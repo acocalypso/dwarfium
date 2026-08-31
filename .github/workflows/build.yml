@@ -30,7 +30,9 @@ jobs:
       - name: Read application version
         id: version
         shell: bash
-        run: echo "version=$(node --print \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(node --print "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Run project checks
         run: npm run CI
