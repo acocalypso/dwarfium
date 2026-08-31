@@ -16,7 +16,6 @@ import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
 const os = require("os");
-import * as forge from "node-forge";
 
 // Function to check if body is a valid JSON string
 function isJSONString(body) {
@@ -59,9 +58,6 @@ function getLocalIPAddress(): string[] {
   return localIPs;
 }
 
-const isMultipart = (contentType) =>
-  typeof contentType === "string" && contentType.includes("multipart");
-
 function check_certificates() {
   const basePath = "."; // Current directory
   const caPath = path.join(basePath, "CADwarfiumCert.pem"); // Your Root CA
@@ -82,7 +78,7 @@ function check_certificates() {
   }
 
   console.warn(
-    "🔒 SSL Certificates not found, use createSSLcert tool to generate and install them..."
+    "🔒 SSL Certificates not found, use createSSLcert tool to generate and install them...",
   );
   return false;
 }
@@ -185,7 +181,7 @@ wss.on("connection", (clientSocket, req) => {
               // Otherwise, forward it as is
               console.log(
                 "Forwarding message from client to target:",
-                data.toString("hex")
+                data.toString("hex"),
               );
               targetSocket.send(data); // Forward data to client
             }
@@ -215,7 +211,7 @@ wss.on("connection", (clientSocket, req) => {
               // Otherwise, forward it as is
               console.log(
                 "Forwarding message from target to client:",
-                data.toString("hex")
+                data.toString("hex"),
               );
               clientSocket.send(data); // Forward data to client
             }
@@ -276,7 +272,7 @@ httpServer.on("upgrade", (req, socket, head) => {
       const err = error as Error; // Cast error to Error
       console.error(
         "Client WebSocket details:",
-        err.message || "An unknown error occurred"
+        err.message || "An unknown error occurred",
       );
     }
   });
@@ -298,7 +294,7 @@ if (httpsServer) {
         const err = error as Error; // Cast error to Error
         console.error(
           "Client WebSocket details:",
-          err.message || "An unknown error occurred"
+          err.message || "An unknown error occurred",
         );
       }
     });
@@ -616,8 +612,8 @@ app.all("*", async (req, res) => {
     // Prepare headers, removing problematic ones
     const filteredHeaders = Object.fromEntries(
       Object.entries(req.headers).filter(
-        ([key]) => !["host", "transfer-encoding"].includes(key.toLowerCase())
-      )
+        ([key]) => !["host", "transfer-encoding"].includes(key.toLowerCase()),
+      ),
     );
 
     // Ensure headers only contain strings (this prevents TypeScript errors)
@@ -625,7 +621,7 @@ app.all("*", async (req, res) => {
       Object.entries(filteredHeaders).map(([key, value]) => [
         key,
         Array.isArray(value) ? value.join(",") : String(value), // Ensure value is a string
-      ])
+      ]),
     );
 
     // Validate if the body is valid for the method
@@ -726,14 +722,14 @@ app.all("*", async (req, res) => {
 
 httpServer.listen(NEXT_PUBLIC_PORT_PROXY_CORS, "0.0.0.0", () => {
   console.log(
-    `Proxy server is running on http://localhost:${NEXT_PUBLIC_PORT_PROXY_CORS}`
+    `Proxy server is running on http://localhost:${NEXT_PUBLIC_PORT_PROXY_CORS}`,
   );
 });
 
 if (httpsServer) {
   httpsServer.listen(NEXT_PUBLIC_PORT_PROXY_CORS_HTTPS, "0.0.0.0", () => {
     console.log(
-      `HTTPS Proxy server is running on https://localhost:${NEXT_PUBLIC_PORT_PROXY_CORS_HTTPS}`
+      `HTTPS Proxy server is running on https://localhost:${NEXT_PUBLIC_PORT_PROXY_CORS_HTTPS}`,
     );
   });
 }

@@ -40,7 +40,7 @@ export default function GotoUserLists(props: PropType) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectPersonalList, setSelectPersonalList] = useState(
-    connectionCtx.currentUserObjectListName === "personal"
+    connectionCtx.currentUserObjectListName === "personal",
   );
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function GotoUserLists(props: PropType) {
         setObjectPersonalList(personalObjecList);
         console.log(
           "Loaded  personalObjecList on load: ",
-          personalObjecList.length
+          personalObjecList.length,
         );
       } else {
         console.log("No personalObjecList found in DB");
@@ -124,11 +124,7 @@ export default function GotoUserLists(props: PropType) {
           <div className="col-xl-6 col-lg-5 col-md-5 col-12">
             <select
               className="form-select mb-2"
-              value={
-                connectionCtx.currentUserObjectListName ||
-                "default" ||
-                "personal"
-              }
+              value={connectionCtx.currentUserObjectListName || "default"}
               onChange={selectListHandler}
             >
               <option value="default">{t("cGoToListdefault")}</option>

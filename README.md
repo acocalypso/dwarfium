@@ -6,7 +6,14 @@
 [![Discord](https://dcbadge.vercel.app/api/server/5vFWbsXDfv)](https://discord.gg/5vFWbsXDfv)
 ![Repobeats](https://repobeats.axiom.co/api/embed/14963aa4fc5307591a6e387817c1dedf75d7e8f9.svg "Repobeats analytics image")
 
-This application connects to the DWARF telescope and integrates with Stellarium via the [DWARF API](https://hj433clxpv.feishu.cn/docx/MiRidJmKOobM2SxZRVGcPCVknQg) and the Stellarium remote control plugin. Once DWARF II and Stellarium are connected, you can select an object in Stellarium and command DWARF II to point to that object.
+This application connects DWARF II, DWARF 3, and DWARF mini telescopes to
+Stellarium. It uses the shared V3 WebSocket protocol (major 1, minor 20),
+discovers the model before creating packets, and applies the correct device and
+client identity for each model.
+
+Protocol access is centralized in `src/services/dwarf`; components must not
+import `dwarfii_api` directly. See [the migration report](MIGRATION_REPORT.md)
+for the command mapping, dependency decisions, and hardware validation plan.
 
 You can find the documentation [here](https://tinyurl.com/Dwarfium).
 
@@ -49,14 +56,14 @@ xattr -d com.apple.quarantine /Applications/Dwarfium.app
 
 If you're interested in exploring the code or contributing to the project, follow these steps:
 
-This app is built with Next.js, TypeScript, and Bootstrap CSS. It uses ESLint and Prettier for linting and formatting the code.
+This app is built with Next.js, TypeScript, Bootstrap CSS, and Tauri 2. It uses ESLint flat config and Prettier for linting and formatting the code.
 
 1. Clone the repository.
 
 2. Install the necessary libraries.
 
 ```bash
-npm install
+npm ci
 ```
 
 3. Start the server.

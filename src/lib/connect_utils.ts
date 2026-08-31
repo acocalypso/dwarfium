@@ -1,12 +1,16 @@
 import { ConnectionContextType } from "@/types";
 
 import {
+  configureDwarfProtocol,
+  createV3SessionPackets,
   Dwarfii_Api,
-  messageCameraTeleGetSystemWorkingState,
-  messageCameraTeleOpenCamera,
-  messageCameraWideOpenCamera,
+  applyAuthoritativeCameraParam,
+  getDwarfDeviceProfile,
+  ingestV3ParameterNotification,
+  loadV3AstroParameterCatalog,
+  V3_SESSION_READY_COMMAND,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import {
   saveConnectionStatusDB,
   saveInitialConnectionTimeDB,
@@ -45,10 +49,6 @@ function updateAstroCamera(connectionCtx: ConnectionContextType, cmd) {
   }
 }
 
-function getDeviceName(deviceId) {
-  return deviceId === 1 ? "Dwarf II" : deviceId === 2 ? "Dwarf3" : "Dwarf";
-}
-
 export async function connectionHandler(
   connectionCtx: ConnectionContextType,
   IPDwarf: string | undefined,
@@ -56,14 +56,33 @@ export async function connectionHandler(
   setConnecting: Function,
   setSlavemode: Function,
   setGoLive: Function,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (IPDwarf === undefined) {
     return;
   }
   let getInfoCamera = true;
   let isStopRecording = false;
-  let initDwarfId: number | undefined = undefined;
+
+  const [deviceId, deviceUid] = await findDeviceInfo(IPDwarf, connectionCtx);
+  if (!deviceId) {
+    setConnecting(false);
+    setErrorTxt("Unable to identify a supported DWARF device.");
+    return;
+  }
+
+  let deviceProfile;
+  try {
+    deviceProfile = getDwarfDeviceProfile(deviceId);
+  } catch (error) {
+    setConnecting(false);
+    setErrorTxt(error instanceof Error ? error.message : String(error));
+    return;
+  }
+
+  connectionCtx.setTypeIdDwarf(deviceProfile.deviceId);
+  connectionCtx.setTypeNameDwarf(deviceProfile.displayName);
+  if (deviceUid) connectionCtx.setTypeUidDwarf(deviceUid);
 
   console.log("socketIPDwarf: ", connectionCtx.socketIPDwarf); // Create WebSocketHandler if need
   const webSocketHandler = connectionCtx.socketIPDwarf
@@ -88,57 +107,42 @@ export async function connectionHandler(
     await webSocketHandler.setNewIpDwarf(IPDwarf);
   }
 
+  try {
+    configureDwarfProtocol(webSocketHandler, deviceProfile);
+  } catch (error) {
+    setConnecting(false);
+    setErrorTxt(error instanceof Error ? error.message : String(error));
+    return;
+  }
+
+  if (deviceProfile.capabilities.rtspPreview) {
+    await checkMediaMtxStreamWithUpdate(IPDwarf, connectionCtx);
+  }
+
   const customMessageHandler = async (txt_info, result_data) => {
     if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_SDCARD_INFO) {
       connectionCtx.setAvailableSizeDwarf(result_data.data.availableSize);
       connectionCtx.setTotalSizeDwarf(result_data.data.totalSize);
-      connectionCtx.setConnectionStatus(true);
-      connectionCtx.setInitialConnectionTime(Date.now());
-      saveConnectionStatusDB(true);
-      saveInitialConnectionTimeDB();
-      saveIPConnectDB(IPDwarf);
-    } else if (
-      result_data.cmd ==
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_SYSTEM_WORKING_STATE
-    ) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
+    } else if (result_data.cmd == V3_SESSION_READY_COMMAND) {
+      if (
+        result_data.data.code === undefined ||
+        result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK
+      ) {
         connectionCtx.setConnectionStatus(true);
-        if (
-          !(
-            connectionCtx.typeIdDwarf &&
-            connectionCtx.typeIdDwarf === initDwarfId
-          )
-        ) {
-          // need to update typeIdDwarf
-          await findDeviceInfo(IPDwarf, connectionCtx).then(
-            ([deviceId, deviceUid]) => {
-              if (deviceId) {
-                connectionCtx.setTypeIdDwarf(deviceId);
-                connectionCtx.setTypeNameDwarf(getDeviceName(deviceId));
-                if (deviceUid) connectionCtx.setTypeUidDwarf(deviceUid);
-                console.log(
-                  `Result Dwarf Data: ID=${deviceId}, Name=${getDeviceName(
-                    deviceId
-                  )}, UID=${deviceUid}`
-                );
-
-                // Update it for the next frames to be sent
-                if (webSocketHandler.setDeviceIdDwarf(deviceId)) {
-                  console.log(
-                    "The device id has been updated for the next frames to be sent"
-                  );
-                } else {
-                  console.error("Error during update of the device id");
-                }
-                if (deviceId == 2)
-                  checkMediaMtxStreamWithUpdate(IPDwarf, connectionCtx);
-
-                initDwarfId = deviceId;
-              }
-            }
+        connectionCtx.setInitialConnectionTime(Date.now());
+        saveConnectionStatusDB(true);
+        saveInitialConnectionTimeDB();
+        saveIPConnectDB(IPDwarf);
+        try {
+          await loadV3AstroParameterCatalog(IPDwarf, connectionCtx);
+        } catch (error) {
+          logger(
+            "V3 parameter discovery unavailable",
+            { error: error instanceof Error ? error.message : String(error) },
+            connectionCtx,
           );
         }
-        if (getInfoCamera && connectionCtx.typeIdDwarf) {
+        if (getInfoCamera) {
           getAllTelescopeISPSetting(connectionCtx, webSocketHandler);
           getInfoCamera = false;
         }
@@ -146,6 +150,9 @@ export async function connectionHandler(
         connectionCtx.setConnectionStatus(true);
         get_error("Error: ", result_data, setErrorTxt);
       }
+    } else if (result_data.cmd == 15264) {
+      const parameter = ingestV3ParameterNotification(result_data.data);
+      if (parameter) applyAuthoritativeCameraParam(connectionCtx, parameter);
     } else if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WS_HOST_SLAVE_MODE
     ) {
@@ -255,7 +262,7 @@ export async function connectionHandler(
         }));
         saveImagingSessionDb(
           "imagesTaken",
-          result_data.data.currentCount.toString()
+          result_data.data.currentCount.toString(),
         );
       }
       if (
@@ -284,7 +291,7 @@ export async function connectionHandler(
         }));
         saveImagingSessionDb(
           "imagesStacked",
-          result_data.data.stackedCount.toString()
+          result_data.data.stackedCount.toString(),
         );
       }
     } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ELE) {
@@ -375,24 +382,21 @@ export async function connectionHandler(
     connectionCtx.setConnectionStatusSlave(false);
     setConnecting(true);
 
-    // Send Commands : cmdCameraTeleGetSystemWorkingState
-    let WS_Packet = messageCameraTeleGetSystemWorkingState();
-    let WS_Packet1 = messageCameraTeleOpenCamera();
-    let WS_Packet2 = messageCameraWideOpenCamera();
+    const sessionPackets = createV3SessionPackets();
     let txtInfoCommand = "Connection";
 
     webSocketHandler.prepare(
-      [WS_Packet, WS_Packet1, WS_Packet2],
+      sessionPackets,
       txtInfoCommand,
       [
         "*", // Get All Data
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_SDCARD_INFO,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ELE,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_CHARGE,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_SYSTEM_WORKING_STATE,
+        V3_SESSION_READY_COMMAND,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WS_HOST_SLAVE_MODE,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_CAPTURE_RAW_LIVE_STACKING,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_PROGRASS_CAPTURE_RAW_LIVE_STACKING,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_WIDE_CAPTURE_RAW_LIVE_STACKING,
@@ -404,7 +408,7 @@ export async function connectionHandler(
       customMessageHandler,
       customStateHandler,
       customErrorHandler,
-      customReconnectHandler
+      customReconnectHandler,
     );
   }
 

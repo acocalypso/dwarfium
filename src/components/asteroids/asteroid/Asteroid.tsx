@@ -16,7 +16,7 @@ import {
 import { convertHMSToDwarfRA, convertDMSToDwarfDec } from "@/lib/math_utils";
 import eventBus from "@/lib/event_bus";
 
-import imgBullet from "/public/images/rifle-bullet.png";
+import imgBullet from "../../../../public/images/rifle-bullet.png";
 
 type AsteroidProps = {
   data: AsteroidData;
@@ -32,7 +32,7 @@ export const Asteroid: React.FC<AsteroidProps> = ({
   const asteroidEstimatedSize = Math.round(
     ((data.estimated_diameter?.meters?.estimated_diameter_max || 0) +
       (data.estimated_diameter?.meters?.estimated_diameter_min || 0)) /
-      2
+      2,
   );
   let connectionCtx = useContext(ConnectionContext);
   let currentObjectName = useRef("");
@@ -41,12 +41,13 @@ export const Asteroid: React.FC<AsteroidProps> = ({
     data.close_approach_data?.[0]?.close_approach_date_full?.split(" ")[1];
 
   const asteroidSpeed = Math.round(
-    data.close_approach_data?.[0]?.relative_velocity?.kilometers_per_second || 0
+    data.close_approach_data?.[0]?.relative_velocity?.kilometers_per_second ||
+      0,
   );
 
   const asteroidMissDistance =
     Math.round(
-      (data.close_approach_data?.[0]?.miss_distance?.astronomical || 0) * 100
+      (data.close_approach_data?.[0]?.miss_distance?.astronomical || 0) * 100,
     ) / 100;
 
   const compareSize = comparisonSize(asteroidEstimatedSize);
@@ -83,7 +84,7 @@ export const Asteroid: React.FC<AsteroidProps> = ({
         undefined,
         parsedRA,
         parsedDeclination,
-        currentObjectName.current
+        currentObjectName.current,
       );
     }
   }
@@ -102,7 +103,7 @@ export const Asteroid: React.FC<AsteroidProps> = ({
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(fetchUrl);
         fetchUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
       fetch(fetchUrl, {
@@ -163,7 +164,7 @@ export const Asteroid: React.FC<AsteroidProps> = ({
         objectAsteroid,
         connectionCtx,
         setErrors,
-        fetchStellariumData
+        fetchStellariumData,
       );
     } catch (error) {
       console.error(error);

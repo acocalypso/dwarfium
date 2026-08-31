@@ -5,7 +5,7 @@ import {
   Dwarfii_Api,
   messageSystemSetMasterLock,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import { saveIPConnectDB } from "@/db/db_utils";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { logger } from "@/lib/logger";
@@ -49,7 +49,7 @@ export default function CmdHostLockDwarf() {
       WS_Packet,
       txtInfoCommand,
       [Dwarfii_Api.DwarfCMD.CMD_SYSTEM_SET_MASTERLOCK],
-      customMessageHandler
+      customMessageHandler,
     );
 
     if (!webSocketHandler.run()) {

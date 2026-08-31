@@ -59,7 +59,7 @@ export default function AstroPhoto() {
           await obsInstance.connect(urlSocketOBS, "ZesqL9dGu2Uv3XlE");
         else {
           const urlProxySocketOBS = `${getProxyUrl(
-            connectionCtx
+            connectionCtx,
           )}?target=${urlSocketOBS}&token=ZesqL9dGu2Uv3XlE`;
           console.log("urlSocketOBS: ", urlProxySocketOBS);
           const wssProxySocketOBS = urlProxySocketOBS.replace("http", "ws");

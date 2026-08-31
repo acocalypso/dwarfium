@@ -46,7 +46,7 @@ export default function CameraPanoSettings(props: PropTypes) {
     ));
   };
   const allowedCountBurstOptions = generateCountBurstOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   // Function to generate options for a specific Dwarf model
@@ -59,7 +59,7 @@ export default function CameraPanoSettings(props: PropTypes) {
     ));
   };
   const allowedIntervalBurstOptions = generateIntervalBurstOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   const { t } = useTranslation();

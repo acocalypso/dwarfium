@@ -22,7 +22,7 @@ function isJSONString(body) {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<ProxyResponse | string>
+  res: NextApiResponse<ProxyResponse | string>,
 ) {
   const controller = new AbortController();
   const timeout = 30000;
@@ -51,16 +51,16 @@ export default async function handler(
     // Prepare headers, removing problematic ones
     const filteredHeaders = Object.fromEntries(
       Object.entries(req.headers).filter(
-        ([key]) => !["host", "transfer-encoding"].includes(key.toLowerCase())
-      )
+        ([key]) => !["host", "transfer-encoding"].includes(key.toLowerCase()),
+      ),
     );
 
     // Ensure headers only contain strings (this prevents TypeScript errors)
     const sanitizedHeaders: { [key: string]: string } = Object.fromEntries(
       Object.entries(filteredHeaders).map(([key, value]) => [
         key,
-        Array.isArray(value) ? value.join(",") : value ?? "", // Join arrays, or use empty string for undefined
-      ])
+        Array.isArray(value) ? value.join(",") : (value ?? ""), // Join arrays, or use empty string for undefined
+      ]),
     );
 
     // Validate if the body is valid for the method

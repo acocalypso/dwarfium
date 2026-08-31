@@ -8,18 +8,20 @@ import Link from "next/link";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
   Dwarfii_Api,
-  messageAstroStartCaptureRawLiveStacking,
-  messageAstroStopCaptureRawLiveStacking,
+  getDwarfDeviceProfile,
+  messageV3AstroStartStacking,
+  messageV3AstroContinueShooting,
+  messageV3AstroStopStacking,
   messageAstroStartWideCaptureLiveStacking,
   messageAstroStopWideCaptureLiveStacking,
-  messageAstroGoLive,
-  messageFocusStartAstroAutoFocus,
+  messageV3AstroStartTracking,
+  messageV3FocusAutoFocusStart,
   messageFocusStopAstroAutoFocus,
-  messageFocusManualSingleStepFocus,
-  messageFocusStartManualContinuFocus,
-  messageFocusStopManualContinuFocus,
+  messageV3FocusManualSingleStep,
+  messageV3FocusManualContinuStart,
+  messageV3FocusManualContinuStop,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import ImagingAstroSettings from "@/components/imaging/ImagingAstroSettings";
 import RecordingButton from "@/components/icons/RecordingButton";
 import RecordButton from "@/components/icons/RecordButton";
@@ -216,7 +218,7 @@ export default function ImagingMenu(props: PropType) {
       saveImagingSessionDb("startTime", now.toString());
       saveImagingSessionDb(
         "astroCamera",
-        connectionCtx.currentAstroCamera.toString()
+        connectionCtx.currentAstroCamera.toString(),
       );
 
       //startAstroPhotoHandler
@@ -224,7 +226,7 @@ export default function ImagingMenu(props: PropType) {
       console.debug(
         "startAstroPhotoHandler current ST:",
         testTimer,
-        connectionCtx
+        connectionCtx,
       );
       connectionCtx.setImagingSession((prev) => {
         prev["imagesTaken"] = 0;
@@ -252,6 +254,19 @@ export default function ImagingMenu(props: PropType) {
             console.debug("Capture Need Goto ", {}, connectionCtx);
             return false;
           } else if (result_data.data.code != Dwarfii_Api.DwarfErrorCode.OK) {
+            if (
+              result_data.data.code ===
+              Dwarfii_Api.DwarfErrorCode.CODE_ASTRO_DARK_TEMP_MISMATCH
+            ) {
+              const profile = getDwarfDeviceProfile(
+                connectionCtx.typeIdDwarf ?? 1,
+              );
+              const recoveryPacket = profile.capabilities.darkFrameContinue
+                ? messageV3AstroContinueShooting()
+                : messageV3AstroStartStacking(-1, true);
+              webSocketHandler.prepare(recoveryPacket, "continueAstroCapture");
+              return true;
+            }
             console.error("Capture error:", result_data.data.code);
             console.debug("Start Capture error", {}, connectionCtx);
             endImagingSession();
@@ -272,9 +287,13 @@ export default function ImagingMenu(props: PropType) {
 
       // Send Command : messageAstroStartCaptureRawLiveStacking or messageAstroStartWideCaptureLiveStacking
       let WS_Packet;
-      if (connectionCtx.currentAstroCamera != wideangleCamera)
-        WS_Packet = messageAstroStartCaptureRawLiveStacking();
-      else WS_Packet = messageAstroStartWideCaptureLiveStacking();
+      if (connectionCtx.currentAstroCamera != wideangleCamera) {
+        const profile = getDwarfDeviceProfile(connectionCtx.typeIdDwarf ?? 1);
+        const filterIndex = profile.capabilities.filterWheel
+          ? Math.max(1, (connectionCtx.astroSettings.IR ?? 0) + 1)
+          : -1;
+        WS_Packet = messageV3AstroStartStacking(filterIndex);
+      } else WS_Packet = messageAstroStartWideCaptureLiveStacking();
       let txtInfoCommand = "takeAstroPhoto";
 
       webSocketHandler.prepare(
@@ -284,7 +303,7 @@ export default function ImagingMenu(props: PropType) {
           Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_CAPTURE_RAW_LIVE_STACKING,
           Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_CAPTURE_WIDE_RAW_LIVE_STACKING,
         ],
-        customMessageHandler
+        customMessageHandler,
       );
 
       if (!webSocketHandler.run()) {
@@ -327,7 +346,7 @@ export default function ImagingMenu(props: PropType) {
     // Send Command : messageAstroStopCaptureRawLiveStacking or messageAstroStopWideCaptureLiveStacking
     let WS_Packet;
     if (connectionCtx.currentAstroCamera != wideangleCamera)
-      WS_Packet = messageAstroStopCaptureRawLiveStacking();
+      WS_Packet = messageV3AstroStopStacking();
     else WS_Packet = messageAstroStopWideCaptureLiveStacking();
     let txtInfoCommand = "stopAstroPhoto";
 
@@ -338,7 +357,7 @@ export default function ImagingMenu(props: PropType) {
         Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_CAPTURE_RAW_LIVE_STACKING,
         Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_WIDE_CAPTURE_LIVE_STACKING,
       ],
-      customMessageHandler
+      customMessageHandler,
     );
 
     if (!webSocketHandler.run()) {
@@ -373,14 +392,14 @@ export default function ImagingMenu(props: PropType) {
       : new WebSocketHandler(connectionCtx.IPDwarf);
 
     // Send Command : messageAstroGoLive
-    let WS_Packet = messageAstroGoLive();
+    let WS_Packet = messageV3AstroStartTracking();
     let txtInfoCommand = "goLive";
 
     webSocketHandler.prepare(
       WS_Packet,
       txtInfoCommand,
       [Dwarfii_Api.DwarfCMD.CMD_ASTRO_GO_LIVE],
-      customMessageHandler
+      customMessageHandler,
     );
 
     if (!webSocketHandler.run()) {
@@ -395,7 +414,7 @@ export default function ImagingMenu(props: PropType) {
       console.debug(
         "ImagingSession tS clearInterval:",
         testTimer,
-        connectionCtx
+        connectionCtx,
       );
     }
 
@@ -405,7 +424,7 @@ export default function ImagingMenu(props: PropType) {
       console.debug(
         "ImagingSession tG clearInterval:",
         testTimer,
-        connectionCtx
+        connectionCtx,
       );
     }
     if (connectionCtx.timerGlobal) clearInterval(connectionCtx.timerGlobal);
@@ -470,14 +489,14 @@ export default function ImagingMenu(props: PropType) {
         updateTelescopeISPSetting(
           "gainMode",
           connectionCtx.astroSettings.gainMode as number,
-          connectionCtx
+          connectionCtx,
         );
       }, 1000);
       setTimeout(() => {
         updateTelescopeISPSetting(
           "IR",
           connectionCtx.astroSettings.IR as number,
-          connectionCtx
+          connectionCtx,
         );
       }, 3500);
     } else {
@@ -493,7 +512,7 @@ export default function ImagingMenu(props: PropType) {
       updateTelescopeISPSetting(
         exposureMode,
         exposureModeValue as number,
-        connectionCtx
+        connectionCtx,
       );
     }, 2000);
     setTimeout(() => {
@@ -503,7 +522,7 @@ export default function ImagingMenu(props: PropType) {
       updateTelescopeISPSetting(
         exposure,
         exposureValue as number,
-        connectionCtx
+        connectionCtx,
       );
     }, 3000);
   }
@@ -531,7 +550,7 @@ export default function ImagingMenu(props: PropType) {
   function focusAutoAstro() {
     console.log("Astro click");
     setAstroFocus(true);
-    focusAction(true, false, false, 0, 1);
+    focusAction(true, false, false, 0);
   }
 
   function focusAutoAstroStop() {
@@ -545,10 +564,10 @@ export default function ImagingMenu(props: PropType) {
     // Your custom logic for right-click event
     console.log("Astro Right click");
     setAstroFocus(true);
-    focusAction(true, false, false, 0, 0);
+    focusAction(true, false, false, 0);
   };
 
-  function focusAction(Astro, Continu, Stop, Direction, ModeAstro = 1) {
+  function focusAction(Astro, Continu, Stop, Direction) {
     if (connectionCtx.IPDwarf === undefined) {
       return;
     }
@@ -592,9 +611,13 @@ export default function ImagingMenu(props: PropType) {
     let txtInfoCommand;
     let Cmd;
     if (Astro && !Continu && !Stop) {
-      WS_Packet = messageFocusStartAstroAutoFocus(ModeAstro);
+      WS_Packet = messageV3FocusAutoFocusStart();
       txtInfoCommand = "AstroFocus";
-      Cmd = [Dwarfii_Api.DwarfCMD.CMD_FOCUS_START_ASTRO_AUTO_FOCUS];
+      Cmd = [
+        Dwarfii_Api.DwarfCMD.CMD_FOCUS_START_ASTRO_AUTO_FOCUS,
+        Dwarfii_Api.DwarfCMD.CMD_V3_NOTIFY_AUTOFOCUS_STATE,
+        Dwarfii_Api.DwarfCMD.CMD_V3_NOTIFY_AUTOFOCUS_STATE_ALT,
+      ];
       console.log("Focus : CMD_FOCUS_START_ASTRO_AUTO_FOCUS");
     }
     if (Astro && !Continu && Stop) {
@@ -604,19 +627,19 @@ export default function ImagingMenu(props: PropType) {
       console.log("Focus : CMD_FOCUS_STOP_ASTRO_AUTO_FOCUS");
     }
     if (!Astro && Continu && !Stop) {
-      WS_Packet = messageFocusStartManualContinuFocus(Direction);
+      WS_Packet = messageV3FocusManualContinuStart(Direction);
       txtInfoCommand = "AstroFocus";
       Cmd = [Dwarfii_Api.DwarfCMD.CMD_FOCUS_START_MANUAL_CONTINU_FOCUS];
       console.log("Focus : CMD_FOCUS_START_MANUAL_CONTINU_FOCUS");
     }
     if (!Astro && Continu && Stop) {
-      WS_Packet = messageFocusStopManualContinuFocus();
+      WS_Packet = messageV3FocusManualContinuStop();
       txtInfoCommand = "AstroFocus";
       Cmd = [Dwarfii_Api.DwarfCMD.CMD_FOCUS_STOP_MANUAL_CONTINU_FOCUS];
       console.log("Focus : CMD_FOCUS_STOP_MANUAL_CONTINU_FOCUS");
     }
     if (!Astro && !Continu) {
-      WS_Packet = messageFocusManualSingleStepFocus(Direction);
+      WS_Packet = messageV3FocusManualSingleStep(Direction);
       txtInfoCommand = "AstroFocus";
       Cmd = [Dwarfii_Api.DwarfCMD.CMD_FOCUS_MANUAL_SINGLE_STEP_FOCUS];
       console.log("Focus : CMD_FOCUS_MANUAL_SINGLE_STEP_FOCUS");
@@ -626,7 +649,7 @@ export default function ImagingMenu(props: PropType) {
       WS_Packet,
       txtInfoCommand,
       Cmd,
-      customMessageHandler
+      customMessageHandler,
     );
 
     if (!webSocketHandler.run()) {
@@ -771,7 +794,7 @@ export default function ImagingMenu(props: PropType) {
   */
   function anim_close() {
     const joystickContainer = document.querySelector(
-      ".joystick-container"
+      ".joystick-container",
     ) as HTMLElement;
     // Check if the element is found
     if (joystickContainer) {

@@ -34,42 +34,57 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     require("bootstrap/dist/js/bootstrap.bundle.min.js");
-    const isTauri = "__TAURI__" in window;
+    let disposed = false;
+    const children: Array<{ kill: () => Promise<void> }> = [];
 
-    if (isTauri) {
-      let proxyCommand, mediaMtxCommand;
-      const startSidecars = async () => {
-        try {
-          const { Command } = await import("@tauri-apps/api/shell"); // Dynamic import for `Command`
-          const { path } = await import("@tauri-apps/api");
+    const startDesktopServices = async () => {
+      const { isTauri } = await import("@tauri-apps/api/core");
+      if (!isTauri()) return;
 
-          // Build the full path to the configuration file
+      try {
+        const { join, resourceDir } = await import("@tauri-apps/api/path");
+        const { Command } = await import("@tauri-apps/plugin-shell");
+        const configFile = await join(await resourceDir(), "mediamtx.yml");
 
-          const configFile = await path.join(
-            await path.resourceDir(),
-            "mediamtx.yml"
-          );
+        const proxy = await Command.sidecar("bin/DwarfiumProxy").spawn();
+        children.push(proxy);
+        console.log("DwarfiumProxy started successfully.");
 
-          // Start the first sidecar
-          proxyCommand = Command.sidecar("bin/DwarfiumProxy");
-          await proxyCommand.spawn(); // Spawn the first sidecar
-          console.log("DwarfiumProxy started successfully.");
+        const mediaMtx = await Command.sidecar("bin/mediamtx", [
+          configFile,
+        ]).spawn();
+        children.push(mediaMtx);
+        console.log("mediamtx started successfully with:", configFile);
+      } catch (error) {
+        console.error("Failed to start desktop sidecars:", error);
+      }
 
-          // Start the second sidecar with the config file as an argument
-          mediaMtxCommand = Command.sidecar("bin/mediamtx", [configFile]);
-          await mediaMtxCommand.spawn(); // Spawn the second sidecar
-          console.log(
-            "mediamtx started successfully with config file:",
-            configFile
-          );
-        } catch (error) {
-          console.error("Failed to start sidecars:", error);
+      if (disposed) return;
+
+      try {
+        const { check } = await import("@tauri-apps/plugin-updater");
+        const update = await check();
+        if (
+          update?.available &&
+          window.confirm(
+            `Dwarfium ${update.version} is available. Install it now?`,
+          )
+        ) {
+          await update.downloadAndInstall();
+          const { relaunch } = await import("@tauri-apps/plugin-process");
+          await relaunch();
         }
-      };
+      } catch (error) {
+        console.error("Failed to check for a desktop update:", error);
+      }
+    };
 
-      // Call the async function
-      startSidecars();
-    }
+    void startDesktopServices();
+
+    return () => {
+      disposed = true;
+      for (const child of children) void child.kill();
+    };
   }, []);
 
   return (

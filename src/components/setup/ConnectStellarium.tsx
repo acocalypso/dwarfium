@@ -34,7 +34,7 @@ export default function ConnectStellarium(props: PropType) {
   const [url_plugin, setUrl_plugin] = useState("");
   const abortControllerRef = useRef<AbortController | null>(null);
   const [portStellarium, setPortStellarium] = useState(
-    connectionCtx.portStellarium || "8090"
+    connectionCtx.portStellarium || "8090",
   );
 
   const handlePortChange = (e) => {
@@ -66,7 +66,7 @@ export default function ConnectStellarium(props: PropType) {
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(url);
         url = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
       fetch(url, { signal: AbortSignal.timeout(2000) })
@@ -139,7 +139,7 @@ export default function ConnectStellarium(props: PropType) {
             urlStellariumConfig = await checkHealth(
               "/api/stellarium-config-health",
               3000,
-              signal
+              signal,
             );
           } else {
             let sameProxyServer = compareURLsIgnoringPort(proxyUrl, serverUrl);
@@ -148,14 +148,14 @@ export default function ConnectStellarium(props: PropType) {
               urlStellariumConfig = await checkHealth(
                 serverUrl + "/stellarium-config-health",
                 3000,
-                signal
+                signal,
               );
               // check on Proxy if not found
               if (!urlStellariumConfig) {
                 urlStellariumConfig = await checkHealth(
                   proxyUrl + "/stellarium-config-health",
                   3000,
-                  signal
+                  signal,
                 );
                 if (urlStellariumConfig) {
                   urlStellariumConfig = proxyUrl + urlStellariumConfig;
@@ -166,7 +166,7 @@ export default function ConnectStellarium(props: PropType) {
               urlStellariumConfig = await checkHealth(
                 proxyUrl + "/stellarium-config-health",
                 3000,
-                signal
+                signal,
               );
               if (urlStellariumConfig) {
                 urlStellariumConfig = proxyUrl + urlStellariumConfig;
@@ -176,7 +176,7 @@ export default function ConnectStellarium(props: PropType) {
                 urlStellariumConfig = await checkHealth(
                   serverUrl + "/stellarium-config-health",
                   3000,
-                  signal
+                  signal,
                 );
               }
             }

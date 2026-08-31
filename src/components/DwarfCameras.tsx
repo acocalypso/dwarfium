@@ -20,15 +20,15 @@ import {
   wideangleURL,
   telephotoURL,
   messageCameraTeleGetSystemWorkingState,
-  messageCameraTeleOpenCamera,
-  messageCameraWideOpenCamera,
+  messageV3CameraTeleOpenCamera,
+  messageV3CameraWideOpenCamera,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 
 import Image from "next/image";
 import { StaticImageData } from "next/image";
-import imgTeleCameraSrc from "/public/images/dwarflab_camera.png";
-import imgWideCameraSrc from "/public/images/dwarfII.png";
+import imgTeleCameraSrc from "../../public/images/dwarflab_camera.png";
+import imgWideCameraSrc from "../../public/images/dwarfII.png";
 import { get_error } from "@/lib/dwarf_utils";
 import styles from "@/components/DwarfCameras.module.css";
 import { logger } from "@/lib/logger";
@@ -63,21 +63,21 @@ export default function DwarfCameras(props: PropType) {
     wideUrl,
     proxyUrl,
     connectionCtx,
-    false
+    false,
   );
   const wideUrl_D3 = `http://${getMediaMTXUrl(connectionCtx)}:8888/dwarf_wide`;
   const transformedWideUrl_D3 = getTransfomProxyImageUrl(
     wideUrl_D3,
     proxyUrl,
     connectionCtx,
-    true
+    true,
   );
   const teleUrl = telephotoURL(IPDwarf);
   const transformedTeleUrl = getTransfomProxyImageUrl(
     teleUrl,
     proxyUrl,
     connectionCtx,
-    false
+    false,
   );
 
   const teleUrl_D3 = `http://${getMediaMTXUrl(connectionCtx)}:8888/dwarf_tele`;
@@ -85,7 +85,7 @@ export default function DwarfCameras(props: PropType) {
     teleUrl_D3,
     proxyUrl,
     connectionCtx,
-    true
+    true,
   );
   const [wideAngleURL, setWideAngleURL] = useState(transformedWideUrl);
   const [telePhotoURL, setTelePhotoURL] = useState(transformedTeleUrl);
@@ -127,7 +127,7 @@ export default function DwarfCameras(props: PropType) {
   const [smallMediaScreenCameraName, setSmallMediaScreenCameraName] =
     useState<string>("wide-angle");
   const initFullScreenRcv = useRef<boolean>(
-    connectionCtx.isFullScreenCameraTele
+    connectionCtx.isFullScreenCameraTele,
   );
 
   const [buttonSwap, setButtonSwap] = useState("Swap");
@@ -164,7 +164,7 @@ export default function DwarfCameras(props: PropType) {
     console.debug("Init Tele SRC : ", mainMediaScreenCameraSrc);
     console.debug(
       "Init is Tele Fullscreen : ",
-      connectionCtx.isFullScreenCameraTele
+      connectionCtx.isFullScreenCameraTele,
     );
     initFullScreenRcv.current = connectionCtx.isFullScreenCameraTele;
     console.debug("initFullScreenRcv : ", initFullScreenRcv.current);
@@ -195,7 +195,7 @@ export default function DwarfCameras(props: PropType) {
       console.info(
         `Device type read: ${connectionCtx.typeIdDwarf} - ${
           connectionCtx.typeIdDwarf === 1 ? "Dwarf II" : "Dwarf 3"
-        }`
+        }`,
       );
       console.debug("End Of Effect DwarfCameras");
     };
@@ -222,19 +222,19 @@ export default function DwarfCameras(props: PropType) {
       wideUrl,
       proxyUrl,
       connectionCtx,
-      false
+      false,
     );
     console.debug("Change setWideAngleURL : ", transformedWideUrl);
     setWideAngleURL(transformedWideUrl);
 
     const wideUrl_D3 = `http://${getMediaMTXUrl(
-      connectionCtx
+      connectionCtx,
     )}:8888/dwarf_wide`;
     const transformedWideUrl_D3 = getTransfomProxyImageUrl(
       wideUrl_D3,
       proxyUrl,
       connectionCtx,
-      true
+      true,
     );
     console.debug("Change setWideAngleURL_D3 : ", transformedWideUrl_D3);
     setWideAngleURL_D3(transformedWideUrl_D3);
@@ -244,19 +244,19 @@ export default function DwarfCameras(props: PropType) {
       teleUrl,
       proxyUrl,
       connectionCtx,
-      false
+      false,
     );
     console.debug("Change setTelePhotoURL : ", transformedTeleUrl);
     setTelePhotoURL(transformedTeleUrl);
 
     const teleUrl_D3 = `http://${getMediaMTXUrl(
-      connectionCtx
+      connectionCtx,
     )}:8888/dwarf_tele`;
     const transformedTeleUrl_D3 = getTransfomProxyImageUrl(
       teleUrl_D3,
       proxyUrl,
       connectionCtx,
-      true
+      true,
     );
     console.debug("Change setTelePhotoURL_D3 : ", transformedTeleUrl_D3);
     setTelePhotoURL_D3(transformedTeleUrl_D3);
@@ -333,12 +333,12 @@ export default function DwarfCameras(props: PropType) {
   useEffect(() => {
     console.debug(
       "Change StreamTypeWideDwarf: ",
-      connectionCtx.streamTypeWideDwarf
+      connectionCtx.streamTypeWideDwarf,
     );
 
     console.debug(
       " API Cam 2 Tele fullScreen: ",
-      connectionCtx.isFullScreenCameraTele
+      connectionCtx.isFullScreenCameraTele,
     );
     if (connectionCtx.isFullScreenCameraTele) {
       if (connectionCtx.streamTypeWideDwarf != smallMediaScreenStreamType)
@@ -353,12 +353,12 @@ export default function DwarfCameras(props: PropType) {
   useEffect(() => {
     console.debug(
       "Change StreamTypeTeleDwarf: ",
-      connectionCtx.streamTypeTeleDwarf
+      connectionCtx.streamTypeTeleDwarf,
     );
 
     console.debug(
       " API Cam 1 Tele fullScreen: ",
-      connectionCtx.isFullScreenCameraTele
+      connectionCtx.isFullScreenCameraTele,
     );
     if (connectionCtx.isFullScreenCameraTele) {
       if (connectionCtx.streamTypeTeleDwarf != mainMediaScreenStreamType)
@@ -373,7 +373,7 @@ export default function DwarfCameras(props: PropType) {
   useEffect(() => {
     console.debug(
       "smallMediaScreenStreamType changed: ",
-      smallMediaScreenStreamType
+      smallMediaScreenStreamType,
     );
     console.debug("Tele fullScreen: ", connectionCtx.isFullScreenCameraTele);
 
@@ -392,7 +392,7 @@ export default function DwarfCameras(props: PropType) {
   useEffect(() => {
     console.debug(
       "mainMediaScreenStreamType changed: ",
-      mainMediaScreenStreamType
+      mainMediaScreenStreamType,
     );
     console.debug("Tele fullScreen: ", connectionCtx.isFullScreenCameraTele);
     if (connectionCtx.isFullScreenCameraTele) {
@@ -419,7 +419,7 @@ export default function DwarfCameras(props: PropType) {
 
       console.debug(
         "exchange Effect IsFullScreen:",
-        connectionCtx.isFullScreenCameraTele
+        connectionCtx.isFullScreenCameraTele,
       );
       setSrcTeleCamera(true);
       setSrcWideCamera(true);
@@ -447,7 +447,7 @@ export default function DwarfCameras(props: PropType) {
       iframeRefTele.current.style.height = `${dimensionsTele.height}px`;
       iframeRefTele.current.style.display = `block`;
       console.debug(
-        ` set Iframe dimensions ${dimensionsTele.width}px set imgHeight ${dimensionsTele.height}px`
+        ` set Iframe dimensions ${dimensionsTele.width}px set imgHeight ${dimensionsTele.height}px`,
       );
     }
     if (
@@ -461,7 +461,7 @@ export default function DwarfCameras(props: PropType) {
       iImgRefTele.current.style.height = `${dimensionsTele.height}px`;
       iImgRefTele.current.style.display = `block`;
       console.debug(
-        ` set IImg dimensions ${dimensionsTele.width}px set imgHeight ${dimensionsTele.height}px`
+        ` set IImg dimensions ${dimensionsTele.width}px set imgHeight ${dimensionsTele.height}px`,
       );
     }
     console.debug("End Of adjustIframeSize");
@@ -481,7 +481,7 @@ export default function DwarfCameras(props: PropType) {
       iframeRefWide.current.style.height = `${dimensionsWide.height}px`;
       iframeRefWide.current.style.display = `block`;
       console.debug(
-        ` set Iframe dimensions ${dimensionsWide.width}px set imgHeight ${dimensionsWide.height}px`
+        ` set Iframe dimensions ${dimensionsWide.width}px set imgHeight ${dimensionsWide.height}px`,
       );
     }
     if (
@@ -495,7 +495,7 @@ export default function DwarfCameras(props: PropType) {
       iImgRefWide.current.style.height = `${dimensionsWide.height}px`;
       iImgRefWide.current.style.display = `block`;
       console.debug(
-        ` set IImg dimensions ${dimensionsWide.width}px set imgHeight ${dimensionsWide.height}px`
+        ` set IImg dimensions ${dimensionsWide.width}px set imgHeight ${dimensionsWide.height}px`,
       );
     }
     console.debug("End Of adjustIframeSizeWide");
@@ -519,7 +519,7 @@ export default function DwarfCameras(props: PropType) {
     console.debug(
       "getTelePhotoURL :",
       connectionCtx.typeIdDwarf,
-      connectionCtx.streamTypeTeleDwarf
+      connectionCtx.streamTypeTeleDwarf,
     );
     if (!connectionCtx.typeIdDwarf || connectionCtx.typeIdDwarf == 1) {
       return telePhotoURL;
@@ -539,13 +539,13 @@ export default function DwarfCameras(props: PropType) {
       turnOnTeleCameraFn(
         connectionCtx,
         setTelephotoCameraStatus,
-        setSrcTeleCamera
+        setSrcTeleCamera,
       );
     } else {
       turnOnWideCameraFn(
         connectionCtx,
         setWideangleCameraStatus,
-        setSrcWideCamera
+        setSrcWideCamera,
       );
     }
   }
@@ -700,8 +700,8 @@ export default function DwarfCameras(props: PropType) {
     // Send Command : messageCameraTeleOpenCamera
     let txtInfoCommand = "";
     let WS_Packet1 = messageCameraTeleGetSystemWorkingState();
-    let WS_Packet2 = messageCameraTeleOpenCamera();
-    let WS_Packet3 = messageCameraWideOpenCamera();
+    let WS_Packet2 = messageV3CameraTeleOpenCamera();
+    let WS_Packet3 = messageV3CameraWideOpenCamera();
     txtInfoCommand = "CheckCamera";
     webSocketHandler.prepare(
       [WS_Packet1, WS_Packet2, WS_Packet3],
@@ -712,7 +712,7 @@ export default function DwarfCameras(props: PropType) {
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA,
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA,
       ],
-      customMessageHandlerTeleWide
+      customMessageHandlerTeleWide,
     );
 
     if (!webSocketHandler.run()) {
@@ -981,7 +981,7 @@ export default function DwarfCameras(props: PropType) {
 
     console.debug(
       "start exchange IsFullScreen:",
-      connectionCtx.isFullScreenCameraTele
+      connectionCtx.isFullScreenCameraTele,
     );
 
     setWideangleCameraStatus("off");
@@ -990,7 +990,7 @@ export default function DwarfCameras(props: PropType) {
     connectionCtx.setIsFullScreenCameraTele((prev) => !prev);
     console.debug(
       "exchange IsFullScreen:",
-      connectionCtx.isFullScreenCameraTele
+      connectionCtx.isFullScreenCameraTele,
     );
 
     let currentMainMediaScreenStreamType = mainMediaScreenStreamType;
@@ -1015,7 +1015,7 @@ export default function DwarfCameras(props: PropType) {
       connectionCtx.setCurrentAstroCamera(
         connectionCtx.currentAstroCamera == telephotoCamera
           ? wideangleCamera
-          : telephotoCamera
+          : telephotoCamera,
       );
     }
   }

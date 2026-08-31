@@ -14,7 +14,7 @@ import {
   saveLastCheckTimerDB,
   fetchLastCheckTimerDB,
 } from "@/db/db_utils";
-import { firmwareVersion, WebSocketHandler } from "dwarfii_api";
+import { firmwareVersion, WebSocketHandler } from "@/services/dwarf";
 import { ConnectionContextType } from "@/types";
 
 export function useSetupConnection() {
@@ -39,15 +39,15 @@ export function useSetupConnection() {
 
       console.debug(
         "Start Dwarf useSetupConnection initialConnectionTime:",
-        initialConnectionTime
+        initialConnectionTime,
       );
       console.debug(
         "Start Dwarf useSetupConnection IPCheckTimer:",
-        IPCheckTimer
+        IPCheckTimer,
       );
       console.debug(
         "Start Dwarf useSetupConnection LastCheckTimer:",
-        LastCheckTimer
+        LastCheckTimer,
       );
 
       if (
@@ -81,7 +81,7 @@ export function useSetupConnection() {
       timerStellarium = checkStellariumConnection(
         connectionCtx,
         timerStellarium,
-        false
+        false,
       );
 
       // continously check connection status
@@ -107,7 +107,7 @@ export function useSetupConnection() {
   function checkDwarfConnection(
     connectionCtx: ConnectionContextType,
     timer: any,
-    loop: boolean
+    loop: boolean,
   ) {
     // Check if connection has not been force stopped
     let IPConnectDB = fetchIPConnectDB();
@@ -135,7 +135,7 @@ export function useSetupConnection() {
     // if we can't connect to camera in 2 seconds, reset connection data
     const url = firmwareVersion(connectionCtx.IPDwarf);
     const proxyUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-      url
+      url,
     )}`;
     fetch(proxyUrl, {
       signal: AbortSignal.timeout(5000),
@@ -223,7 +223,7 @@ export function useSetupConnection() {
   function checkStellariumConnection(
     connectionCtx: ConnectionContextType,
     timer: any,
-    loop: boolean
+    loop: boolean,
   ) {
     if (connectionCtx.IPStellarium === undefined) {
       console.log("Check Stellarium connection no IPStellarium!");
@@ -235,7 +235,7 @@ export function useSetupConnection() {
     if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
       const targetUrl = new URL(url);
       url = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-        targetUrl.href
+        targetUrl.href,
       )}`;
     }
     fetch(url, {
@@ -261,7 +261,7 @@ export function useSetupConnection() {
             // retry later
             console.log(
               "Stellarium connection error count:",
-              errorCount.current
+              errorCount.current,
             );
             errorCount.current += 1;
           } else {
@@ -273,14 +273,14 @@ export function useSetupConnection() {
           console.log(
             "checkStellariumConnection err >>>",
             err.name,
-            err.message
+            err.message,
           );
           // let more time for autoconnect function!
           if (errorCountStellarium.current < errorCountMax) {
             // retry later
             console.log(
               "Stellarium connection error count:",
-              errorCount.current
+              errorCount.current,
             );
             errorCount.current += 1;
           } else {

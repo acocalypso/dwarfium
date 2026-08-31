@@ -14,15 +14,15 @@ import CameraTimeLapseSettings from "@/components/imaging/CameraTimeLapseSetting
 import CameraWideSettings from "@/components/imaging/CameraWideSettings";
 import CameraTeleSettings from "@/components/imaging/CameraTeleSettings";
 import { getWideAllParamsFn, getTeleAllParamsFn } from "@/lib/dwarf_utils";
-import { modeManual, modeAuto } from "dwarfii_api";
+import { modeManual, modeAuto } from "@/services/dwarf";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
-  messageStepMotorServiceJoystick,
-  messageStepMotorServiceJoystickStop,
+  messageV3MotorServiceJoystick,
+  messageV3MotorServiceJoystickStop,
   messageStepMotorServiceJoystickFixedAngle,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import {
   startPhoto,
   startVideo,
@@ -56,12 +56,12 @@ export default function CameraAddOn(props: PropTypes) {
   const [isVisible, setIsVisible] = useState(true);
 
   const [joystickId, setJoystickId] = useState<JoystickController | undefined>(
-    undefined
+    undefined,
   );
   const joystickSpeed = useRef(2.2);
 
   const [activeAction, setActiveAction] = useState<string | undefined>(
-    undefined
+    undefined,
   ); // State to track active action
   const [activeBtnPhoto, setActiveBtnPhoto] = useState("tele"); // State to track active button
   const [activeBtnVideo, setActiveBtnVideo] = useState("tele"); // State to track active button
@@ -87,7 +87,7 @@ export default function CameraAddOn(props: PropTypes) {
   const [totalTimeIndexValue, setTotalTimeIndexValue] = useState<number>(3);
 
   const [wideExposureAuto, setWideExposureAuto] = useState<number | undefined>(
-    connectionCtx.cameraWideSettings.exp_mode
+    connectionCtx.cameraWideSettings.exp_mode,
   );
   const [wideExposureIndexValue, setWideExposureIndexValue] = useState<
     number | undefined
@@ -96,7 +96,7 @@ export default function CameraAddOn(props: PropTypes) {
     number | undefined
   >(connectionCtx.cameraWideSettings.gain_index);
   const [wideWBAuto, setWideWBAuto] = useState<number | undefined>(
-    connectionCtx.cameraWideSettings.wb_mode
+    connectionCtx.cameraWideSettings.wb_mode,
   );
   //  const [wideWBMode, setWideWBMode] = useState<numbe|undefinedr>(1);
   const [wideWBColorTempIndexValue, setWideWBColorTempIndexValue] = useState<
@@ -110,7 +110,7 @@ export default function CameraAddOn(props: PropTypes) {
     number | undefined
   >(connectionCtx.cameraWideSettings.contrast);
   const [wideHueValue, setWideHueValue] = useState<number | undefined>(
-    connectionCtx.cameraWideSettings.hue
+    connectionCtx.cameraWideSettings.hue,
   );
   const [wideSaturationValue, setWideSaturationValue] = useState<
     number | undefined
@@ -120,16 +120,16 @@ export default function CameraAddOn(props: PropTypes) {
   >(connectionCtx.cameraWideSettings.sharpness);
 
   const [teleWBAuto, setTeleWBAuto] = useState<number | undefined>(
-    connectionCtx.cameraTeleSettings.wb_mode
+    connectionCtx.cameraTeleSettings.wb_mode,
   );
   const [teleWBMode, setTeleWBMode] = useState<number | undefined>(
-    connectionCtx.cameraTeleSettings.wb_index_mode
+    connectionCtx.cameraTeleSettings.wb_index_mode,
   );
   const [teleWBColorTempIndexValue, setTeleWBColorTempIndexValue] = useState<
     number | undefined
   >(connectionCtx.cameraTeleSettings.wb_index);
   const [teleWBSceneValue, setTeleWBSceneValue] = useState<number | undefined>(
-    3
+    3,
   );
   const [teleBrightnessValue, setTeleBrightnessValue] = useState<
     number | undefined
@@ -138,7 +138,7 @@ export default function CameraAddOn(props: PropTypes) {
     number | undefined
   >(connectionCtx.cameraTeleSettings.contrast);
   const [teleHueValue, setTeleHueValue] = useState<number | undefined>(
-    connectionCtx.cameraTeleSettings.hue
+    connectionCtx.cameraTeleSettings.hue,
   );
   const [teleSaturationValue, setTeleSaturationValue] = useState<
     number | undefined
@@ -181,7 +181,7 @@ export default function CameraAddOn(props: PropTypes) {
   let WidthCircularSlider = useRef(150);
   let trackSize = useRef(24);
   let intervalTimer = useRef<ReturnType<typeof setInterval> | undefined>(
-    undefined
+    undefined,
   );
   let isDwarfII = connectionCtx.typeIdDwarf == 1;
 
@@ -274,7 +274,7 @@ export default function CameraAddOn(props: PropTypes) {
         ? buttonName === "tele"
           ? "wide"
           : "tele"
-        : buttonName
+        : buttonName,
     );
   };
 
@@ -293,7 +293,7 @@ export default function CameraAddOn(props: PropTypes) {
         ? buttonName === "tele"
           ? "wide"
           : "tele"
-        : buttonName
+        : buttonName,
     );
   };
   const handleBtnTimeLapseClick = (buttonName) => {
@@ -303,7 +303,7 @@ export default function CameraAddOn(props: PropTypes) {
         ? buttonName === "tele"
           ? "wide"
           : "tele"
-        : buttonName
+        : buttonName,
     );
   };
   const handleBtnSettingsClick = (buttonName) => {
@@ -313,7 +313,7 @@ export default function CameraAddOn(props: PropTypes) {
         ? buttonName === "tele"
           ? "wide"
           : "tele"
-        : buttonName
+        : buttonName,
     );
   };
 
@@ -393,7 +393,7 @@ export default function CameraAddOn(props: PropTypes) {
       connectionCtx,
       setErrorTxt,
       setActiveAction,
-      stopPanoAuto
+      stopPanoAuto,
     );
     // Change the image source using the ID
     changeColorButton("TakePano", true);
@@ -438,14 +438,14 @@ export default function CameraAddOn(props: PropTypes) {
       connectionCtx,
       setErrorTxt,
       setActiveAction,
-      stopBurstAuto
+      stopBurstAuto,
     );
     // Change the image source using the ID
     changeColorButton("TakeBurstPhoto", true);
     intervalTimer.current = setInterval(
       changeColorButton,
       2000,
-      "TakeBurstPhoto"
+      "TakeBurstPhoto",
     );
   };
 
@@ -487,14 +487,14 @@ export default function CameraAddOn(props: PropTypes) {
       connectionCtx,
       setErrorTxt,
       setActiveAction,
-      stopTimeLapseAuto
+      stopTimeLapseAuto,
     );
     // Change the image source using the ID
     changeColorButton("TakeTimeLapse", true);
     intervalTimer.current = setInterval(
       changeColorButton,
       2000,
-      "TakeTimeLapse"
+      "TakeTimeLapse",
     );
   };
 
@@ -506,7 +506,7 @@ export default function CameraAddOn(props: PropTypes) {
     await stopTimeLapse(
       CameraType[activeBtnTimeLapse],
       connectionCtx,
-      setErrorTxt
+      setErrorTxt,
     );
     // stopTimeLapseAuto is called
   };
@@ -609,7 +609,7 @@ export default function CameraAddOn(props: PropTypes) {
 
     if (webSocketHandler.isConnected()) {
       let txtInfoCommand = "";
-      let WS_Packet = messageStepMotorServiceJoystickStop();
+      let WS_Packet = messageV3MotorServiceJoystickStop();
       txtInfoCommand = "Joystick";
       webSocketHandler.prepare(WS_Packet, txtInfoCommand);
     }
@@ -667,7 +667,7 @@ export default function CameraAddOn(props: PropTypes) {
           } else {
             console.debug("command motor not send", elapsedTime);
           }
-        }
+        },
       );
       setJoystickId(staticJoystick);
 
@@ -679,7 +679,7 @@ export default function CameraAddOn(props: PropTypes) {
 
       // Get the elements matching the constructed selectors
       let containerElement = document.querySelector(
-        containerSelector
+        containerSelector,
       ) as HTMLElement;
 
       // Check if the elements exist
@@ -714,28 +714,28 @@ export default function CameraAddOn(props: PropTypes) {
           "Up",
           "joystick-button-up",
           90,
-          "bi bi-arrow-up-circle"
+          "bi bi-arrow-up-circle",
         );
         create_button_joystick(
           joystickContainer,
           "Down",
           "joystick-button-down",
           270,
-          "bi bi-arrow-down-circle"
+          "bi bi-arrow-down-circle",
         );
         create_button_joystick(
           joystickContainer,
           "Left",
           "joystick-button-left",
           180,
-          "bi bi-arrow-left-circle"
+          "bi bi-arrow-left-circle",
         );
         create_button_joystick(
           joystickContainer,
           "Right",
           "joystick-button-right",
           0,
-          "bi bi-arrow-right-circle"
+          "bi bi-arrow-right-circle",
         );
       }
     }
@@ -750,7 +750,7 @@ export default function CameraAddOn(props: PropTypes) {
     title,
     className,
     angle,
-    icon
+    icon,
   ) {
     // Create a button div element
     const newDiv = document.createElement("div");
@@ -790,16 +790,12 @@ export default function CameraAddOn(props: PropTypes) {
       console.debug("new speed: ", speed_dwarf);
       let WS_Packet;
       if (!fixed) {
-        WS_Packet = messageStepMotorServiceJoystick(
-          angle_dec,
-          vector,
-          speed_dwarf
-        );
+        WS_Packet = messageV3MotorServiceJoystick(angle_dec, vector);
       } else {
         WS_Packet = messageStepMotorServiceJoystickFixedAngle(
           angle_dec,
           vector,
-          speed_dwarf
+          speed_dwarf,
         );
       }
       txtInfoCommand = "Joystick";
@@ -994,8 +990,8 @@ export default function CameraAddOn(props: PropTypes) {
                         activeAction === undefined
                           ? handleClickActionStartVideo
                           : activeAction === PhotosModeActions[1].toString()
-                          ? handleClickActionStopVideo
-                          : undefined
+                            ? handleClickActionStopVideo
+                            : undefined
                       }
                       style={{ cursor: "pointer" }}
                     />
@@ -1082,8 +1078,8 @@ export default function CameraAddOn(props: PropTypes) {
                         activeAction === undefined
                           ? handleClickActionStartPano
                           : activeAction === PhotosModeActions[2].toString()
-                          ? handleClickActionStopPano
-                          : undefined
+                            ? handleClickActionStopPano
+                            : undefined
                       }
                       style={{ cursor: "pointer" }}
                     />
@@ -1170,8 +1166,8 @@ export default function CameraAddOn(props: PropTypes) {
                         activeAction === undefined
                           ? handleClickActionStartBurst
                           : activeAction === PhotosModeActions[3].toString()
-                          ? handleClickActionStopBurst
-                          : undefined
+                            ? handleClickActionStopBurst
+                            : undefined
                       }
                       style={{ cursor: "pointer" }}
                     />
@@ -1250,8 +1246,8 @@ export default function CameraAddOn(props: PropTypes) {
                         activeAction === undefined
                           ? handleClickActionStartTimeLapse
                           : activeAction === PhotosModeActions[4].toString()
-                          ? handleClickActionStopTimeLapse
-                          : undefined
+                            ? handleClickActionStopTimeLapse
+                            : undefined
                       }
                       style={{ cursor: "pointer" }}
                     />

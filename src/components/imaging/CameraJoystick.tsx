@@ -5,10 +5,10 @@ import JoystickController from "joystick-controller";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
   Dwarfii_Api,
-  messageStepMotorServiceJoystick,
-  messageStepMotorServiceJoystickStop,
+  messageV3MotorServiceJoystick,
+  messageV3MotorServiceJoystickStop,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 
 export default function CameraJoystick() {
   const [motorState, setMotorState] = useState(false);
@@ -22,7 +22,7 @@ export default function CameraJoystick() {
 
     if (webSocketHandler.isConnected()) {
       let txtInfoCommand = "";
-      let WS_Packet = messageStepMotorServiceJoystick(angle_dec, vector, 10);
+      let WS_Packet = messageV3MotorServiceJoystick(angle_dec, vector);
       txtInfoCommand = "Joystick";
       webSocketHandler.prepare(WS_Packet, txtInfoCommand);
     }
@@ -35,7 +35,7 @@ export default function CameraJoystick() {
 
     if (webSocketHandler.isConnected()) {
       let txtInfoCommand = "";
-      let WS_Packet = messageStepMotorServiceJoystickStop();
+      let WS_Packet = messageV3MotorServiceJoystickStop();
       txtInfoCommand = "Joystick";
       webSocketHandler.prepare(WS_Packet, txtInfoCommand);
     }
@@ -96,7 +96,7 @@ export default function CameraJoystick() {
       } else {
         console.debug("command motor not send", elapsedTime);
       }
-    }
+    },
   );
 
   function close() {

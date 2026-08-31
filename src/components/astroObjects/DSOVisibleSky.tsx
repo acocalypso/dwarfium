@@ -6,7 +6,7 @@ import { ConnectionContext } from "@/stores/ConnectionContext";
 export default function DSOVisibleSky({ updateVisibleSkyLimit }) {
   let connectionCtx = useContext(ConnectionContext);
   const [visibleSkyLimitValue, setVisibleSkyLimitValue] = useState(
-    connectionCtx.visibleSkyLimit
+    connectionCtx.visibleSkyLimit,
   );
   const [showTooltip, setShowTooltip] = useState(false);
 

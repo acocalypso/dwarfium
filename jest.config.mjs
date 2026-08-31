@@ -14,6 +14,7 @@ const config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
+  transformIgnorePatterns: ["/node_modules/(?!dwarfii_api)/"],
   testEnvironment: "jest-environment-jsdom",
 };
 

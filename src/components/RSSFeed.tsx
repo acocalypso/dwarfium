@@ -19,7 +19,7 @@ const RSSFeed = () => {
     const fetchFeed = async () => {
       try {
         const response = await fetch(
-          `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(rssUrl)}`
+          `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(rssUrl)}`,
         );
 
         // Check if the response has data
@@ -33,11 +33,12 @@ const RSSFeed = () => {
           const validItems = feed.items.filter((item) => item.isoDate);
           validItems.sort(
             (a, b) =>
-              new Date(a.isoDate!).getTime() - new Date(b.isoDate!).getTime()
+              new Date(a.isoDate!).getTime() - new Date(b.isoDate!).getTime(),
           );
           const currentDate = new Date();
           const filteredItems = validItems.filter(
-            (item) => new Date(item.isoDate!).getTime() >= currentDate.getTime()
+            (item) =>
+              new Date(item.isoDate!).getTime() >= currentDate.getTime(),
           );
           const sanitizedItems = filteredItems.map((item) => ({
             ...item,

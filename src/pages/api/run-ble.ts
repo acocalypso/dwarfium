@@ -65,7 +65,7 @@ const normalizeIP = (ip: string | undefined) => {
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse,
 ) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -78,7 +78,7 @@ export default async function handler(
     const clientIp =
       normalizeIP(
         (req.headers["x-forwarded-for"] as string)?.split(",")[0] || // If behind a proxy
-          req.socket.remoteAddress
+          req.socket.remoteAddress,
       ) || // Direct connection
       "Unknown IP";
 

@@ -21,7 +21,7 @@ import {
   messageCameraWideStopTimeLapsePhoto,
   messageCameraTeleGetAllFeatureParams,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import { get_error } from "@/lib/dwarf_utils";
 
 import { logger } from "@/lib/logger";
@@ -33,7 +33,7 @@ function callback(message) {
 export async function startPhoto(
   camera: number,
   connectionCtx: ConnectionContextType,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -133,7 +133,7 @@ export async function startPhoto(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ALBUM_UPDATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -143,7 +143,7 @@ export async function startPhoto(
 export async function startVideo(
   camera: number,
   connectionCtx: ConnectionContextType,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -260,7 +260,7 @@ export async function startVideo(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_RECORD_TIME,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -270,7 +270,7 @@ export async function startVideo(
 export async function stopVideo(
   camera: number,
   connectionCtx: ConnectionContextType,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -382,7 +382,7 @@ export async function stopVideo(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_RECORD_TIME,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -396,7 +396,7 @@ export async function startPano(
   connectionCtx: ConnectionContextType,
   setErrorTxt: Function,
   setActiveAction: Function,
-  stopAction: Function
+  stopAction: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -490,7 +490,7 @@ export async function startPano(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     id = 7; // "Panorama col"
     continueValue = cols;
@@ -500,7 +500,7 @@ export async function startPano(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
   } else {
     setErrorTxt("Function not available for Wide angle");
@@ -516,7 +516,7 @@ export async function startPano(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_PANORAMA_PROGRESS,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -526,7 +526,7 @@ export async function startPano(
 export async function stopPano(
   camera: number,
   connectionCtx: ConnectionContextType,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -604,7 +604,7 @@ export async function stopPano(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_PANORAMA_PROGRESS,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -618,7 +618,7 @@ export async function startBurst(
   connectionCtx: ConnectionContextType,
   setErrorTxt: Function,
   setActiveAction: Function,
-  stopAction: Function
+  stopAction: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -720,7 +720,7 @@ export async function startBurst(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     id = 9; // "Burst interval"
     autoMode = 1;
@@ -733,7 +733,7 @@ export async function startBurst(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     WS_Packet3 = messageCameraTeleGetAllFeatureParams();
   } else {
@@ -747,7 +747,7 @@ export async function startBurst(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
   }
 
@@ -762,7 +762,7 @@ export async function startBurst(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_BURST_PROGRESS,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -772,7 +772,7 @@ export async function startBurst(
 export async function stopBurst(
   camera: number,
   connectionCtx: ConnectionContextType,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -865,7 +865,7 @@ export async function stopBurst(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_BURST_PROGRESS,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_BURST_PROGRESS,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -879,7 +879,7 @@ export async function startTimeLapse(
   connectionCtx: ConnectionContextType,
   setErrorTxt: Function,
   setActiveAction: Function,
-  stopAction: Function
+  stopAction: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -986,7 +986,7 @@ export async function startTimeLapse(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     id = 5; // "TimeLapse totalTime"
     index = interval_index;
@@ -996,7 +996,7 @@ export async function startTimeLapse(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
   } else {
     WS_Packet = messageCameraWideStartTimeLapsePhoto();
@@ -1009,7 +1009,7 @@ export async function startTimeLapse(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     id = 5; // "TimeLapse totalTime"
     index = interval_index;
@@ -1019,7 +1019,7 @@ export async function startTimeLapse(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
   }
 
@@ -1033,7 +1033,7 @@ export async function startTimeLapse(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_TIMELAPSE_OUT_TIME,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -1043,7 +1043,7 @@ export async function startTimeLapse(
 export async function stopTimeLapse(
   camera: number,
   connectionCtx: ConnectionContextType,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -1132,7 +1132,7 @@ export async function stopTimeLapse(
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_TIMELAPSE_OUT_TIME,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");

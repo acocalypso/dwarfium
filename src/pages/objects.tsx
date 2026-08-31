@@ -29,7 +29,7 @@ export default function Goto() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [objectFavoriteNames, setObjectFavoriteNames] = useState<string[]>([]);
   const [objectPersonalList, setObjectPersonalList] = useState<AstroObject[]>(
-    []
+    [],
   );
   const [errors, setErrors] = useState<string | undefined>();
   const [success, setSuccess] = useState<string | undefined>();

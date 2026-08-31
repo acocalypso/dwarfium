@@ -35,20 +35,20 @@ export default function AstroPhoto() {
       if (connectionCtx.typeNameDwarf === "Dwarf II") {
         thumbnailUrl = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}/stacked_thumbnail.jpg`;
         thumbnailUrl = `${proxyUrlData}?target=${encodeURIComponent(
-          thumbnailUrl
+          thumbnailUrl,
         )}`;
         fullImageUrl = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}/stacked.jpg`;
         fullImageUrl = `${proxyUrlData}?target=${encodeURIComponent(
-          fullImageUrl
+          fullImageUrl,
         )}`;
       } else {
         thumbnailUrl = `http://${connectionCtx.IPDwarf}/DWARF3/Astronomy/${sessionName}/stacked_thumbnail.jpg`;
         thumbnailUrl = `${proxyUrlData}?target=${encodeURIComponent(
-          thumbnailUrl
+          thumbnailUrl,
         )}`;
         fullImageUrl = `http://${connectionCtx.IPDwarf}/DWARF3/Astronomy/${sessionName}/stacked.jpg`;
         fullImageUrl = `${proxyUrlData}?target=${encodeURIComponent(
-          fullImageUrl
+          fullImageUrl,
         )}`;
       }
     } else {
@@ -61,7 +61,7 @@ export default function AstroPhoto() {
     setIsPhotoEditorOpen(true);
   };
   const [selectedPhoto, setSelectedPhoto] = useState<SelectedPhoto | null>(
-    null
+    null,
   );
   const closePhotoEditor = () => {
     setIsPhotoEditorOpen(false);
@@ -69,7 +69,7 @@ export default function AstroPhoto() {
   };
   const fetchThumbnailExists = async (
     sessionName: string,
-    proxyUrlData: string
+    proxyUrlData: string,
   ) => {
     if (connectionCtx.typeNameDwarf == "Dwarf II") {
       const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}/stacked_thumbnail.jpg`;
@@ -91,7 +91,7 @@ export default function AstroPhoto() {
       } else {
         console.error(
           "Unexpected status code while checking thumbnail existence:",
-          response.status
+          response.status,
         );
         return false;
       }
@@ -105,7 +105,7 @@ export default function AstroPhoto() {
     const loadThumbnailExists = async (
       sessionName: string,
       index: number,
-      proxyUrlData: string
+      proxyUrlData: string,
     ) => {
       console.log(`Loading thumbnail existence for session: ${sessionName}`);
       const exists = await fetchThumbnailExists(sessionName, proxyUrlData);
@@ -153,20 +153,20 @@ export default function AstroPhoto() {
             if (connectionCtx.typeNameDwarf == "Dwarf II") {
               const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${folderName}/shotsInfo.json`;
               const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(
-                url
+                url,
               )}`;
               await fetch(proxyUrl);
             } else {
               const url = `http://${connectionCtx.IPDwarf}/DWARF3/Astronomy/${folderName}/shotsInfo.json`;
               const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(
-                url
+                url,
               )}`;
               await fetch(proxyUrl);
             }
             sessionList.push({ name: folderName, date: folderDate });
           } catch (error) {
             console.log(
-              `shotsInfo.json not found in session folder ${folderName}`
+              `shotsInfo.json not found in session folder ${folderName}`,
             );
           }
         }
@@ -178,7 +178,7 @@ export default function AstroPhoto() {
     } catch (error: any) {
       console.error(
         "An error occurred while fetching sessions:",
-        error.message
+        error.message,
       );
       setSessions([]);
     }
@@ -209,7 +209,7 @@ export default function AstroPhoto() {
     } catch (error: any) {
       console.log(
         "An error occurred while fetching session info:",
-        error.message
+        error.message,
       );
     }
   };
@@ -239,7 +239,7 @@ export default function AstroPhoto() {
         const selectedFolder = await (window as any).showDirectoryPicker();
         const sessionFolderHandle = await selectedFolder.getDirectoryHandle(
           decodeURIComponent(sessionName),
-          { create: true }
+          { create: true },
         );
         let folderResponse;
         if (connectionCtx.typeNameDwarf == "Dwarf II") {
@@ -254,11 +254,11 @@ export default function AstroPhoto() {
         const folderData = await folderResponse.text();
         if (folderData !== null) {
           const fitsFilesMatch = folderData.match(
-            /href="([^"]*\.(fits|json|jpg|png))"/g
+            /href="([^"]*\.(fits|json|jpg|png))"/g,
           );
           if (fitsFilesMatch !== null) {
             const fitsFiles = fitsFilesMatch.map((match) =>
-              decodeURIComponent(match.substring(6, match.length - 1))
+              decodeURIComponent(match.substring(6, match.length - 1)),
             );
             const totalFiles = fitsFiles.length;
             let downloadedFiles = 0;
@@ -268,20 +268,20 @@ export default function AstroPhoto() {
                 const url = `http://${
                   connectionCtx.IPDwarf
                 }/sdcard/DWARF_II/Astronomy/${sessionName}/${encodeURIComponent(
-                  fitsFile
+                  fitsFile,
                 )}`;
                 const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(
-                  url
+                  url,
                 )}`;
                 fileResponse = await fetch(proxyUrl);
               } else {
                 const url = `http://${
                   connectionCtx.IPDwarf
                 }/DWARF3/Astronomy/${sessionName}/${encodeURIComponent(
-                  fitsFile
+                  fitsFile,
                 )}`;
                 const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(
-                  url
+                  url,
                 )}`;
                 fileResponse = await fetch(proxyUrl);
               }
@@ -290,7 +290,7 @@ export default function AstroPhoto() {
                 fitsFile,
                 {
                   create: true,
-                }
+                },
               );
               const writable = await fileHandle.createWritable();
               await writable.write(fileBlob);
@@ -305,7 +305,7 @@ export default function AstroPhoto() {
         }
       } else {
         console.error(
-          "File System Access API is not supported in this browser."
+          "File System Access API is not supported in this browser.",
         );
       }
     } catch (error: any) {
@@ -452,7 +452,7 @@ export default function AstroPhoto() {
                               src={getTransfomProxyImageUrl(
                                 `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${session.name}/stacked_thumbnail.jpg`,
                                 proxyUrlData,
-                                connectionCtx
+                                connectionCtx,
                               )}
                               alt="Thumbnail"
                             />
@@ -462,7 +462,7 @@ export default function AstroPhoto() {
                               src={getTransfomProxyImageUrl(
                                 `http://${connectionCtx.IPDwarf}/DWARF3/Astronomy/${session.name}/stacked_thumbnail.jpg`,
                                 proxyUrlData,
-                                connectionCtx
+                                connectionCtx,
                               )}
                               alt="Thumbnail"
                             />

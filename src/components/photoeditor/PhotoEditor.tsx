@@ -25,7 +25,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({
   const [copyrightText, setCopyrightText] = useState(" \u00A9 2025 Your Name");
   const [isCropping, setIsCropping] = useState(false);
   const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(
-    null
+    null,
   );
   const [cropEnd, setCropEnd] = useState<{ x: number; y: number } | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -81,7 +81,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({
 
     // Zet de data om naar een Uint8ClampedArray met vier kanalen (RGBA)
     const pixelArray = new Uint8ClampedArray(
-      newCanvas.width * newCanvas.height * 4
+      newCanvas.width * newCanvas.height * 4,
     );
 
     // Vul het array met de juiste waarden
@@ -97,7 +97,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({
     const outputImageData = new ImageData(
       pixelArray,
       newCanvas.width,
-      newCanvas.height
+      newCanvas.height,
     );
     newCtx.putImageData(outputImageData, 0, 0);
 
@@ -147,7 +147,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({
           }
         },
         "image/jpeg",
-        0.95
+        0.95,
       );
     };
     img.onerror = () => {
@@ -209,7 +209,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({
         0,
         0,
         cropWidth,
-        cropHeight
+        cropHeight,
       );
 
       const newImageUrl = canvas.toDataURL("image/jpeg");
@@ -403,7 +403,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({
           <button
             onClick={() => {
               const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-                editedImageUrl
+                editedImageUrl,
               )}`;
               window.open(facebookShareUrl, "_blank");
             }}

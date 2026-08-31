@@ -20,7 +20,7 @@ import {
   messageGetconfig,
   messageWifiSTA,
   analyzePacketBle,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
   saveIPDwarfDB,
@@ -45,17 +45,17 @@ export default function ConnectDwarfSTA() {
   const [findDwarfBluetooth, setFindDwarfBluetooth] = useState(false);
   const [etatBluetooth, setEtatBluetooth] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<boolean | undefined>(
-    undefined
+    undefined,
   );
   const [errorTxt, setErrorTxt] = useState("");
   const [BluetoothPWD, setBluetoothPWD] = useState<string>(
-    connectionCtx.BlePWDDwarf || "DWARF_12345678"
+    connectionCtx.BlePWDDwarf || "DWARF_12345678",
   );
   const [Wifi_SSID, setWifi_SSID] = useState<string>(
-    connectionCtx.BleSTASSIDDwarf || ""
+    connectionCtx.BleSTASSIDDwarf || "",
   );
   const [Wifi_PWD, setWifi_PWD] = useState<string>(
-    connectionCtx.BleSTAPWDDwarf || ""
+    connectionCtx.BleSTAPWDDwarf || "",
   );
   const [useDirectBluetooth, setUseDirectBluetooth] = useState(false);
   const [stateProxy, setStateProxy] = useState(false);
@@ -178,14 +178,16 @@ export default function ConnectDwarfSTA() {
         }
 
         console.log(
-          "########## Bluetooth connected to " + deviceDwarfName + " ##########"
+          "########## Bluetooth connected to " +
+            deviceDwarfName +
+            " ##########",
         );
 
         if (!service) throw new Error("Can't get bluetooth service");
         else console.debug("Got bluetooth service");
 
         const characteristic = await service.getCharacteristic(
-          Dwarf_Characteristic_String
+          Dwarf_Characteristic_String,
         );
         if (!characteristic)
           throw new Error("Can't get bluetooth characteristic");
@@ -198,7 +200,7 @@ export default function ConnectDwarfSTA() {
 
         characteristicDwarf.addEventListener(
           "characteristicvaluechanged",
-          handleValueChanged
+          handleValueChanged,
         );
         await characteristicDwarf.startNotifications();
 
@@ -256,7 +258,7 @@ export default function ConnectDwarfSTA() {
               result_data.code +
               " (" +
               Dwarfii_Api.DwarfBleErrorCode[result_data.code] +
-              ")"
+              ")",
           );
           setConnecting(false);
           setConnectionStatus(false);
@@ -268,19 +270,19 @@ export default function ConnectDwarfSTA() {
             1,
             BluetoothPWD,
             Wifi_SSID,
-            Wifi_PWD
+            Wifi_PWD,
           );
           await characteristicDwarf.writeValue(bufferSetWifiSta);
         } else if (result_data.state != 2) {
           setErrorTxt(
-            "Error WiFi configuration not Completed! Restart it and Use the mobile App."
+            "Error WiFi configuration not Completed! Restart it and Use the mobile App.",
           );
           setConnecting(false);
           setConnectionStatus(false);
           actionDisconnect();
         } else if (result_data.wifiMode != 2) {
           setErrorTxt(
-            "Error STA MODE not Configured! Restart it and Use the mobile App."
+            "Error STA MODE not Configured! Restart it and Use the mobile App.",
           );
           setConnecting(false);
           setConnectionStatus(false);
@@ -297,7 +299,7 @@ export default function ConnectDwarfSTA() {
             0,
             BluetoothPWD,
             Wifi_SSID,
-            Wifi_PWD
+            Wifi_PWD,
           );
           await characteristicDwarf.writeValue(bufferSetWifiSta);
         } else if (
@@ -312,7 +314,7 @@ export default function ConnectDwarfSTA() {
             0,
             BluetoothPWD,
             connectionCtx.BleSTASSIDDwarf,
-            connectionCtx.BleSTAPWDDwarf
+            connectionCtx.BleSTAPWDDwarf,
           );
           await characteristicDwarf.writeValue(bufferSetWifiSta);
         } else {
@@ -321,7 +323,7 @@ export default function ConnectDwarfSTA() {
             0,
             BluetoothPWD,
             result_data.ssid,
-            result_data.psd
+            result_data.psd,
           );
           await characteristicDwarf.writeValue(bufferSetWifiSta);
         }
@@ -337,7 +339,7 @@ export default function ConnectDwarfSTA() {
               result_data.code +
               " (" +
               Dwarfii_Api.DwarfBleErrorCode[result_data.code] +
-              ")"
+              ")",
           );
           setConnecting(false);
           setConnectionStatus(false);
@@ -368,7 +370,7 @@ export default function ConnectDwarfSTA() {
           await characteristicDwarf.stopNotifications();
           characteristicDwarf.removeEventListener(
             "characteristicvaluechanged",
-            handleValueChanged
+            handleValueChanged,
           );
         }
       }
@@ -396,13 +398,13 @@ export default function ConnectDwarfSTA() {
         await characteristicDwarf.stopNotifications();
         characteristicDwarf.removeEventListener(
           "characteristicvaluechanged",
-          handleValueChanged
+          handleValueChanged,
         );
       }
       if (deviceDwarf) {
         deviceDwarf.removeEventListener(
           "gattserverdisconnected",
-          onDisconnected
+          onDisconnected,
         );
         if (deviceDwarf.gatt) await deviceDwarf.gatt.disconnect();
       }
@@ -532,7 +534,7 @@ export default function ConnectDwarfSTA() {
 
       try {
         setStateMediaMtx(
-          await checkMediaMtxStreamUrls(connectionCtx, 3000, signal)
+          await checkMediaMtxStreamUrls(connectionCtx, 3000, signal),
         );
 
         if (connectionCtx.proxyIP) setProxyIpValue(connectionCtx.proxyIP);
@@ -594,13 +596,13 @@ export default function ConnectDwarfSTA() {
             } else if (connectionCtx?.proxyIP && connectionCtx?.proxyLocalIP) {
               const proxyLocalUrl = proxyUrl?.replace(
                 connectionCtx.proxyIP,
-                connectionCtx.proxyLocalIP
+                connectionCtx.proxyLocalIP,
               );
               console.log("proxyLocalUrl:", proxyLocalUrl);
               let statusLocalProxy = await checkHealth(
                 proxyLocalUrl + "/health",
                 3000,
-                signal
+                signal,
               );
               console.log("statusLocalProxy:", statusLocalProxy);
               connectionCtx.setProxyInLan(statusLocalProxy);
@@ -625,7 +627,7 @@ export default function ConnectDwarfSTA() {
           connectionCtx.setUseDirectBluetoothServer(
             sameProxyServer
               ? statusBluetoothServer
-              : statusBluetoothServer && !statusBluetoothProxy
+              : statusBluetoothServer && !statusBluetoothProxy,
           );
         }
       } catch (error: unknown) {
@@ -680,13 +682,13 @@ export default function ConnectDwarfSTA() {
           } else if (connectionCtx?.proxyIP && connectionCtx?.proxyLocalIP) {
             const proxyLocalUrl = proxyUrl?.replace(
               connectionCtx.proxyIP,
-              connectionCtx.proxyLocalIP
+              connectionCtx.proxyLocalIP,
             );
             console.log("proxyLocalUrl:", proxyLocalUrl);
             let statusLocalProxy = await checkHealth(
               proxyLocalUrl + "/health",
               3000,
-              signal
+              signal,
             );
             console.log("statusLocalProxy:", statusLocalProxy);
             connectionCtx.setProxyInLan(statusLocalProxy);
@@ -943,7 +945,7 @@ export default function ConnectDwarfSTA() {
                 setConnecting(false);
                 setConnectionStatus(false);
                 setErrorTxt(
-                  "Device Found with Error, check Password and Retry ..."
+                  "Device Found with Error, check Password and Retry ...",
                 );
               } else {
                 console.log(`runExecutable: No device Found`);
@@ -969,7 +971,7 @@ export default function ConnectDwarfSTA() {
         } else if (response.ok && response.status === 202) {
           const result = await response.json();
           console.log(
-            `runExecutable: Select device in ${JSON.stringify(result)}`
+            `runExecutable: Select device in ${JSON.stringify(result)}`,
           );
           if (result.devices) {
             setDevices(result.devices);

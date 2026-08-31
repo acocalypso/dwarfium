@@ -13,10 +13,10 @@ const Clouds = () => {
   const [humidityArray, setHumidityArray] = useState<number[]>([]);
   const [windArray, setWindArray] = useState<number[]>([]);
   const [apiKey, setApiKey] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : "",
   );
   const [city, setCity] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("city") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("city") || "" : "",
   );
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ const Clouds = () => {
           if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
             const targetUrl = new URL(apiUrl);
             apiUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-              targetUrl.href
+              targetUrl.href,
             )}`;
           }
           const response = await axios.get(apiUrl);
@@ -57,7 +57,7 @@ const Clouds = () => {
           });
 
           setForecastTimes(
-            weatherTonight.map((hr) => hr.dt_txt.substring(11, 16))
+            weatherTonight.map((hr) => hr.dt_txt.substring(11, 16)),
           );
           setCloudArray(weatherTonight.map((hr) => hr.clouds.all));
           setHumidityArray(weatherTonight.map((hr) => hr.main.humidity));
@@ -67,12 +67,12 @@ const Clouds = () => {
           setApiRequestCount((prevCount) => prevCount + 1);
           console.log(
             "API Request Successful. Total API Requests Made:",
-            apiRequestCount + 1
+            apiRequestCount + 1,
           );
         } catch (error: any) {
           if (error.response && error.response.status === 429) {
             setErrorMessage(
-              "Too many requests. Please wait before trying again."
+              "Too many requests. Please wait before trying again.",
             );
           } else if (error.response && error.response.status === 500) {
             setErrorMessage("Internal server error. Please try again later.");
@@ -108,7 +108,7 @@ const Clouds = () => {
   };
 
   const handleSearchWithCityChange = (
-    e: React.MouseEvent<HTMLButtonElement>
+    e: React.MouseEvent<HTMLButtonElement>,
   ) => {
     const newCityValue = cityInputRef.current?.value || "";
     setCity(newCityValue);
@@ -133,7 +133,7 @@ const Clouds = () => {
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(apiUrl);
         apiUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
       const response = await axios.get(apiUrl);
@@ -160,7 +160,7 @@ const Clouds = () => {
       setApiRequestCount((prevCount) => prevCount + 1);
       console.log(
         "API Request Successful. Total API Requests Made:",
-        apiRequestCount + 1
+        apiRequestCount + 1,
       );
     } catch (error: any) {
       if (error.response && error.response.status === 429) {

@@ -111,16 +111,16 @@ const Modal: React.FC = () => {
     localStorage.setItem("fontSize", fontSize.toString());
 
     const paragraphs = Array.from(
-      document.querySelectorAll("p")
+      document.querySelectorAll("p"),
     ) as HTMLElement[];
     const listItems = Array.from(
-      document.querySelectorAll("li")
+      document.querySelectorAll("li"),
     ) as HTMLLIElement[];
     const headings = Array.from(
-      document.querySelectorAll("h1, h2, h3")
+      document.querySelectorAll("h1, h2, h3"),
     ) as HTMLElement[];
     const boldTexts = Array.from(
-      document.querySelectorAll("b")
+      document.querySelectorAll("b"),
     ) as HTMLElement[];
 
     const elements = [...paragraphs, ...listItems, ...headings, ...boldTexts];
@@ -158,7 +158,7 @@ const Modal: React.FC = () => {
                   className="box"
                   onClick={() =>
                     handleImageClick(
-                      "/backgrounds/high-resolution-earth_180484.jpg"
+                      "/backgrounds/high-resolution-earth_180484.jpg",
                     )
                   }
                 >

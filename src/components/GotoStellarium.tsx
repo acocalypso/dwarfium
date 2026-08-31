@@ -55,7 +55,7 @@ export default function ManualGoto(props: PropType) {
   const [declination, setDeclination] = useState<string | undefined>();
   const [objectName, setObjectName] = useState<string | undefined>();
   const [objectNGC, setObjectNGC] = useState<AstroObject | undefined>(
-    undefined
+    undefined,
   );
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -93,7 +93,7 @@ export default function ManualGoto(props: PropType) {
     let object = getObjectByNamesListOpenNGC(
       dsoCatalog,
       objectData.objectNGC.split(" - "),
-      objectFavoriteNames
+      objectFavoriteNames,
     );
 
     setObjectNGC(object);
@@ -118,7 +118,7 @@ export default function ManualGoto(props: PropType) {
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(fetchUrl);
         fetchUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
       fetch(fetchUrl, {
@@ -224,7 +224,7 @@ export default function ManualGoto(props: PropType) {
       objectName,
       (options) => {
         setGotoMessages((prev) => prev.concat(options));
-      }
+      },
     );
   }
 
@@ -362,7 +362,7 @@ export default function ManualGoto(props: PropType) {
                 RA,
                 declination,
                 connectionCtx,
-                setErrors
+                setErrors,
               )
             }
             disabled={

@@ -8,11 +8,11 @@ import {
   messageSystemSetTime,
   messageSystemSetTimezone,
   messageAstroStartCalibration,
-  messageAstroStartGotoSolarSystem,
-  messageAstroStartGotoDso,
-  messageAstroStopGoto,
-  messageCameraTeleCloseCamera,
-  messageCameraWideCloseCamera,
+  messageV3AstroGotoSolar,
+  messageV3AstroGotoDSO,
+  messageV3AstroGotoDone,
+  messageV3CameraTeleCloseCamera,
+  messageV3CameraWideCloseCamera,
   messageRgbPowerReboot,
   messageRgbPowerDown,
   messageRgbPowerCloseRGB,
@@ -25,7 +25,7 @@ import {
   messageAstroStartEqSolving,
   //  messageCameraTeleGetAllFeatureParams,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import { get_error } from "@/lib/dwarf_utils";
 import eventBus from "@/lib/event_bus";
 import { logger } from "@/lib/logger";
@@ -54,7 +54,7 @@ export async function calibrationHandler(
   connectionCtx: ConnectionContextType,
   setErrors: Dispatch<SetStateAction<string | undefined>>,
   setSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -182,7 +182,7 @@ export async function calibrationHandler(
             " Phase #" +
             result_data.data.plateSolvingTimes +
             " " +
-            result_data.data.statePlainTxt
+            result_data.data.statePlainTxt,
         );
         if (callback) {
           callback(
@@ -190,7 +190,7 @@ export async function calibrationHandler(
               " Phase #" +
               result_data.data.plateSolvingTimes +
               " " +
-              result_data.data.statePlainTxt
+              result_data.data.statePlainTxt,
           );
         }
       }
@@ -217,7 +217,7 @@ export async function calibrationHandler(
     WS_Packet1,
     txtInfoCommand1,
     [Dwarfii_Api.DwarfCMD.CMD_SYSTEM_SET_TIME],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -234,13 +234,22 @@ export async function calibrationHandler(
     WS_Packet2,
     txtInfoCommand2,
     [Dwarfii_Api.DwarfCMD.CMD_SYSTEM_SET_TIME_ZONE],
-    customMessageHandler
+    customMessageHandler,
   );
 
   await sleep(500);
 
   // Send Command : messageAstroStartCalibration
-  let WS_Packet3 = messageAstroStartCalibration();
+  if (
+    connectionCtx.longitude === undefined ||
+    connectionCtx.latitude === undefined
+  ) {
+    throw new Error("A location is required before starting V3 calibration");
+  }
+  let WS_Packet3 = messageAstroStartCalibration(
+    connectionCtx.longitude,
+    connectionCtx.latitude,
+  );
   let txtInfoCommand3 = "Calibration";
   webSocketHandler.prepare(
     WS_Packet3,
@@ -248,8 +257,9 @@ export async function calibrationHandler(
     [
       Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_CALIBRATION,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_CALIBRATION,
+      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_CALIBRATION_RESULT,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
 }
 
@@ -262,7 +272,7 @@ export async function startGotoHandler(
   declination: string | undefined | null,
   objectName: string | undefined,
   callback?: (options: any) => void, // eslint-disable-line no-unused-vars
-  stopGoto: boolean = false
+  stopGoto: boolean = false,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -349,7 +359,7 @@ export async function startGotoHandler(
             connectionCtx,
             setGotoErrors,
             setGotoSuccess,
-            callback
+            callback,
           );
         }
         resetCameraData(connectionCtx);
@@ -407,28 +417,25 @@ export async function startGotoHandler(
     // Send Command : cmdAstroStartGotoDso
     if (Dwarfii_Api.SolarSystemTarget[planet]) {
       targetName = Dwarfii_Api.SolarSystemTarget[planet];
-      WS_Packet = messageAstroStartGotoSolarSystem(
+      WS_Packet = messageV3AstroGotoSolar(
         planet,
         lon,
         lat,
-        Dwarfii_Api.SolarSystemTarget[planet]
+        Dwarfii_Api.SolarSystemTarget[planet],
       );
     } else if (targetName) {
-      WS_Packet = messageAstroStartGotoSolarSystem(
-        planet,
-        lon,
-        lat,
-        targetName
-      );
+      WS_Packet = messageV3AstroGotoSolar(planet, lon, lat, targetName);
     } else {
-      WS_Packet = messageAstroStartGotoSolarSystem(planet, lon, lat, "-");
+      WS_Packet = messageV3AstroGotoSolar(planet, lon, lat, "-");
     }
   } else if (targetName) {
     // Send Command : messageAstroStartGotoDso
-    WS_Packet = messageAstroStartGotoDso(
+    WS_Packet = messageV3AstroGotoDSO(
       RA_number,
       declination_number,
-      targetName
+      targetName,
+      lon,
+      lat,
     );
   }
   connectionCtx.setAstroSettings((prev) => ({
@@ -452,12 +459,13 @@ export async function startGotoHandler(
     WS_Packet,
     txtInfoCommand,
     [
-      Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_GOTO_DSO,
-      Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_GOTO_SOLAR_SYSTEM,
+      Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_ONE_CLICK_GOTO_DSO,
+      Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_ONE_CLICK_GOTO_SOLAR_SYSTEM,
+      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_ONE_CLICK_GOTO,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_GOTO,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_TRACKING,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -472,35 +480,35 @@ function resetCameraData(connectionCtx) {
     updateTelescopeISPSetting(
       "gainMode",
       connectionCtx.astroSettings.gainMode as number,
-      connectionCtx
+      connectionCtx,
     );
   }, 1500);
   setTimeout(() => {
     updateTelescopeISPSetting(
       "exposureMode",
       connectionCtx.astroSettings.exposureMode as number,
-      connectionCtx
+      connectionCtx,
     );
   }, 2000);
   setTimeout(() => {
     updateTelescopeISPSetting(
       "gain",
       connectionCtx.astroSettings.gain as number,
-      connectionCtx
+      connectionCtx,
     );
   }, 2500);
   setTimeout(() => {
     updateTelescopeISPSetting(
       "exposure",
       connectionCtx.astroSettings.exposure as number,
-      connectionCtx
+      connectionCtx,
     );
   }, 3000);
   setTimeout(() => {
     updateTelescopeISPSetting(
       "IR",
       connectionCtx.astroSettings.IR as number,
-      connectionCtx
+      connectionCtx,
     );
   }, 3500);
 }
@@ -509,7 +517,7 @@ export function savePositionHandler(
   connectionCtx: ConnectionContextType,
   setPosition: Dispatch<SetStateAction<string | undefined>>,
   current_position = "Recorded Position: ",
-  no_position = "No Recorded Position"
+  no_position = "No Recorded Position",
 ) {
   //Save Position
 
@@ -525,7 +533,7 @@ export function savePositionHandler(
       connectionCtx.astroSavePosition.rightAscension! * 15,
       connectionCtx.astroSavePosition.declination!,
       connectionCtx.astroSavePosition.strLocalTime,
-      connectionCtx.timezone
+      connectionCtx.timezone,
     );
 
     if (results) {
@@ -548,7 +556,7 @@ export function savePositionHandler(
           "alt: " +
           ConvertStrDeg(formatFloatToDecimalPlaces(results.alt, 4)) +
           ",az: " +
-          ConvertStrDeg(formatFloatToDecimalPlaces(results.az, 4))
+          ConvertStrDeg(formatFloatToDecimalPlaces(results.az, 4)),
       );
     }
   } else setPosition(no_position);
@@ -561,7 +569,7 @@ export function gotoPositionHandler(
   setGotoSuccess: Dispatch<SetStateAction<string | undefined>>,
   callback?: (options: any) => void, // eslint-disable-line no-unused-vars
   info_txt = "Initial Position",
-  no_position = "No Recorded Position"
+  no_position = "No Recorded Position",
 ) {
   //get Save Position
   let today = new Date();
@@ -576,7 +584,7 @@ export function gotoPositionHandler(
       connectionCtx.astroSavePosition.altitude!,
       connectionCtx.astroSavePosition.azimuth!,
       toIsoStringInLocalTime(today),
-      connectionCtx.timezone
+      connectionCtx.timezone,
     );
 
     if (results) {
@@ -586,20 +594,20 @@ export function gotoPositionHandler(
           ConvertStrDeg(
             formatFloatToDecimalPlaces(
               connectionCtx.astroSavePosition.altitude,
-              4
-            )
+              4,
+            ),
           ) +
           ",az: " +
           ConvertStrDeg(
             formatFloatToDecimalPlaces(
               connectionCtx.astroSavePosition.azimuth,
-              4
-            )
+              4,
+            ),
           ) +
           " => RA: " +
           ConvertStrHours(results.ra / 15) +
           ", Declination: " +
-          ConvertStrDeg(results.dec)
+          ConvertStrDeg(results.dec),
       );
       startGotoHandler(
         connectionCtx,
@@ -610,7 +618,7 @@ export function gotoPositionHandler(
         ConvertStrDeg(results.dec),
         info_txt,
         callback,
-        true
+        true,
       );
     }
   } else setPosition(no_position);
@@ -620,7 +628,7 @@ export async function stopGotoHandler(
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
   setGotoSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -674,7 +682,7 @@ export async function stopGotoHandler(
     : new WebSocketHandler(connectionCtx.IPDwarf);
 
   // Send Command : messageAstroStopGoto
-  let WS_Packet = messageAstroStopGoto();
+  let WS_Packet = messageV3AstroGotoDone();
   //  let WS_Packet = messageCameraTeleGetAllFeatureParams();
   let txtInfoCommand = "Stop Goto";
 
@@ -682,10 +690,10 @@ export async function stopGotoHandler(
     WS_Packet,
     txtInfoCommand,
     [
-      Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_GOTO,
+      Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_ONE_CLICK_GOTO,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_GOTO,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -696,7 +704,7 @@ export async function PowerLightsHandlerFn(
   setOff: boolean,
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -731,7 +739,7 @@ export async function RingLightsHandlerFn(
   setOff: boolean,
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -766,7 +774,7 @@ export async function shutDownHandler(
   reboot: boolean,
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -797,8 +805,8 @@ export async function shutDownHandler(
   let WS_Packet3 = {};
   let txtInfoCommand = "Shutdown";
   if (reboot) {
-    WS_Packet1 = messageCameraTeleCloseCamera();
-    WS_Packet2 = messageCameraWideCloseCamera();
+    WS_Packet1 = messageV3CameraTeleCloseCamera();
+    WS_Packet2 = messageV3CameraWideCloseCamera();
     WS_Packet3 = messageRgbPowerReboot();
     txtInfoCommand = "Reboot";
   } else WS_Packet1 = messageRgbPowerDown();
@@ -821,7 +829,7 @@ export async function shutDownHandler(
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_CLOSE_CAMERA,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_POWER_OFF,
       ],
-      customMessageHandler
+      customMessageHandler,
     );
   } else {
     webSocketHandler.prepare(
@@ -833,7 +841,7 @@ export async function shutDownHandler(
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_CLOSE_CAMERA,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_POWER_OFF,
       ],
-      customMessageHandler
+      customMessageHandler,
     );
   }
 
@@ -849,7 +857,7 @@ export async function dwarfResetMotorHandlerFn(
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
   setGotoSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -911,7 +919,7 @@ export async function dwarfResetMotorHandlerFn(
         WS_Packet[indCommand],
         txtInfoCommand,
         [Dwarfii_Api.DwarfCMD.CMD_STEP_MOTOR_RESET],
-        customMessageHandler
+        customMessageHandler,
       );
     }
     if (indCommand == maxCommand && polarAlign)
@@ -919,7 +927,7 @@ export async function dwarfResetMotorHandlerFn(
         connectionCtx,
         setGotoErrors,
         setGotoSuccess,
-        callback
+        callback,
       );
   };
   // Send Command : messageStepMotorReset
@@ -942,7 +950,7 @@ export async function polarAlignHandlerFn(
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
   setGotoSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -1029,7 +1037,7 @@ export async function polarAlignHandlerFn(
         WS_Packet[indCommand],
         txtInfoCommand,
         [Dwarfii_Api.DwarfCMD.CMD_STEP_MOTOR_RUN_TO],
-        customMessageHandler
+        customMessageHandler,
       );
     }
   };
@@ -1056,7 +1064,7 @@ export async function polarAlignPositionHandlerFn(
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
   setGotoSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -1126,7 +1134,7 @@ export async function polarAlignPositionHandlerFn(
     WS_Packet,
     txtInfoCommand,
     [Dwarfii_Api.DwarfCMD.CMD_STEP_MOTOR_RUN_TO],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -1138,7 +1146,7 @@ export async function EQSolvingHandlerFn(
   connectionCtx: ConnectionContextType,
   setErrors: Dispatch<SetStateAction<string | undefined>>,
   setSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -1178,7 +1186,7 @@ export async function EQSolvingHandlerFn(
           " azi_err = " +
             result_data.data.aziErr +
             " , alt_err = " +
-            result_data.data.altErr
+            result_data.data.altErr,
         );
         if (callback) {
           callback(
@@ -1186,7 +1194,7 @@ export async function EQSolvingHandlerFn(
               " Result: azi_err = " +
               result_data.data.aziErr +
               " , alt_err = " +
-              result_data.data.altErr
+              result_data.data.altErr,
           );
         }
       } else find_error = true;
@@ -1206,7 +1214,7 @@ export async function EQSolvingHandlerFn(
           " Phase #" +
           result_data.data.step +
           " " +
-          result_data.data.statePlainTxt
+          result_data.data.statePlainTxt,
       );
       if (callback) {
         callback(
@@ -1214,7 +1222,7 @@ export async function EQSolvingHandlerFn(
             " Phase #" +
             result_data.data.step +
             " " +
-            result_data.data.statePlainTxt
+            result_data.data.statePlainTxt,
         );
       }
     } else {
@@ -1261,7 +1269,7 @@ export async function EQSolvingHandlerFn(
       Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_EQ_SOLVING,
       Dwarfii_Api.DwarfCMD.CMD_NOTIFY_EQ_SOLVING_STATE,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -1273,7 +1281,7 @@ export async function stopEQSolvingHandler(
   connectionCtx: ConnectionContextType,
   setGotoErrors: Dispatch<SetStateAction<string | undefined>>,
   setGotoSuccess: Dispatch<SetStateAction<string | undefined>>,
-  callback?: (options: any) => void // eslint-disable-line no-unused-vars
+  callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -1320,7 +1328,7 @@ export async function stopEQSolvingHandler(
     WS_Packet,
     txtInfoCommand,
     [Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_EQ_SOLVING],
-    customMessageHandler
+    customMessageHandler,
   );
   if (!webSocketHandler.run()) {
     console.error(" Can't launch Web Socket Run Action!");
@@ -1329,7 +1337,7 @@ export async function stopEQSolvingHandler(
 
 export function stellariumErrorHandler(
   err: any,
-  setErrors: Dispatch<SetStateAction<string | undefined>>
+  setErrors: Dispatch<SetStateAction<string | undefined>>,
 ) {
   if (
     err.name === "AbortError" ||
@@ -1348,7 +1356,7 @@ export function centerCoordinatesHandler(
   RA: string | undefined,
   declination: string | undefined,
   connectionCtx: ConnectionContextType,
-  setErrors: Dispatch<SetStateAction<string | undefined>>
+  setErrors: Dispatch<SetStateAction<string | undefined>>,
 ) {
   eventBus.dispatch("clearErrors", { message: "clear errors" });
 
@@ -1372,7 +1380,7 @@ export function centerCoordinatesHandler(
     if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
       const targetUrl = new URL(focusUrl);
       focusUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-        targetUrl.href
+        targetUrl.href,
       )}`;
     }
     console.log("focusUrl : " + focusUrl);
@@ -1397,7 +1405,7 @@ export function centerHandler(
   object: AstroObject,
   connectionCtx: ConnectionContextType,
   setErrors: Dispatch<SetStateAction<string | undefined>>,
-  functionSuccess?: () => void // eslint-disable-line no-unused-vars
+  functionSuccess?: () => void, // eslint-disable-line no-unused-vars
 ) {
   eventBus.dispatch("clearErrors", { message: "clear errors" });
 
@@ -1422,7 +1430,7 @@ export function centerHandler(
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(focusUrl);
         focusUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
       console.log("focusUrl : " + focusUrl);
@@ -1444,7 +1452,7 @@ export function centerHandler(
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(focusUrl);
         focusUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
       console.log("focusUrl : " + focusUrl);
@@ -1472,7 +1480,7 @@ export function centerHandler(
             if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
               const targetUrl = new URL(focusUrl);
               focusUrl = `${getProxyUrl(
-                connectionCtx
+                connectionCtx,
               )}?target=${encodeURIComponent(targetUrl.href)}`;
             }
             console.log("focusUrl : " + focusUrl);
@@ -1488,14 +1496,14 @@ export function centerHandler(
                 console.log(data);
                 if (data != "ok") {
                   setErrors(
-                    `Could not find object by coordinates : ${object.designation}`
+                    `Could not find object by coordinates : ${object.designation}`,
                   );
                 }
               })
               .catch((err) => stellariumErrorHandler(err, setErrors));
           } else if (data != "true" && object.type == "Asteroid") {
             setErrors(
-              `Could not find Asteroid : ${object.designation} in Stellarium`
+              `Could not find Asteroid : ${object.designation} in Stellarium`,
             );
           } else if (functionSuccess) functionSuccess();
         })

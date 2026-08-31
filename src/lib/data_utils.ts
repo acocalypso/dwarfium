@@ -6,7 +6,7 @@ const getExposuresDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 0);
@@ -18,7 +18,7 @@ const getExposuresDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 0);
@@ -44,7 +44,7 @@ export const getExposureDefault = (DwarfModelId = 1) => {
   if (allowedExposures[DwarfModelId])
     index = allowedExposures[DwarfModelId].defaultValueIndex;
   foundOption = allowedExposures[DwarfModelId].values.find(
-    (option) => option.index === index
+    (option) => option.index === index,
   );
   return foundOption ? foundOption.name : "1/30";
 };
@@ -53,7 +53,7 @@ export const getExposureNameByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedExposures[DwarfModelId])
     foundOption = allowedExposures[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Auto";
 };
@@ -68,7 +68,7 @@ export const getExposureIndexByName = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedExposures[DwarfModelId])
     foundOption = allowedExposures[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedExposures[DwarfModelId].defaultValueIndex;
@@ -80,7 +80,7 @@ const getGainsDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 1);
@@ -92,7 +92,7 @@ const getGainsDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 1);
@@ -109,7 +109,7 @@ export const getGainNameByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedGains[DwarfModelId])
     foundOption = allowedGains[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Auto";
 };
@@ -118,7 +118,7 @@ export const getGainIndexByName = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedGains[DwarfModelId])
     foundOption = allowedGains[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedGains[DwarfModelId].defaultValueIndex;
@@ -130,7 +130,7 @@ const getWBColorTempDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 2);
@@ -142,7 +142,7 @@ const getWBColorTempDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 2);
@@ -159,7 +159,7 @@ export const getWBColorTempValueByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWBColorTemp[DwarfModelId])
     foundOption = allowedWBColorTemp[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Auto";
 };
@@ -168,7 +168,7 @@ export const getWBColorTempIndexByValue = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWBColorTemp[DwarfModelId])
     foundOption = allowedWBColorTemp[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedWBColorTemp[DwarfModelId].defaultValueIndex;
@@ -179,7 +179,7 @@ export const getWBColorTempIndexByValue = (name, DwarfModelId = 1) => {
 const getCountBurstDwarf2 = () => {
   let value;
   const featureParam = data_dwarf2_config.data.featureParams.find(
-    (feature) => feature.id === 3
+    (feature) => feature.id === 3,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -188,7 +188,7 @@ const getCountBurstDwarf2 = () => {
 const getCountBurstDwarf3 = () => {
   let value;
   const featureParam = data_dwarf3_config.data.featureParams.find(
-    (feature) => feature.id === 3
+    (feature) => feature.id === 3,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -203,7 +203,7 @@ export const getCountBurstValueByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedCountBurst[DwarfModelId])
     foundOption = allowedCountBurst[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Select";
 };
@@ -212,7 +212,7 @@ export const getCountBurstIndexByValue = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedCountBurst[DwarfModelId])
     foundOption = allowedCountBurst[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedCountBurst[DwarfModelId].defaultValueIndex;
@@ -223,7 +223,7 @@ export const getCountBurstIndexByValue = (name, DwarfModelId = 1) => {
 const getCountIntervalDwarf2 = () => {
   let value;
   const featureParam = data_dwarf2_config.data.featureParams.find(
-    (feature) => feature.id === 9
+    (feature) => feature.id === 9,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -232,7 +232,7 @@ const getCountIntervalDwarf2 = () => {
 const getCountIntervalDwarf3 = () => {
   let value;
   const featureParam = data_dwarf3_config.data.featureParams.find(
-    (feature) => feature.id === 9
+    (feature) => feature.id === 9,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -247,7 +247,7 @@ export const getIntervalBurstValueByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedIntervalBurst[DwarfModelId])
     foundOption = allowedIntervalBurst[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Select";
 };
@@ -256,7 +256,7 @@ export const getIntervalBurstIndexByValue = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedIntervalBurst[DwarfModelId])
     foundOption = allowedIntervalBurst[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedIntervalBurst[DwarfModelId].defaultValueIndex;
@@ -267,7 +267,7 @@ export const getIntervalBurstIndexByValue = (name, DwarfModelId = 1) => {
 const getIntervalTimeLapseDwarf2 = () => {
   let value;
   const featureParam = data_dwarf2_config.data.featureParams.find(
-    (feature) => feature.id === 4
+    (feature) => feature.id === 4,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -276,7 +276,7 @@ const getIntervalTimeLapseDwarf2 = () => {
 const getIntervalTimeLapseDwarf3 = () => {
   let value;
   const featureParam = data_dwarf3_config.data.featureParams.find(
-    (feature) => feature.id === 4
+    (feature) => feature.id === 4,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -291,7 +291,7 @@ export const getIntervalTimeLapseValueByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedIntervalTimeLapse[DwarfModelId])
     foundOption = allowedIntervalTimeLapse[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Select";
 };
@@ -300,7 +300,7 @@ export const getIntervalTimeLapseIndexByValue = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedIntervalTimeLapse[DwarfModelId])
     foundOption = allowedIntervalTimeLapse[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index =
@@ -312,7 +312,7 @@ export const getIntervalTimeLapseIndexByValue = (name, DwarfModelId = 1) => {
 const getTotalTimeTimeLapseDwarf2 = () => {
   let value;
   const featureParam = data_dwarf2_config.data.featureParams.find(
-    (feature) => feature.id === 5
+    (feature) => feature.id === 5,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -321,7 +321,7 @@ const getTotalTimeTimeLapseDwarf2 = () => {
 const getTotalTimeTimeLapseDwarf3 = () => {
   let value;
   const featureParam = data_dwarf3_config.data.featureParams.find(
-    (feature) => feature.id === 5
+    (feature) => feature.id === 5,
   );
   if (featureParam) value = featureParam.gearMode;
   return value ? value : false;
@@ -336,7 +336,7 @@ export const getTotalTimeTimeLapseValueByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedTotalTimeTimeLapse[DwarfModelId])
     foundOption = allowedTotalTimeTimeLapse[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Select";
 };
@@ -345,7 +345,7 @@ export const getTotalTimeTimeLapseIndexByValue = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedTotalTimeTimeLapse[DwarfModelId])
     foundOption = allowedTotalTimeTimeLapse[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index =
@@ -358,7 +358,7 @@ const getIRDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 8);
@@ -370,7 +370,7 @@ const getIRDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 0
+    (camera) => camera.id === 0,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 8);
@@ -387,7 +387,7 @@ export const getIRNameByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedIRs[DwarfModelId])
     foundOption = allowedIRs[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "_";
 };

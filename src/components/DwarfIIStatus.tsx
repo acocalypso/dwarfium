@@ -5,7 +5,7 @@ import {
   messageCameraTeleGetAllFeatureParams,
   messageCameraTeleGetAllParams,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 
@@ -46,7 +46,7 @@ export default function DwarfIIStatus() {
         WS_Packet,
         txtInfoCommand,
         [Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_PARAMS],
-        customMessageHandler
+        customMessageHandler,
       );
 
       if (!webSocketHandler.run()) {
@@ -109,7 +109,7 @@ export default function DwarfIIStatus() {
         WS_Packet,
         txtInfoCommand,
         [Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_FEATURE_PARAMS],
-        customMessageHandler
+        customMessageHandler,
       );
 
       if (!webSocketHandler.run()) {

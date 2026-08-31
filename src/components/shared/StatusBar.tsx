@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { ConnectionContext } from "@/stores/ConnectionContext";
-import { modeAuto, modeManual } from "dwarfii_api";
+import { modeAuto, modeManual } from "@/services/dwarf";
 import ConnectDwarfII from "@/components/setup/ConnectDwarfII";
 import {
   getExposureNameByIndex,
@@ -82,7 +82,7 @@ export default function StatusBar() {
   )
     exposureValue = getExposureNameByIndex(
       connectionCtx.astroSettings.exposure,
-      connectionCtx.typeIdDwarf
+      connectionCtx.typeIdDwarf,
     );
 
   let wideExposureValue: string | undefined = undefined;
@@ -98,7 +98,7 @@ export default function StatusBar() {
   )
     wideExposureValue = getWideExposureNameByIndex(
       connectionCtx.astroSettings.wideExposure,
-      connectionCtx.typeIdDwarf
+      connectionCtx.typeIdDwarf,
     );
 
   useEffect(() => {
@@ -221,7 +221,7 @@ export default function StatusBar() {
                     :{" "}
                     {getGainNameByIndex(
                       connectionCtx.astroSettings.gain,
-                      connectionCtx.typeIdDwarf
+                      connectionCtx.typeIdDwarf,
                     )}
                   </div>
                 </span>
@@ -249,7 +249,7 @@ export default function StatusBar() {
                     :{" "}
                     {getWideGainNameByIndex(
                       connectionCtx.astroSettings.wideGain,
-                      connectionCtx.typeIdDwarf
+                      connectionCtx.typeIdDwarf,
                     )}
                   </div>
                 </span>
@@ -277,7 +277,7 @@ export default function StatusBar() {
                     :{" "}
                     {getIRNameByIndex(
                       connectionCtx.astroSettings.IR,
-                      connectionCtx.typeIdDwarf
+                      connectionCtx.typeIdDwarf,
                     )}
                   </div>
                 </span>

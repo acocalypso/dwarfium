@@ -98,7 +98,7 @@ export default function DSOObject(props: AstronomyObjectPropType) {
       if (!objectFavoriteNames) updatedListsNames.push(object.displayName);
       else
         updatedListsNames = objectFavoriteNames.filter(
-          (name) => name != object.displayName
+          (name) => name != object.displayName,
         );
       setObjectFavoriteNames(updatedListsNames);
       saveObjectFavoriteNamesDb(updatedListsNames.join("|"));
@@ -115,10 +115,10 @@ export default function DSOObject(props: AstronomyObjectPropType) {
 
   function addAstroObject(
     list: AstroObject[],
-    newObject: AstroObject
+    newObject: AstroObject,
   ): AstroObject[] {
     const exists = list.some(
-      (obj) => obj.displayName === newObject.displayName
+      (obj) => obj.displayName === newObject.displayName,
     );
     return exists ? list : [...list, newObject];
   }
@@ -143,17 +143,16 @@ export default function DSOObject(props: AstronomyObjectPropType) {
   const riseSetTime = useMemo(() => renderRiseSetTime(), [forceUpdate]);
   const altAz = useMemo(
     () => renderAltAz(),
-    [forceUpdate, connectionCtx.visibleSkyLimit]
+    [forceUpdate, connectionCtx.visibleSkyLimit],
   );
   const raDec = useMemo(() => renderRADec(), [forceUpdate]);
 
   function renderRiseSetTime() {
     if (connectionCtx.latitude && connectionCtx.longitude) {
-      // eslint-disable-next-line testing-library/render-result-naming-convention
       let timesObject = renderLocalRiseSetTime(
         object,
         connectionCtx.latitude,
-        connectionCtx.longitude
+        connectionCtx.longitude,
       );
 
       if (timesObject?.error) {
@@ -195,7 +194,7 @@ export default function DSOObject(props: AstronomyObjectPropType) {
         raDecimal,
         decDecimal,
         toIsoStringInLocalTime(today),
-        connectionCtx.timezone
+        connectionCtx.timezone,
       );
 
       let visibility = false;
@@ -215,7 +214,7 @@ export default function DSOObject(props: AstronomyObjectPropType) {
             "directions" in target
           ) {
             const isInTargetDirections = target.directions.includes(
-              convertAzToCardinal(results.az)
+              convertAzToCardinal(results.az),
             );
             if (isInTargetDirections) notPresentInDirection = false;
             if (results.alt >= target.number && isInTargetDirections) {
@@ -267,7 +266,7 @@ export default function DSOObject(props: AstronomyObjectPropType) {
       object.displayName,
       (options) => {
         setGotoMessages((prev) => prev.concat(options));
-      }
+      },
     );
   }
 

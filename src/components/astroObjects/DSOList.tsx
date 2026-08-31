@@ -47,7 +47,7 @@ export default function DSOList(props: PropType) {
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [searchTxtValue, setSearchTxtValue] = useState(connectionCtx.searchTxt);
   const [visibleSkyLimitValue, setVisibleSkyLimitValue] = useState(
-    connectionCtx.visibleSkyLimit
+    connectionCtx.visibleSkyLimit,
   );
 
   const { t } = useTranslation();
@@ -135,7 +135,7 @@ export default function DSOList(props: PropType) {
       setSelectedCategories((prev) => {
         // Filter out categories that are not in categoriesToKeep
         const filteredCategories = prev.filter((type) =>
-          categoriesToKeep.includes(type)
+          categoriesToKeep.includes(type),
         );
 
         // Add "all" if it's not already in the array
@@ -149,7 +149,7 @@ export default function DSOList(props: PropType) {
       setSelectedCategories((prev) => {
         // Filter out targetCategory
         const filteredCategories = prev.filter(
-          (type) => type !== targetCategory
+          (type) => type !== targetCategory,
         );
 
         // Check if all remaining categories are from KeepCategory
@@ -159,7 +159,7 @@ export default function DSOList(props: PropType) {
             category === "visible" ||
             category === "large" ||
             category === "small" ||
-            category === "tiny"
+            category === "tiny",
         );
 
         // If there are no categories left or all remaining categories are from KeepCategory, add "ALL"
@@ -176,7 +176,7 @@ export default function DSOList(props: PropType) {
       });
     } else {
       setSelectedCategories((prev) =>
-        prev.filter((type) => type !== "all").concat([targetCategory])
+        prev.filter((type) => type !== "all").concat([targetCategory]),
       );
     }
   }
@@ -214,10 +214,10 @@ export default function DSOList(props: PropType) {
                 object.favorite &&
                 object.visible &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("visible")) {
           setObjects(
@@ -227,10 +227,10 @@ export default function DSOList(props: PropType) {
                   sizeDso.includes(object.notes?.toString() ?? "")) &&
                 object.visible &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("favorite")) {
           setObjects(
@@ -240,10 +240,10 @@ export default function DSOList(props: PropType) {
                   sizeDso.includes(object.notes?.toString() ?? "")) &&
                 object.favorite &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         } else {
           setObjects(
@@ -252,10 +252,10 @@ export default function DSOList(props: PropType) {
                 (sizeDso.length === 0 ||
                   sizeDso.includes(object.notes?.toString() ?? "")) &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         }
       } else {
@@ -271,7 +271,7 @@ export default function DSOList(props: PropType) {
                 object.favorite &&
                 object.visible
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("visible")) {
           setObjects(
@@ -281,7 +281,7 @@ export default function DSOList(props: PropType) {
                   sizeDso.includes(object.notes?.toString() ?? "")) &&
                 object.visible
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("favorite")) {
           setObjects(
@@ -291,7 +291,7 @@ export default function DSOList(props: PropType) {
                   sizeDso.includes(object.notes?.toString() ?? "")) &&
                 object.favorite
               );
-            })
+            }),
           );
         } else {
           setObjects(
@@ -300,7 +300,7 @@ export default function DSOList(props: PropType) {
                 sizeDso.length === 0 ||
                 sizeDso.includes(object.notes?.toString() ?? "")
               );
-            })
+            }),
           );
         }
       }
@@ -319,10 +319,10 @@ export default function DSOList(props: PropType) {
                 object.favorite &&
                 object.visible &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("visible")) {
           setObjects(
@@ -333,10 +333,10 @@ export default function DSOList(props: PropType) {
                 selectedCategories.includes(object.typeCategory) &&
                 object.visible &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("favorite")) {
           setObjects(
@@ -347,10 +347,10 @@ export default function DSOList(props: PropType) {
                 selectedCategories.includes(object.typeCategory) &&
                 object.favorite &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         } else {
           setObjects(
@@ -360,10 +360,10 @@ export default function DSOList(props: PropType) {
                   sizeDso.includes(object.notes?.toString() ?? "")) &&
                 selectedCategories.includes(object.typeCategory) &&
                 removeSpaces(object.displayName.toLowerCase()).includes(
-                  removeSpaces(dataSearchTxt.toLowerCase())
+                  removeSpaces(dataSearchTxt.toLowerCase()),
                 )
               );
-            })
+            }),
           );
         }
       } else {
@@ -380,7 +380,7 @@ export default function DSOList(props: PropType) {
                 object.visible &&
                 selectedCategories.includes(object.typeCategory)
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("visible")) {
           setObjects(
@@ -391,7 +391,7 @@ export default function DSOList(props: PropType) {
                 object.visible &&
                 selectedCategories.includes(object.typeCategory)
               );
-            })
+            }),
           );
         } else if (selectedCategories.includes("favorite")) {
           setObjects(
@@ -402,7 +402,7 @@ export default function DSOList(props: PropType) {
                 object.favorite &&
                 selectedCategories.includes(object.typeCategory)
               );
-            })
+            }),
           );
         } else {
           setObjects(
@@ -412,7 +412,7 @@ export default function DSOList(props: PropType) {
                 (sizeDso.length === 0 ||
                   sizeDso.includes(object.notes?.toString() ?? ""))
               );
-            })
+            }),
           );
         }
       }

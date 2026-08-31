@@ -14,7 +14,7 @@ function WeatherForecast(props: { coordinates: { lat: number; lon: number } }) {
   const [loaded, setLoaded] = useState(false);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
   const [apiKey] = useState<string>(
-    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : "",
   );
   let connectionCtx = useContext(ConnectionContext);
 
@@ -32,7 +32,7 @@ function WeatherForecast(props: { coordinates: { lat: number; lon: number } }) {
       if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
         const targetUrl = new URL(apiURL);
         apiURL = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href
+          targetUrl.href,
         )}`;
       }
 
@@ -47,10 +47,10 @@ function WeatherForecast(props: { coordinates: { lat: number; lon: number } }) {
           console.error("Weather forecast API call failed:", error);
           if (error.response && error.response.status === 429) {
             console.error(
-              "Error 429: API rate limit exceeded. Try again later."
+              "Error 429: API rate limit exceeded. Try again later.",
             );
             alert(
-              "Error 429: You have exceeded the API rate limit. Please try again later."
+              "Error 429: You have exceeded the API rate limit. Please try again later.",
             );
           }
         });
@@ -77,11 +77,11 @@ function WeatherForecast(props: { coordinates: { lat: number; lon: number } }) {
       } else {
         dailyForecast[date].main.temp_max = Math.max(
           dailyForecast[date].main.temp_max,
-          tempMax
+          tempMax,
         );
         dailyForecast[date].main.temp_min = Math.min(
           dailyForecast[date].main.temp_min,
-          tempMin
+          tempMin,
         );
       }
     });

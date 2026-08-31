@@ -3,7 +3,7 @@ import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 import { Formik } from "formik";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
-import { modeManual, modeAuto } from "dwarfii_api";
+import { modeManual, modeAuto } from "@/services/dwarf";
 import { saveAstroSettingsDb } from "@/db/db_utils";
 import { validateAstroSettings } from "@/components/imaging/form_validations";
 import { AstroSettings } from "@/types";
@@ -264,7 +264,7 @@ export default function TakeAstroPhoto(props: PropTypes) {
 
   function setImagingTime(
     count: number | undefined,
-    exposure: number | string | undefined
+    exposure: number | string | undefined,
   ) {
     if (typeof exposure === "string") {
       return;
@@ -355,7 +355,7 @@ export default function TakeAstroPhoto(props: PropTypes) {
     ));
   };
   const allowedExposuresOptions = generateExposureOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   const generateGainOptions = (DwarfModelId = 1) => {
@@ -388,7 +388,7 @@ export default function TakeAstroPhoto(props: PropTypes) {
     ));
   };
   const allowedWideExposuresOptions = generateWideExposureOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   const generateWideGainOptions = (DwarfModelId = 1) => {
@@ -400,7 +400,7 @@ export default function TakeAstroPhoto(props: PropTypes) {
     ));
   };
   const allowedWideGainsOptions = generateWideGainOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   if (showSettingsInfo) {
@@ -722,8 +722,8 @@ export default function TakeAstroPhoto(props: PropTypes) {
                   connectionCtx.astroSettings.count,
                   getExposureValueByIndex(
                     connectionCtx.astroSettings.exposure,
-                    connectionCtx.typeIdDwarf
-                  )
+                    connectionCtx.typeIdDwarf,
+                  ),
                 )}
               </div>
             </div>

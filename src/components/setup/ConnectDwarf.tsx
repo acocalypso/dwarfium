@@ -13,7 +13,11 @@ import { connectionHandler } from "@/lib/connect_utils";
 const DwarfClientID_original = "0000DAF2-0000-1000-8000-00805F9B34FB";
 const DwarfClientID_base = "0000DAF2-0000-1000-8000-00805F9B35";
 
-import { DwarfClientID, setDwarfClientID, WebSocketHandler } from "dwarfii_api";
+import {
+  DwarfClientID,
+  setDwarfClientID,
+  WebSocketHandler,
+} from "@/services/dwarf";
 
 export default function ConnectDwarf() {
   let connectionCtx = useContext(ConnectionContext);
@@ -84,7 +88,7 @@ export default function ConnectDwarf() {
     connectionCtx.setIPDwarf(IPDwarf);
     saveIPDwarfDB(IPDwarf);
     console.log(
-      "Start connection with " + IPDwarf + " using ClientID: " + DwarfClientID
+      "Start connection with " + IPDwarf + " using ClientID: " + DwarfClientID,
     );
     console.log("Current ClientID: " + currentDwarfClientID);
     connectionHandler(
@@ -94,7 +98,7 @@ export default function ConnectDwarf() {
       setConnecting,
       setSlavemode,
       setGoLive,
-      setErrorTxt
+      setErrorTxt,
     );
   }
 

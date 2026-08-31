@@ -99,7 +99,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
       setSuccess,
       (options) => {
         setGotoMessages((prev) => prev.concat(options));
-      }
+      },
     );
   }
 
@@ -121,7 +121,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
       setSuccess,
       (options) => {
         setGotoMessages((prev) => prev.concat(options));
-      }
+      },
     );
   }
 
@@ -135,7 +135,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
       setSuccess,
       (options) => {
         setGotoMessages((prev) => prev.concat(options));
-      }
+      },
     );
   }
 
@@ -149,7 +149,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
       setSuccess,
       (options) => {
         setGotoMessages((prev) => prev.concat(options));
-      }
+      },
     );
   }
   function savePositionFn() {
@@ -157,7 +157,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
       connectionCtx,
       setPosition,
       t("cCalibrationDwarfRecordedPosition"),
-      t("cCalibrationDwarfNoPosition")
+      t("cCalibrationDwarfNoPosition"),
     );
   }
 
@@ -177,7 +177,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
         setGotoMessages((prev) => prev.concat(options));
       },
       t("cCalibrationDwarfInitialPosition"),
-      t("cCalibrationDwarfNoPosition")
+      t("cCalibrationDwarfNoPosition"),
     );
   }
 
@@ -268,14 +268,14 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
         updateTelescopeISPSetting(
           "gain",
           getGainIndexByName("80", connectionCtx.typeIdDwarf),
-          connectionCtx
+          connectionCtx,
         );
       }, 2500);
       setTimeout(() => {
         updateTelescopeISPSetting(
           "exposure",
           getExposureIndexByName("1", connectionCtx.typeIdDwarf),
-          connectionCtx
+          connectionCtx,
         );
       }, 3500);
       setTimeout(() => {

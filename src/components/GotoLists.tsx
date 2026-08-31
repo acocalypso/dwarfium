@@ -55,7 +55,7 @@ export default function AutoGoto(props: PropType) {
         setObjectPersonalList(personalObjecList);
         console.log(
           "Loaded  personalObjecList on load: ",
-          personalObjecList.length
+          personalObjecList.length,
         );
       } else {
         console.log("No personalObjecList found in DB");

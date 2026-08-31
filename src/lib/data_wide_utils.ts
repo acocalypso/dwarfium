@@ -6,7 +6,7 @@ const getWideExposuresDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 1
+    (camera) => camera.id === 1,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 0);
@@ -18,7 +18,7 @@ const getWideExposuresDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 1
+    (camera) => camera.id === 1,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 0);
@@ -44,7 +44,7 @@ export const getWideExposureDefault = (DwarfModelId = 1) => {
   if (allowedWideExposures[DwarfModelId])
     index = allowedWideExposures[DwarfModelId].defaultValueIndex;
   foundOption = allowedWideExposures[DwarfModelId].values.find(
-    (option) => option.index === index
+    (option) => option.index === index,
   );
   return foundOption ? foundOption.name : "1/30";
 };
@@ -53,7 +53,7 @@ export const getWideExposureNameByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWideExposures[DwarfModelId])
     foundOption = allowedWideExposures[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Auto";
 };
@@ -68,7 +68,7 @@ export const getWideExposureIndexByName = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWideExposures[DwarfModelId])
     foundOption = allowedWideExposures[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedWideExposures[DwarfModelId].defaultValueIndex;
@@ -80,7 +80,7 @@ const getWideGainsDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 1
+    (camera) => camera.id === 1,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 1);
@@ -92,7 +92,7 @@ const getWideGainsDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 1
+    (camera) => camera.id === 1,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 1);
@@ -109,7 +109,7 @@ export const getWideGainNameByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWideGains[DwarfModelId])
     foundOption = allowedWideGains[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Auto";
 };
@@ -118,7 +118,7 @@ export const getWideGainIndexByName = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWideGains[DwarfModelId]) {
     foundOption = allowedWideGains[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   }
   if (!foundOption) {
@@ -133,7 +133,7 @@ const getWideWBColorTempDwarf2 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf2_config.data.cameras.find(
-    (camera) => camera.id === 1
+    (camera) => camera.id === 1,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 2);
@@ -145,7 +145,7 @@ const getWideWBColorTempDwarf3 = () => {
   let value;
   let supportParam;
   const camera = data_dwarf3_config.data.cameras.find(
-    (camera) => camera.id === 1
+    (camera) => camera.id === 1,
   );
   if (camera)
     supportParam = camera.supportParams.find((param) => param.id === 2);
@@ -162,7 +162,7 @@ export const getWideWBColorTempValueByIndex = (index, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWideWBColorTemp[DwarfModelId])
     foundOption = allowedWideWBColorTemp[DwarfModelId].values.find(
-      (option) => option.index === index
+      (option) => option.index === index,
     );
   return foundOption ? foundOption.name : "Auto";
 };
@@ -171,7 +171,7 @@ export const getWideWBColorTempIndexByValue = (name, DwarfModelId = 1) => {
   let foundOption;
   if (allowedWideWBColorTemp[DwarfModelId])
     foundOption = allowedWideWBColorTemp[DwarfModelId].values.find(
-      (option) => option.name === String(name)
+      (option) => option.name === String(name),
     );
   if (!foundOption)
     foundOption.index = allowedWideWBColorTemp[DwarfModelId].defaultValueIndex;

@@ -25,10 +25,10 @@ interface WeatherData {
 
 function Weather() {
   const [cityInput, setCityInput] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("city") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("city") || "" : "",
   );
   const [apiKey, setApiKey] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : "",
   );
   const [weatherData, setWeatherData] = useState<WeatherData>({ ready: false });
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ function Weather() {
     if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
       const targetUrl = new URL(apiUrl);
       apiUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-        targetUrl.href
+        targetUrl.href,
       )}`;
     }
     axios
@@ -73,7 +73,7 @@ function Weather() {
         console.error("Weather data fetch error:", error);
         if (error.response && error.response.status === 429) {
           setError(
-            "Error 429: You have exceeded the API rate limit. Please try again later."
+            "Error 429: You have exceeded the API rate limit. Please try again later.",
           );
         } else {
           setError("An error occurred while fetching weather data.");

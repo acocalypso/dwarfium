@@ -31,7 +31,7 @@ export default function ConnectDwarfII() {
       setConnecting,
       setSlavemode,
       setGoLive,
-      setErrorTxt
+      setErrorTxt,
     );
   }
   const { t } = useTranslation();

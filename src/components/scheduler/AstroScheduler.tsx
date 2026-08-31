@@ -17,7 +17,7 @@ const App: React.FC = () => {
   const [bluetoothConnected, setBluetoothConnected] = useState<boolean>(false);
   const [schedulerRunning, setSchedulerRunning] = useState<boolean>(false);
   const schedulerIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
+    null,
   );
 
   // Log–state

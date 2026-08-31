@@ -6,17 +6,21 @@ import {
   fileTiff,
   modeManual,
   modeAuto,
-  messageCameraTeleOpenCamera,
-  messageCameraWideOpenCamera,
-  messageCameraTeleSetExpMode,
-  messageCameraTeleSetExp,
-  messageCameraTeleSetGainMode,
-  messageCameraTeleSetGain,
+  messageV3CameraTeleOpenCamera,
+  messageV3CameraWideOpenCamera,
+  encodeParamId,
+  getDwarfDeviceProfile,
+  messageV3AstroExposureSet,
+  messageV3AstroGainSet,
+  messageV3AstroFrameCountSet,
+  messageV3CameraParamSet,
+  messageV3CameraParamSetExpGain,
+  messageV3FilterWheelSet,
+  V3_CAMERA_ID,
+  V3_PARAM_CATEGORY,
+  V3_PARAM_INDEX,
+  V3_SHOOTING_MODE,
   messageCameraTeleSetIRCut,
-  messageCameraTeleGetExpMode,
-  messageCameraTeleGetExp,
-  messageCameraTeleGetGainMode,
-  messageCameraTeleGetGain,
   messageCameraTeleGetIRCut,
   messageCameraTeleSetFeatureParams,
   messageCameraTeleGetAllParams,
@@ -45,7 +49,7 @@ import {
   messageCameraWideGetExp,
   messageCameraWideGetGain,
   WebSocketHandler,
-} from "dwarfii_api";
+} from "@/services/dwarf";
 import { getExposureIndexDefault } from "@/lib/data_utils";
 import {
   getWideExposureIndexDefault,
@@ -65,7 +69,7 @@ async function sleep(ms) {
 export async function turnOnTeleCameraFn(
   connectionCtx: ConnectionContextType,
   setTelephotoCameraStatus: any | undefined = undefined,
-  setSrcTeleCamera: any | undefined = undefined
+  setSrcTeleCamera: any | undefined = undefined,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -111,14 +115,15 @@ export async function turnOnTeleCameraFn(
     : new WebSocketHandler(connectionCtx.IPDwarf);
 
   // Send Command : messageCameraTeleOpenCamera
-  let WS_Packet = messageCameraTeleOpenCamera(binning);
+  void binning;
+  let WS_Packet = messageV3CameraTeleOpenCamera();
   let txtInfoCommand = "turnOnTeleCamera";
 
   webSocketHandler.prepare(
     WS_Packet,
     txtInfoCommand,
     [Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -131,7 +136,7 @@ export async function turnOnTeleCameraFn(
 export async function turnOnWideCameraFn(
   connectionCtx: ConnectionContextType,
   setWideangleCameraStatus: any | undefined = undefined,
-  setSrcWideCamera: any | undefined = undefined
+  setSrcWideCamera: any | undefined = undefined,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -173,14 +178,14 @@ export async function turnOnWideCameraFn(
     : new WebSocketHandler(connectionCtx.IPDwarf);
 
   // Send Command : messageCameraWideOpenCamera
-  let WS_Packet = messageCameraWideOpenCamera();
+  let WS_Packet = messageV3CameraWideOpenCamera();
   let txtInfoCommand = "turnOnWideCamera";
 
   webSocketHandler.prepare(
     WS_Packet,
     txtInfoCommand,
     [Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -193,7 +198,7 @@ export async function turnOnWideCameraFn(
 export async function updateTelescopeISPSetting(
   type: string,
   value: number,
-  connectionCtx: ConnectionContextType
+  connectionCtx: ConnectionContextType,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -201,28 +206,40 @@ export async function updateTelescopeISPSetting(
 
   let WS_Packet;
   let WS_Packet2;
-  let cmd = "";
-  let cmd2 = "";
+  let cmd: number | string = "";
+  let cmd2: number | string = "";
   if (type === "exposure") {
-    cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_EXP;
-    WS_Packet = messageCameraTeleSetExp(value);
-    cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_EXP;
-    WS_Packet2 = messageCameraTeleGetExp();
+    cmd = 16700;
+    WS_Packet = messageV3AstroExposureSet(value);
   } else if (type === "exposureMode") {
-    cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_EXP_MODE;
-    WS_Packet = messageCameraTeleSetExpMode(value);
-    cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_EXP_MODE;
-    WS_Packet2 = messageCameraTeleGetExpMode();
+    cmd = 16700;
+    const paramId = encodeParamId(
+      V3_SHOOTING_MODE.ASTRO,
+      V3_PARAM_CATEGORY.OPTICAL,
+      V3_CAMERA_ID.TELE,
+      V3_PARAM_INDEX.EXPOSURE,
+    );
+    WS_Packet = messageV3CameraParamSet(
+      paramId,
+      Number(connectionCtx.astroSettings.exposure ?? 0),
+      value,
+    );
   } else if (type === "gain") {
-    cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_GAIN;
-    WS_Packet = messageCameraTeleSetGain(value);
-    cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_GAIN;
-    WS_Packet2 = messageCameraTeleGetGain();
+    cmd = 16701;
+    WS_Packet = messageV3AstroGainSet(value);
   } else if (type === "gainMode") {
-    cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_GAIN_MODE;
-    WS_Packet = messageCameraTeleSetGainMode(value);
-    cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_GAIN_MODE;
-    WS_Packet2 = messageCameraTeleGetGainMode();
+    cmd = 16701;
+    const paramId = encodeParamId(
+      V3_SHOOTING_MODE.ASTRO,
+      V3_PARAM_CATEGORY.OPTICAL,
+      V3_CAMERA_ID.TELE,
+      V3_PARAM_INDEX.GAIN,
+    );
+    WS_Packet = messageV3CameraParamSetExpGain(
+      paramId,
+      Number(connectionCtx.astroSettings.gain ?? 0),
+      value,
+    );
   } else if (type === "wideExposure") {
     cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_SET_EXP;
     WS_Packet = messageCameraWideSetExp(value);
@@ -239,10 +256,16 @@ export async function updateTelescopeISPSetting(
     cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_GET_GAIN;
     WS_Packet2 = messageCameraWideGetGain();
   } else if (type === "IR") {
-    cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_IRCUT;
-    WS_Packet = messageCameraTeleSetIRCut(value);
-    cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_IRCUT;
-    WS_Packet2 = messageCameraTeleGetIRCut();
+    const profile = getDwarfDeviceProfile(connectionCtx.typeIdDwarf ?? 1);
+    if (profile.capabilities.filterWheel) {
+      cmd = 16703;
+      WS_Packet = messageV3FilterWheelSet(Math.max(1, value + 1));
+    } else {
+      cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_IRCUT;
+      WS_Packet = messageCameraTeleSetIRCut(value);
+      cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_IRCUT;
+      WS_Packet2 = messageCameraTeleGetIRCut();
+    }
   } else if (type === "binning") {
     cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_FEATURE_PARAM;
     let hasAuto = false;
@@ -257,7 +280,7 @@ export async function updateTelescopeISPSetting(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_FEATURE_PARAMS;
     WS_Packet2 = messageCameraTeleGetAllFeatureParams();
@@ -275,7 +298,7 @@ export async function updateTelescopeISPSetting(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_FEATURE_PARAMS;
     WS_Packet2 = messageCameraTeleGetAllFeatureParams();
@@ -293,28 +316,13 @@ export async function updateTelescopeISPSetting(
       id,
       modeIndex,
       index,
-      continueValue
+      continueValue,
     );
     cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_FEATURE_PARAMS;
     WS_Packet2 = messageCameraTeleGetAllFeatureParams();
   } else if (type === "count") {
-    cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_FEATURE_PARAM;
-    let hasAuto = false;
-    let autoMode = 1; // Manual
-    let id = 1; // "Astro img_to_take"
-    let modeIndex = 1;
-    let index = 0;
-    let continueValue = value; // Imgages To Take
-    WS_Packet = messageCameraTeleSetFeatureParams(
-      hasAuto,
-      autoMode,
-      id,
-      modeIndex,
-      index,
-      continueValue
-    );
-    cmd2 = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_FEATURE_PARAMS;
-    WS_Packet2 = messageCameraTeleGetAllFeatureParams();
+    cmd = 16703;
+    WS_Packet = messageV3AstroFrameCountSet(value);
   } else if (type === "quality") {
     cmd = Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_JPG_QUALITY;
     WS_Packet = messageCameraTeleSetJPGQuality(value);
@@ -344,11 +352,13 @@ export async function updateTelescopeISPSetting(
 
   let txtInfoCommand = `set ${type}`;
 
+  const packets = [WS_Packet, WS_Packet2].filter(Boolean);
+  const commands = [cmd, cmd2].filter((command) => command !== "");
   webSocketHandler.prepare(
-    [WS_Packet, WS_Packet2],
+    packets,
     txtInfoCommand,
-    [cmd, cmd2],
-    customMessageHandler
+    commands,
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -358,7 +368,7 @@ export async function updateTelescopeISPSetting(
 
 export async function getAllTelescopeISPSetting(
   connectionCtx: ConnectionContextType,
-  webSocketHandlerVal: any | undefined = undefined
+  webSocketHandlerVal: any | undefined = undefined,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -380,13 +390,13 @@ export async function getAllTelescopeISPSetting(
           const filteredArray = result_data.data.allFeatureParams.filter(
             (commonParam) =>
               !Object.prototype.hasOwnProperty.call(commonParam, "id") ||
-              commonParam.id === undefined
+              commonParam.id === undefined,
           );
           if (filteredArray[0].index) binning = binning2x2;
           else binning = binning1x1;
           // For id=1 : "Astro img_to_take"
           const resultObject1 = result_data.data.allFeatureParams.find(
-            (item) => item.id === 1
+            (item) => item.id === 1,
           );
           console.log("allFeatureParams-resultObject1:", resultObject1);
           count = 0;
@@ -395,7 +405,7 @@ export async function getAllTelescopeISPSetting(
           }
           // For id=2 : Astro Format
           const resultObject2 = result_data.data.allFeatureParams.find(
-            (item) => item.id === 2
+            (item) => item.id === 2,
           );
           console.log("allFeatureParams-resultObject2:", resultObject2);
           if (resultObject2.index) fileFormat = fileTiff;
@@ -403,7 +413,7 @@ export async function getAllTelescopeISPSetting(
 
           // For id=14 : AiEnhance
           const resultObject3 = result_data.data.allFeatureParams.find(
-            (item) => item.id === 14
+            (item) => item.id === 14,
           );
           console.log("allFeatureParams-resultObject3:", resultObject3);
           AiEnhance = 0;
@@ -448,7 +458,7 @@ export async function getAllTelescopeISPSetting(
           const filteredArray = result_data.data.allParams.filter(
             (commonParam) =>
               !Object.prototype.hasOwnProperty.call(commonParam, "id") ||
-              commonParam.id === undefined
+              commonParam.id === undefined,
           );
           // id = 0 (no present)
           // autoMode == 0 => Auto not present
@@ -459,14 +469,14 @@ export async function getAllTelescopeISPSetting(
             exposure = getExposureIndexDefault(connectionCtx.typeIdDwarf);
           // For id=1 : "Gain"
           const resultObject1 = result_data.data.allParams.find(
-            (item) => item.id === 1
+            (item) => item.id === 1,
           );
           console.log("allParams-resultObject1:", resultObject1);
           let gain = 0;
           if (resultObject1.index) gain = resultObject1.index;
           // For id=8 : IR Cut
           const resultObject2 = result_data.data.allParams.find(
-            (item) => item.id === 8
+            (item) => item.id === 8,
           );
           console.log("allParams-resultObject2:", resultObject2);
           let val_IRCut = 0;
@@ -474,12 +484,12 @@ export async function getAllTelescopeISPSetting(
           // For id=9 : previewQuality : only dwarf II
           let previewQuality;
           const resultObject4 = result_data.data.allParams.find(
-            (item) => item.id === 9
+            (item) => item.id === 9,
           );
           if (resultObject4 && resultObject4.continueValue) {
             console.log(
               "previewQuality: allParams-resultObject4:",
-              resultObject4
+              resultObject4,
             );
             previewQuality = resultObject4.continueValue;
           }
@@ -530,7 +540,7 @@ export async function getAllTelescopeISPSetting(
           const filteredArray = result_data.data.allParams.filter(
             (commonParam) =>
               !Object.prototype.hasOwnProperty.call(commonParam, "id") ||
-              commonParam.id === undefined
+              commonParam.id === undefined,
           );
           // id = 0 (no present)
           // autoMode == 0 => Auto not present
@@ -539,11 +549,11 @@ export async function getAllTelescopeISPSetting(
           if (filteredArray[0].index) wideExposure = filteredArray[0].index;
           else if (wideExposureMode == modeAuto)
             wideExposure = getWideExposureIndexDefault(
-              connectionCtx.typeIdDwarf
+              connectionCtx.typeIdDwarf,
             );
           // For id=1 : "Gain"
           const resultObjectW1 = result_data.data.allParams.find(
-            (item) => item.id === 1
+            (item) => item.id === 1,
           );
           console.log("allParams-resultObjectW1:", resultObjectW1);
           let wideGain = 0;
@@ -573,8 +583,8 @@ export async function getAllTelescopeISPSetting(
   const webSocketHandler = webSocketHandlerVal
     ? webSocketHandlerVal
     : connectionCtx.socketIPDwarf
-    ? connectionCtx.socketIPDwarf
-    : new WebSocketHandler(connectionCtx.IPDwarf);
+      ? connectionCtx.socketIPDwarf
+      : new WebSocketHandler(connectionCtx.IPDwarf);
 
   let txtInfoCommand = "get CameraParameter";
   let WS_Packet = messageCameraTeleGetAllParams();
@@ -589,7 +599,7 @@ export async function getAllTelescopeISPSetting(
       Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_FEATURE_PARAMS,
       Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_GET_ALL_PARAMS,
     ],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -614,7 +624,7 @@ export async function getAllTelescopeISPSetting(
 function update_data_camera_wide_settings(
   connectionCtx,
   result_data,
-  bDoneGain
+  bDoneGain,
 ) {
   let exp_mode,
     exp_index,
@@ -634,7 +644,7 @@ function update_data_camera_wide_settings(
     const filteredArray = result_data.data.allParams.filter(
       (commonParam) =>
         !Object.prototype.hasOwnProperty.call(commonParam, "id") ||
-        commonParam.id === undefined
+        commonParam.id === undefined,
     );
     // id = 0 (no present)
     // autoMode == 0 => Auto not present
@@ -646,14 +656,14 @@ function update_data_camera_wide_settings(
 
     // For id=1 : "Gain"
     const resultObject1 = result_data.data.allParams.find(
-      (item) => item.id === 1
+      (item) => item.id === 1,
     );
     console.log("allParams-resultObject1:", resultObject1);
     if (!bDoneGain && resultObject1.index) gain_index = resultObject1.index;
 
     // For id=2 : WB
     const resultObject2 = result_data.data.allParams.find(
-      (item) => item.id === 2
+      (item) => item.id === 2,
     );
     console.log("allParams-resultObject2:", resultObject2);
     // autoMode == 0 => Auto not present
@@ -663,7 +673,7 @@ function update_data_camera_wide_settings(
 
     // For id=3 : Brightness
     const resultObject3 = result_data.data.allParams.find(
-      (item) => item.id === 3
+      (item) => item.id === 3,
     );
     console.log("allParams-resultObject3:", resultObject3);
     if (resultObject3.continueValue) brightness = resultObject3.continueValue;
@@ -671,7 +681,7 @@ function update_data_camera_wide_settings(
 
     // For id=4 : Contrast
     const resultObject4 = result_data.data.allParams.find(
-      (item) => item.id === 4
+      (item) => item.id === 4,
     );
     console.log("allParams-resultObject4:", resultObject4);
     if (resultObject4.continueValue) contrast = resultObject4.continueValue;
@@ -679,7 +689,7 @@ function update_data_camera_wide_settings(
 
     // For id=5 : Hue
     const resultObject5 = result_data.data.allParams.find(
-      (item) => item.id === 5
+      (item) => item.id === 5,
     );
     console.log("allParams-resultObject5:", resultObject5);
     if (resultObject5.continueValue) hue = resultObject5.continueValue;
@@ -687,7 +697,7 @@ function update_data_camera_wide_settings(
 
     // For id=6 : Saturation
     const resultObject6 = result_data.data.allParams.find(
-      (item) => item.id === 6
+      (item) => item.id === 6,
     );
     console.log("allParams-resultObject6:", resultObject6);
     if (resultObject6.continueValue) saturation = resultObject6.continueValue;
@@ -695,7 +705,7 @@ function update_data_camera_wide_settings(
 
     // For id=7 : Sharpness
     const resultObject7 = result_data.data.allParams.find(
-      (item) => item.id === 7
+      (item) => item.id === 7,
     );
     console.log("allParams-resultObject7:", resultObject7);
     if (resultObject7.continueValue) sharpness = resultObject7.continueValue;
@@ -763,7 +773,7 @@ function update_data_camera_tele_settings(connectionCtx, result_data) {
 
     // For id=2 : WB
     const resultObject2 = result_data.data.allParams.find(
-      (item) => item.id === 2
+      (item) => item.id === 2,
     );
     console.log("allParams-resultObject2:", resultObject2);
     // autoMode == 0 => Auto not present
@@ -778,7 +788,7 @@ function update_data_camera_tele_settings(connectionCtx, result_data) {
 
     // For id=3 : Brightness
     const resultObject3 = result_data.data.allParams.find(
-      (item) => item.id === 3
+      (item) => item.id === 3,
     );
     console.log("allParams-resultObject3:", resultObject3);
     if (resultObject3.continueValue) brightness = resultObject3.continueValue;
@@ -786,7 +796,7 @@ function update_data_camera_tele_settings(connectionCtx, result_data) {
 
     // For id=4 : Contrast
     const resultObject4 = result_data.data.allParams.find(
-      (item) => item.id === 4
+      (item) => item.id === 4,
     );
     console.log("allParams-resultObject4:", resultObject4);
     if (resultObject4.continueValue) contrast = resultObject4.continueValue;
@@ -794,7 +804,7 @@ function update_data_camera_tele_settings(connectionCtx, result_data) {
 
     // For id=5 : Hue
     const resultObject5 = result_data.data.allParams.find(
-      (item) => item.id === 5
+      (item) => item.id === 5,
     );
     console.log("allParams-resultObject5:", resultObject5);
     if (resultObject5.continueValue) hue = resultObject5.continueValue;
@@ -802,7 +812,7 @@ function update_data_camera_tele_settings(connectionCtx, result_data) {
 
     // For id=6 : Saturation
     const resultObject6 = result_data.data.allParams.find(
-      (item) => item.id === 6
+      (item) => item.id === 6,
     );
     console.log("allParams-resultObject6:", resultObject6);
     if (resultObject6.continueValue) saturation = resultObject6.continueValue;
@@ -810,7 +820,7 @@ function update_data_camera_tele_settings(connectionCtx, result_data) {
 
     // For id=7 : Sharpness
     const resultObject7 = result_data.data.allParams.find(
-      (item) => item.id === 7
+      (item) => item.id === 7,
     );
     console.log("allParams-resultObject7:", resultObject7);
     if (resultObject7.continueValue) sharpness = resultObject7.continueValue;
@@ -872,7 +882,7 @@ export async function getWideAllParamsFn(connectionCtx: ConnectionContextType) {
       if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
         connectionCtx.cameraWideSettings.gain_index = getWideGainIndexByName(
           result_data.data.value,
-          connectionCtx.typeIdDwarf
+          connectionCtx.typeIdDwarf,
         );
         logger(txt_info, result_data, connectionCtx);
         bDoneGain = true;
@@ -904,14 +914,14 @@ export async function getWideAllParamsFn(connectionCtx: ConnectionContextType) {
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_GET_ALL_PARAMS,
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_GET_GAIN,
       ],
-      customMessageHandler
+      customMessageHandler,
     );
   else
     webSocketHandler.prepare(
       WS_Packet,
       txtInfoCommand,
       [Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_GET_ALL_PARAMS],
-      customMessageHandler
+      customMessageHandler,
     );
 
   if (!webSocketHandler.run()) {
@@ -932,7 +942,7 @@ export async function setWideAllParamsFn(
   contrast,
   hue,
   saturation,
-  sharpness
+  sharpness,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -959,7 +969,7 @@ export async function setWideAllParamsFn(
           ...prev, // Spread the previous state
           gain_index: getWideGainIndexByName(
             result_data.data.value,
-            connectionCtx.typeIdDwarf
+            connectionCtx.typeIdDwarf,
           ),
         }));
         logger(txt_info, result_data, connectionCtx);
@@ -1016,7 +1026,7 @@ export async function setWideAllParamsFn(
     ],
     txtInfoCommand,
     WS_PacketListen,
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -1056,7 +1066,7 @@ export async function getTeleAllParamsFn(connectionCtx: ConnectionContextType) {
     WS_Packet,
     txtInfoCommand,
     [Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_PARAMS],
-    customMessageHandler
+    customMessageHandler,
   );
 
   if (!webSocketHandler.run()) {
@@ -1075,7 +1085,7 @@ export async function setTeleAllParamsFn(
   contrast,
   hue,
   saturation,
-  sharpness
+  sharpness,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
     return;
@@ -1129,7 +1139,7 @@ export async function setTeleAllParamsFn(
     ],
     txtInfoCommand,
     [Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_ALL_PARAMS],
-    customMessageHandlerTele
+    customMessageHandlerTele,
   );
 
   if (!webSocketHandler.run()) {
@@ -1145,11 +1155,11 @@ import { padNumber } from "@/lib/math_utils";
 export function calculateSessionTime(connectionCtx: ConnectionContextType) {
   let data = calculateElapsedTime(
     connectionCtx.imagingSession.startTime,
-    Date.now()
+    Date.now(),
   );
   if (data) {
     return `${padNumber(data.hours)}:${padNumber(data.minutes)}:${padNumber(
-      data.seconds
+      data.seconds,
     )}`;
   }
 }
@@ -1157,7 +1167,7 @@ export function calculateSessionTime(connectionCtx: ConnectionContextType) {
 export function get_error(
   errorMessage: string,
   result_data: any,
-  setErrorTxt: Function
+  setErrorTxt: Function,
 ) {
   if (
     result_data.data.errorPlainTxt &&
@@ -1166,7 +1176,7 @@ export function get_error(
   )
     setErrorTxt(
       (prevError) =>
-        (prevError ?? "") + errorMessage + " " + result_data.data.errorPlainTxt
+        (prevError ?? "") + errorMessage + " " + result_data.data.errorPlainTxt,
     );
   else if (
     result_data.data.errorTxt &&
@@ -1175,7 +1185,7 @@ export function get_error(
   )
     setErrorTxt(
       (prevError) =>
-        (prevError ?? "") + errorMessage + " " + result_data.data.errorTxt
+        (prevError ?? "") + errorMessage + " " + result_data.data.errorTxt,
     );
   else if (result_data.data.code)
     setErrorTxt(
@@ -1184,7 +1194,7 @@ export function get_error(
         errorMessage +
         " " +
         "Error: " +
-        result_data.data.code
+        result_data.data.code,
     );
   else setErrorTxt((prevError) => (prevError ?? "") + " " + "Error");
 }

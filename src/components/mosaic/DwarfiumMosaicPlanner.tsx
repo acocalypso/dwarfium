@@ -34,7 +34,7 @@ const DwarfiumMosaicPlanner: React.FC = () => {
 
   const handleViewImage = (
     e: React.FormEvent<HTMLFormElement>,
-    mode: number
+    mode: number,
   ) => {
     e.preventDefault();
     (window as any).ViewImage && (window as any).ViewImage(mode);
@@ -97,7 +97,7 @@ const DwarfiumMosaicPlanner: React.FC = () => {
         console.warn(
           `Rij "${rowNumber}" heeft niet het juiste aantal waardes (verwacht: ${
             columns.length * 2
-          }, gekregen: ${tokens.length}).`
+          }, gekregen: ${tokens.length}).`,
         );
         continue; // of throw Error(...)
       }

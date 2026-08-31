@@ -9,14 +9,14 @@ export default function Moonphase() {
   const currentYear = currentDate.getFullYear();
   const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, "0");
   const [selectedMonth, setSelectedMonth] = useState(
-    `${currentYear}-${currentMonth}`
+    `${currentYear}-${currentMonth}`,
   );
   const { t } = useTranslation();
   const [apiKey] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("apiKey") || "" : "",
   );
   const [city, setCity] = useState(
-    typeof window !== "undefined" ? localStorage.getItem("city") || "" : ""
+    typeof window !== "undefined" ? localStorage.getItem("city") || "" : "",
   );
   const cityInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,14 +34,14 @@ export default function Moonphase() {
   const fetchCoordinates = async (cityName: string) => {
     try {
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}`
+        `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}`,
       );
       const data = await response.json();
       if (data.coord) {
         setLatitude(data.coord.lat);
         setLongitude(data.coord.lon);
         setTimezoneOffset(data.timezone);
-        setCity(data.name), localStorage.setItem("city", data.name);
+        (setCity(data.name), localStorage.setItem("city", data.name));
       } else {
         alert(t("cCloudsCityNotFound"));
       }
@@ -89,7 +89,7 @@ export default function Moonphase() {
           const moonTimes = SunCalc.getMoonTimes(date, latitude, longitude);
           const adjustMoonTimesToLocal = (
             moonTimes: { rise: Date | null; set: Date | null },
-            timezoneOffset: number
+            timezoneOffset: number,
           ): { rise: Date | null; set: Date | null } => {
             if (!moonTimes.rise || !moonTimes.set)
               return { rise: null, set: null };
@@ -100,13 +100,13 @@ export default function Moonphase() {
               rise: moonTimes.rise
                 ? new Date(
                     moonTimes.rise.getTime() +
-                      (timezoneOffset + localTimezoneOffset) * 1000
+                      (timezoneOffset + localTimezoneOffset) * 1000,
                   )
                 : null,
               set: moonTimes.set
                 ? new Date(
                     moonTimes.set.getTime() +
-                      (timezoneOffset + localTimezoneOffset) * 1000
+                      (timezoneOffset + localTimezoneOffset) * 1000,
                   )
                 : null,
             };
@@ -123,7 +123,7 @@ export default function Moonphase() {
           };
           const localMoonTimes = adjustMoonTimesToLocal(
             moonTimes,
-            timezoneOffset
+            timezoneOffset,
           );
 
           const moonrise = formatDate(localMoonTimes.rise);
@@ -135,7 +135,7 @@ export default function Moonphase() {
           const moonDistance = SunCalc.getMoonPosition(
             date,
             latitude,
-            longitude
+            longitude,
           ).distance.toFixed(0);
 
           rowData.push(
@@ -167,7 +167,7 @@ export default function Moonphase() {
                   </div>
                 </div>
               </div>
-            </td>
+            </td>,
           );
           currentDay++;
         } else {

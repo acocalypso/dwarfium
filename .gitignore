@@ -204,7 +204,6 @@ raw_data/mike_camilleri_list.csv
 src-tauri/target/
 /.vs
 .vscode/
-package-lock.json
 certificates
 /Dwarfium
 /save
@@ -218,6 +217,8 @@ install/extern/frozen_application_license.txt
 install/extern/python311.dll
 install/windows/DwarfiumProxy.exe
 server/server.js
+server/createSSLcert.js
+install/windows/createSSLcert.exe
 src-tauri/bin/DwarfiumProxy-x86_64-pc-windows-msvc.exe
 src-tauri/bin/mediamtx-x86_64-pc-windows-msvc.exe
 src-tauri/mediamtx.yml

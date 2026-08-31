@@ -3,7 +3,7 @@ import { CoordinatesData } from "@/types";
 export function saveCoordinatesDB(
   latitude: number,
   longitude: number,
-  timezone: string
+  timezone: string,
 ) {
   localStorage.setItem("latitude", latitude.toString());
   localStorage.setItem("longitude", longitude.toString());

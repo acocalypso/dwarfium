@@ -34,7 +34,7 @@ export async function checkHealth(url, timeout = 5000, externalSignal) {
     if (error instanceof Error) {
       if (timeoutSignal.aborted) {
         console.log(
-          `checkHealth ${url} Operation timed out after ${timeout} ms`
+          `checkHealth ${url} Operation timed out after ${timeout} ms`,
         );
       } else if (externalSignal.aborted) {
         console.log(`Request aborted: ${url}`);
@@ -170,7 +170,7 @@ export function getIpServerMTX() {
 export async function checkMediaMtxStreamUrls(
   connectionCtx: ConnectionContextType,
   timeout = 5000,
-  externalSignal: AbortSignal
+  externalSignal: AbortSignal,
 ) {
   const url1 = `http://${getIpServerMTX()}:9997/v3/config/paths/get/dwarf_wide`;
   const url2 = `http://${getIpServerMTX()}:9997/v3/config/paths/get/dwarf_tele`;
@@ -186,10 +186,10 @@ export async function checkMediaMtxStreamUrls(
 
   try {
     const proxyUrl1 = `${getProxyUrl(
-      connectionCtx
+      connectionCtx,
     )}?target=${encodeURIComponent(url1)}`;
     const proxyUrl2 = `${getProxyUrl(
-      connectionCtx
+      connectionCtx,
     )}?target=${encodeURIComponent(url2)}`;
 
     const [response1, response2] = await Promise.all([
@@ -220,7 +220,7 @@ export async function checkMediaMtxStreamUrls(
     if (error instanceof Error) {
       if (timeoutSignal1.aborted || timeoutSignal2.aborted) {
         console.log(
-          `checkMediaMtxStreamUrls Operation timed out after ${timeout} ms`
+          `checkMediaMtxStreamUrls Operation timed out after ${timeout} ms`,
         );
       } else if (externalSignal.aborted) {
         console.log(`Media Mtx Request aborted`);
@@ -259,7 +259,7 @@ export function getTransfomProxyImageUrl(
   imageUrl,
   proxyUrl: string | undefined = undefined,
   connectionCtx: ConnectionContextType,
-  forceHttps: boolean = false
+  forceHttps: boolean = false,
 ) {
   if (connectionCtx && !connectionCtx.useHttps && connectionCtx.proxyInLan) {
     console.debug("getTransfomProxyImageUrl - Local Lan.");

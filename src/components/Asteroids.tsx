@@ -21,7 +21,7 @@ const MainPage: NextPage<PropType> = ({ setModule, setErrors, setSuccess }) => {
   const currentDate = new Date().toISOString().split("T")[0];
   const [localStorageData, setLocalStorageData] = useLocalStorage(
     "asteroids",
-    ""
+    "",
   );
   let connectionCtx = useContext(ConnectionContext);
   const [NasaApiKey, setNasaApiKey] = useLocalStorage("NasaApiKey", ""); // Store NasaApiKey in local storage
@@ -32,7 +32,7 @@ const MainPage: NextPage<PropType> = ({ setModule, setErrors, setSuccess }) => {
   // Parse the local storage data or initialize it as an empty object
   const asteroidsData: ApiNasaResponse = React.useMemo(
     () => (localStorageData ? JSON.parse(localStorageData) : {}),
-    [localStorageData]
+    [localStorageData],
   );
 
   const { t } = useTranslation();
@@ -121,7 +121,7 @@ const MainPage: NextPage<PropType> = ({ setModule, setErrors, setSuccess }) => {
           total={asteroidsData?.element_count}
           dangerous={
             asteroidsData?.near_earth_objects?.[currentDate]?.filter(
-              (asteroid) => asteroid.is_potentially_hazardous_asteroid
+              (asteroid) => asteroid.is_potentially_hazardous_asteroid,
             )?.length
           }
         />
@@ -135,7 +135,7 @@ const MainPage: NextPage<PropType> = ({ setModule, setErrors, setSuccess }) => {
         {asteroidsData &&
           asteroidsData.near_earth_objects?.[currentDate]
             ?.sort(({ is_potentially_hazardous_asteroid }) =>
-              is_potentially_hazardous_asteroid ? -1 : 1
+              is_potentially_hazardous_asteroid ? -1 : 1,
             )
             .map((data, index) => (
               <Asteroid

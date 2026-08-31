@@ -45,7 +45,7 @@ export default function CameraPanoSettings(props: PropTypes) {
     ));
   };
   const allowedIntervalTimeLapseOptions = generateIntervalTimeLapseOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   // Function to generate options for a specific Dwarf model
@@ -58,7 +58,7 @@ export default function CameraPanoSettings(props: PropTypes) {
     ));
   };
   const allowedTotalTimeTimeLapseOptions = generateTotalTimeTimeLapseOptions(
-    connectionCtx.typeIdDwarf
+    connectionCtx.typeIdDwarf,
   ); //DwarfModelId
 
   return (
