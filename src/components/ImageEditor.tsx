@@ -21,16 +21,23 @@ const ImageEditor: React.FC = () => {
   const [lastPosY, setLastPosY] = useState<number | null>(null);
 
   useEffect(() => {
-    if (canvasRef.current) {
-      const canvasInstance = new Canvas(canvasRef.current, {
-        selection: false,
-      });
-      setCanvas(canvasInstance);
-      canvasInstance.on("mouse:down", handleMouseDown);
-      canvasInstance.on("mouse:move", handleMouseMove);
-      canvasInstance.on("mouse:up", handleMouseUp);
-      canvasInstance.on("mouse:wheel", handleMouseWheel);
-    }
+    const canvasElement = canvasRef.current;
+    if (!canvasElement) return;
+
+    const canvasInstance = new Canvas(canvasElement, {
+      selection: false,
+    });
+    setCanvas(canvasInstance);
+    canvasInstance.on("mouse:down", handleMouseDown);
+    canvasInstance.on("mouse:move", handleMouseMove);
+    canvasInstance.on("mouse:up", handleMouseUp);
+    canvasInstance.on("mouse:wheel", handleMouseWheel);
+
+    return () => {
+      setCanvas((current) => (current === canvasInstance ? null : current));
+      setImageObject(null);
+      void canvasInstance.dispose();
+    };
   }, []);
 
   const onDrop = (acceptedFiles: File[]) => {

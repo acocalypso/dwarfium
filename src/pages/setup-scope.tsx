@@ -24,7 +24,7 @@ export default function SetupScope() {
   }, []);
 
   return (
-    <div className="dw-page">
+    <div className="dw-page dw-setup-page">
       <header className="dw-page-header">
         <div>
           <p className="dw-eyebrow">Device</p>

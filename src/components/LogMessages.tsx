@@ -50,9 +50,8 @@ export default function DebugMessages() {
     <div>
       <h2>Message log</h2>
       <p>
-        If turn on the logger, this app will save and display all the messages
-        sent between this app and Dwarf device. The messages are ordered from
-        oldest to newest.
+        Turn on logging to record messages exchanged between Dwarfium and your
+        DWARF. Messages are shown from oldest to newest and stay on this device.
       </p>
       <div className="mb-3 dw-log-status">
         <span

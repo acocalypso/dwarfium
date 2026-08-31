@@ -152,7 +152,7 @@ const App: React.FC = () => {
       <Tab label="Main">
         {/* Main-tab */}
         <div className="section">
-          <h2>Configuration</h2>
+          <h2>Configuration profiles</h2>
         </div>
         <div className="config-section">
           <label>
@@ -161,11 +161,11 @@ const App: React.FC = () => {
               checked={isMultiple}
               onChange={(e) => setIsMultiple(e.target.checked)}
             />{" "}
-            Multiple
+            Enable multiple configurations
           </label>
           {isMultiple && (
             <div className="config-controls">
-              <label>Current Config:</label>
+              <label>Current configuration:</label>
               <select value={currentConfig} onChange={handleConfigChange}>
                 {configs.map((c, idx) => (
                   <option key={idx} value={c}>
@@ -174,7 +174,7 @@ const App: React.FC = () => {
                 ))}
               </select>
 
-              <label>New Config:</label>
+              <label>New configuration:</label>
               <input
                 type="text"
                 value={newConfig}
@@ -187,10 +187,10 @@ const App: React.FC = () => {
         </div>
         <br />
         <div className="section">
-          <h2>Bluetooth Connection</h2>
+          <h2>Bluetooth setup</h2>
           <div className="button-group">
-            <button onClick={startBluetooth}>Yes</button>
-            <button onClick={skipBluetooth}>No</button>
+            <button onClick={startBluetooth}>Connect via Bluetooth</button>
+            <button onClick={skipBluetooth}>Skip Bluetooth</button>
           </div>
         </div>
 
@@ -232,10 +232,10 @@ const App: React.FC = () => {
       <Tab label="Session Overview">
         <OverviewSessionTab />
       </Tab>
-      <Tab label="Results Session">
+      <Tab label="Session results">
         <ResultSessionTab />
       </Tab>
-      <Tab label="Create Session">
+      <Tab label="New session">
         <SessionForm />
       </Tab>
     </Tabs>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import axios from "axios";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { getProxyUrl } from "@/lib/get_proxy_url";
@@ -22,157 +22,117 @@ const Clouds = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [initialRequestMade, setInitialRequestMade] = useState(false);
-  const [apiRequestCount, setApiRequestCount] = useState(0);
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [notice, setNotice] = useState<string>("");
 
-  const cityInputRef = useRef<HTMLInputElement>(null);
   let connectionCtx = useContext(ConnectionContext);
+
+  const fetchForecast = useCallback(
+    async (requestedCity: string, requestedDate: Date) => {
+      const normalizedCity = requestedCity.trim();
+      setError(null);
+      setNotice("");
+
+      if (!normalizedCity) {
+        setError("Enter a city before loading the forecast.");
+        return;
+      }
+      if (!apiKey.trim()) {
+        setError("Enter your OpenWeather API key before loading the forecast.");
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const targetUrl = new URL(
+          "https://api.openweathermap.org/data/2.5/forecast",
+        );
+        targetUrl.searchParams.set("q", normalizedCity);
+        targetUrl.searchParams.set("appid", apiKey.trim());
+        targetUrl.searchParams.set("units", "metric");
+
+        const proxyUrl = getProxyUrl(connectionCtx);
+        const apiUrl = connectionCtx.proxyIP
+          ? `${proxyUrl}?target=${encodeURIComponent(targetUrl.href)}`
+          : targetUrl.href;
+        const response = await axios.get(apiUrl);
+
+        const observingStart = new Date(requestedDate);
+        observingStart.setHours(18, 0, 0, 0);
+        const observingEnd = new Date(observingStart);
+        observingEnd.setHours(observingEnd.getHours() + 15);
+
+        const weatherTonight = response.data.list.filter((entry) => {
+          const timestamp = entry.dt * 1000;
+          return (
+            timestamp >= observingStart.getTime() &&
+            timestamp <= observingEnd.getTime()
+          );
+        });
+
+        setForecastTimes(
+          weatherTonight.map((entry) => entry.dt_txt.substring(11, 16)),
+        );
+        setCloudArray(weatherTonight.map((entry) => entry.clouds.all));
+        setHumidityArray(weatherTonight.map((entry) => entry.main.humidity));
+        setWindArray(weatherTonight.map((entry) => entry.wind.speed));
+        setCity(normalizedCity);
+        localStorage.setItem("city", normalizedCity);
+
+        if (weatherTonight.length === 0) {
+          setNotice("No forecast intervals are available for this date.");
+        }
+      } catch (requestError: any) {
+        const status = requestError.response?.status;
+        if (status === 401) {
+          setError("OpenWeather rejected the API key. Check it and try again.");
+        } else if (status === 404) {
+          setError("City not found. Check the spelling and try again.");
+        } else if (status === 429) {
+          setError(
+            "OpenWeather request limit reached. Please try again later.",
+          );
+        } else {
+          setError("The cloud forecast could not be loaded. Please try again.");
+          console.error("Cloud forecast request failed:", requestError);
+        }
+        setForecastTimes([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [apiKey, connectionCtx],
+  );
 
   useEffect(() => {
     setIsClient(true);
-
-    const fetchData = async () => {
-      if (city && apiKey) {
-        try {
-          let apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}`;
-          if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-            const targetUrl = new URL(apiUrl);
-            apiUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-              targetUrl.href,
-            )}`;
-          }
-          const response = await axios.get(apiUrl);
-
-          setSelectedDate((prevDate) => {
-            const newDate = new Date(prevDate);
-            newDate.setHours(23, 0, 0, 0);
-            return newDate;
-          });
-
-          const weatherTonight = response.data.list.filter((weathersingle) => {
-            const currentTime = new Date(weathersingle.dt * 1000).getTime();
-            const lowerBound = selectedDate.getTime() - 3600000 * 6;
-            const upperBound = selectedDate.getTime() + 3600000 * 12;
-            return currentTime >= lowerBound && currentTime <= upperBound;
-          });
-
-          setForecastTimes(
-            weatherTonight.map((hr) => hr.dt_txt.substring(11, 16)),
-          );
-          setCloudArray(weatherTonight.map((hr) => hr.clouds.all));
-          setHumidityArray(weatherTonight.map((hr) => hr.main.humidity));
-          setWindArray(weatherTonight.map((hr) => hr.wind.speed));
-
-          setInitialRequestMade(true);
-          setApiRequestCount((prevCount) => prevCount + 1);
-          console.log(
-            "API Request Successful. Total API Requests Made:",
-            apiRequestCount + 1,
-          );
-        } catch (error: any) {
-          if (error.response && error.response.status === 429) {
-            setErrorMessage(
-              "Too many requests. Please wait before trying again.",
-            );
-          } else if (error.response && error.response.status === 500) {
-            setErrorMessage("Internal server error. Please try again later.");
-          } else {
-            setError(error.message);
-            console.error("API Request Failed:", error.message);
-          }
-        }
-      }
-    };
-
-    if (!initialRequestMade && city && apiKey) {
-      fetchData();
-    }
-  }, [city, apiKey, selectedDate, initialRequestMade, apiRequestCount]);
+    if (city && apiKey) void fetchForecast(city, selectedDate);
+    // Saved values should be loaded once when this page opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setApiKey(e.target.value);
-    setInitialRequestMade(false);
-    setErrorMessage("");
+    setError(null);
+    setNotice("");
   };
 
   const handleApiKeySave = (e: React.FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
     localStorage.setItem("apiKey", apiKey);
-    setInitialRequestMade(false);
-    setErrorMessage("");
+    setError(null);
+    setNotice("API key saved on this device.");
   };
 
-  const handleSearch = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    fetchData();
+    void fetchForecast(city, selectedDate);
   };
 
-  const handleSearchWithCityChange = (
-    e: React.MouseEvent<HTMLButtonElement>,
-  ) => {
-    const newCityValue = cityInputRef.current?.value || "";
-    setCity(newCityValue);
-    handleSearch(e);
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const handleDateChange = (newDate: Date | ((prevState: Date) => Date)) => {
-    if (typeof newDate === "function") {
-      setSelectedDate((prevState) => newDate(prevState));
-    } else {
-      setSelectedDate(newDate);
-    }
-    setInitialRequestMade(false);
-    setErrorMessage("");
-  };
-
-  const fetchData = async () => {
-    setErrorMessage("");
-    try {
-      let apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}`;
-      if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-        const targetUrl = new URL(apiUrl);
-        apiUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href,
-        )}`;
-      }
-      const response = await axios.get(apiUrl);
-
-      setSelectedDate((prevDate) => {
-        const newDate = new Date(prevDate);
-        newDate.setHours(23, 0, 0, 0);
-        return newDate;
-      });
-
-      const weatherTonight = response.data.list.filter((weathersingle) => {
-        const currentTime = new Date(weathersingle.dt * 1000).getTime();
-        const lowerBound = selectedDate.getTime() - 3600000 * 6;
-        const upperBound = selectedDate.getTime() + 3600000 * 12;
-        return currentTime >= lowerBound && currentTime <= upperBound;
-      });
-
-      setForecastTimes(weatherTonight.map((hr) => hr.dt_txt.substring(11, 16)));
-      setCloudArray(weatherTonight.map((hr) => hr.clouds.all));
-      setHumidityArray(weatherTonight.map((hr) => hr.main.humidity));
-      setWindArray(weatherTonight.map((hr) => hr.wind.speed));
-
-      setInitialRequestMade(true);
-      setApiRequestCount((prevCount) => prevCount + 1);
-      console.log(
-        "API Request Successful. Total API Requests Made:",
-        apiRequestCount + 1,
-      );
-    } catch (error: any) {
-      if (error.response && error.response.status === 429) {
-        setErrorMessage("Too many requests. Please wait before trying again.");
-      } else if (error.response && error.response.status === 500) {
-        setErrorMessage("Internal server error. Please try again later.");
-      } else {
-        setError(error.message);
-        console.error("API Request Failed:", error.message);
-      }
-    }
+  const handleDateChange = (newDate: Date) => {
+    setSelectedDate(newDate);
+    setError(null);
+    setNotice("");
   };
   const { t } = useTranslation();
   // eslint-disable-next-line no-unused-vars
@@ -196,15 +156,19 @@ const Clouds = () => {
             description="Compare cloud cover, humidity and wind across the observing window."
           />
           <section className="dw-panel dw-conditions-panel">
-            <form className="dw-conditions-form">
+            <form
+              className="dw-conditions-form is-clouds"
+              onSubmit={handleSearch}
+            >
               <label>
                 <span>City</span>
                 <input
                   type="search"
-                  defaultValue={city}
-                  ref={cityInputRef}
+                  value={city}
+                  onChange={(event) => setCity(event.target.value)}
                   placeholder={t("cCloudsCityInput")}
                   className="form-control-weather"
+                  autoComplete="address-level2"
                 />
               </label>
               <label>
@@ -215,15 +179,20 @@ const Clouds = () => {
                   placeholder={t("cCloudsApiKeyInput")}
                   className="form-control-weather"
                   onChange={handleApiKeyChange}
+                  autoComplete="off"
                 />
               </label>
+              <Daypicker
+                selectedDate={selectedDate}
+                setSelectedDate={handleDateChange}
+              />
               <div className="dw-action-row">
                 <button
-                  type="button"
+                  type="submit"
                   className="dw-button"
-                  onClick={handleSearchWithCityChange}
+                  disabled={isLoading}
                 >
-                  {t("cCloudsSearch")}
+                  {isLoading ? "Loading forecast…" : t("cCloudsSearch")}
                 </button>
                 <button
                   type="button"
@@ -232,10 +201,6 @@ const Clouds = () => {
                 >
                   {t("cCloudsSaveAPIKey")}
                 </button>
-                <Daypicker
-                  selectedDate={selectedDate}
-                  setSelectedDate={handleDateChange}
-                />
               </div>
             </form>
             {error && (
@@ -243,12 +208,18 @@ const Clouds = () => {
                 {error}
               </div>
             )}
-            {errorMessage && (
-              <div className="alert alert-warning" role="alert">
-                {errorMessage}
+            {notice && (
+              <div className="alert alert-info" role="status">
+                {notice}
               </div>
             )}
-            {forecastTimes.length > 0 ? (
+            {isLoading ? (
+              <div className="dw-inline-empty" role="status">
+                <i className="bi bi-cloud-arrow-down" aria-hidden="true" />
+                <h2>Loading cloud forecast</h2>
+                <p>Checking the selected observing window for {city}.</p>
+              </div>
+            ) : forecastTimes.length > 0 ? (
               <CustomChart
                 forecastTimes={forecastTimes}
                 cloudArray={cloudArray}

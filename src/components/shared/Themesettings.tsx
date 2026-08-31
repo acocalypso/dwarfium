@@ -67,7 +67,7 @@ export default function ThemeSettings() {
         aria-label="Open appearance settings"
         aria-expanded={open}
       >
-        <i className="bi bi-sliders" aria-hidden="true" />
+        <i className="bi bi-palette" aria-hidden="true" />
       </button>
       {open && (
         <div
