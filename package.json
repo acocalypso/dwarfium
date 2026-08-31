@@ -39,7 +39,7 @@
     "lint": "eslint src server/*.ts",
     "format": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\" \"server/*.ts\"",
     "format:fix": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\" \"server/*.ts\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "CI": "npm run lint && npm run format && npm run typecheck && npm run test",
     "test": "jest",
     "test:watch": "jest . --watch"
