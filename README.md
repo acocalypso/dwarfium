@@ -15,6 +15,21 @@ Protocol access is centralized in `src/services/dwarf`; components must not
 import `dwarfii_api` directly. See [the migration report](MIGRATION_REPORT.md)
 for the command mapping, dependency decisions, and hardware validation plan.
 
+## Interface
+
+Dwarfium uses a responsive astronomy console shared by the browser and Tauri
+desktop builds. The shell keeps device connection, battery, temperature,
+storage, target, and capture state visible while moving between observing,
+planning, conditions, and diagnostic tools. It uses solid high-contrast
+surfaces; decorative background images are intentionally not used.
+
+![Dwarfium observatory dashboard](output/playwright/after/dashboard-1366x768.png)
+
+The desktop sidebar collapses for narrow Tauri windows and becomes a
+keyboard-accessible drawer on mobile. The supported desktop window minimum is
+820 × 640. See [UI architecture](docs/UI_ARCHITECTURE.md) for the information
+architecture, responsive behavior, and component conventions.
+
 You can find the documentation [here](https://tinyurl.com/Dwarfium).
 
 ![Screenshot of Stellarium and app](images/ScreenShot.png)

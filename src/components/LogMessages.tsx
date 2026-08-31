@@ -48,29 +48,36 @@ export default function DebugMessages() {
 
   return (
     <div>
-      <h1>Message Log</h1>
+      <h2>Message log</h2>
       <p>
         If turn on the logger, this app will save and display all the messages
         sent between this app and Dwarf device. The messages are ordered from
         oldest to newest.
       </p>
-      <div className="mb-3">
-        Log status: {connectionCtx.loggerStatus ? "on" : "off"}
+      <div className="mb-3 dw-log-status">
+        <span
+          className={`dw-badge ${connectionCtx.loggerStatus ? "is-ready" : ""}`}
+        >
+          Logger {connectionCtx.loggerStatus ? "on" : "off"}
+        </span>
         {connectionCtx.loggerStatus && (
           <span>, {displayMessages?.length || 0} messages</span>
         )}
       </div>
       {!connectionCtx.loggerStatus && (
-        <button className="btn btn-primary" onClick={toggleLogger}>
+        <button className="dw-button" onClick={toggleLogger}>
           Turn on logger
         </button>
       )}
       {connectionCtx.loggerStatus && (
         <>
-          <button className="btn btn-primary me-3" onClick={toggleLogger}>
+          <button
+            className="dw-button is-secondary me-3"
+            onClick={toggleLogger}
+          >
             Turn off logger
           </button>
-          <button className="btn btn-primary" onClick={deleteHandler}>
+          <button className="dw-button" onClick={deleteHandler}>
             Delete all messages
           </button>
         </>

@@ -39,7 +39,7 @@ export async function checkHealth(url, timeout = 5000, externalSignal) {
       } else if (externalSignal.aborted) {
         console.log(`Request aborted: ${url}`);
       } else {
-        console.error("Error:", error);
+        console.warn(`Health service ${url} is unavailable:`, error.message);
       }
     } else {
       console.error("An unknown error occurred:", error);
@@ -225,7 +225,10 @@ export async function checkMediaMtxStreamUrls(
       } else if (externalSignal.aborted) {
         console.log(`Media Mtx Request aborted`);
       } else {
-        console.error("Error:", error);
+        // MediaMTX is optional in the web build and may not be running until
+        // the Tauri sidecar starts. Treat that as an unavailable service,
+        // not an application-level runtime error.
+        console.warn("MediaMTX stream service is unavailable:", error.message);
       }
     } else {
       console.error("Error verifying stream info:", error);

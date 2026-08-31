@@ -791,7 +791,8 @@ export default function DwarfCameras(props: PropType) {
               ? `livestream for ${smallMediaScreenCameraName} camera`
               : ""
           }
-          onLoadingComplete={(img) => {
+          onLoad={(event) => {
+            const img = event.currentTarget;
             setDimensionsWide({
               width: img.offsetWidth,
               height: img.offsetHeight,
@@ -874,7 +875,8 @@ export default function DwarfCameras(props: PropType) {
                 ? `livestream for ${mainMediaScreenCameraName} camera`
                 : ""
             }
-            onLoadingComplete={(img) => {
+            onLoad={(event) => {
+              const img = event.currentTarget;
               setDimensionsTele({
                 width: img.offsetWidth,
                 height: img.offsetHeight,

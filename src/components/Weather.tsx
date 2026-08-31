@@ -115,43 +115,39 @@ function Weather() {
 
   return (
     <div className="Weather">
-      <form onSubmit={handleSubmit}>
-        <div className="row">
-          <div className="col-sm-6 col-md-3 mb-3">
-            <input
-              type="search"
-              value={cityInput}
-              placeholder={t("cCloudsCityInput")}
-              className="form-control-weather"
-              autoFocus={true}
-              onChange={handleCityInput}
-            />
-          </div>
-          <div className="col-sm-6 col-md-3 mb-3">
-            <input
-              type="submit"
-              value={t("cCloudsSearch")}
-              className="btn btn-more02 w-40"
-            />
-          </div>
-          <div className="col-sm-6 col-md-3 mb-3">
-            <input
-              type="text"
-              value={apiKey}
-              onChange={handleApiKeyChange}
-              placeholder={t("cCloudsApiKeyInput")}
-              className="form-control-weather"
-            />
-          </div>
-          <div className="col-sm-6 col-md-3 mb-3">
-            <button
-              type="button" // Changed to button to avoid form submission
-              onClick={handleSaveApiKey}
-              className="btn btn-more02 w-40"
-            >
-              {t("cCloudsSaveAPIKey")}
-            </button>
-          </div>
+      <form onSubmit={handleSubmit} className="dw-conditions-form">
+        <label>
+          <span>City</span>
+          <input
+            type="search"
+            value={cityInput}
+            placeholder={t("cCloudsCityInput")}
+            className="form-control-weather"
+            onChange={handleCityInput}
+          />
+        </label>
+        <label>
+          <span>OpenWeather API key</span>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={handleApiKeyChange}
+            placeholder={t("cCloudsApiKeyInput")}
+            className="form-control-weather"
+          />
+        </label>
+        <div className="dw-action-row">
+          <button type="submit" className="dw-button">
+            <i className="bi bi-search" aria-hidden="true" />
+            {t("cCloudsSearch")}
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveApiKey}
+            className="dw-button is-secondary"
+          >
+            {t("cCloudsSaveAPIKey")}
+          </button>
         </div>
       </form>
       {error ? (
@@ -166,7 +162,19 @@ function Weather() {
           />
         </>
       ) : (
-        <div>{t("pWeatherLoading")}</div>
+        <div className="dw-inline-empty">
+          <i className="bi bi-cloud-moon" aria-hidden="true" />
+          <h2>
+            {cityInput && apiKey
+              ? t("pWeatherLoading")
+              : "Add your forecast source"}
+          </h2>
+          <p>
+            {cityInput && apiKey
+              ? "Fetching the latest conditions…"
+              : "Enter a city and OpenWeather API key to load observing conditions."}
+          </p>
+        </div>
       )}
     </div>
   );

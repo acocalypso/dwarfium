@@ -6,6 +6,7 @@ import CustomChart from "@/components/clouds/Chart";
 import Daypicker from "@/components/clouds/Daypicker";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
+import PageHeader from "@/components/shared/PageHeader";
 
 const Clouds = () => {
   const [forecastTimes, setForecastTimes] = useState<string[]>([]);
@@ -188,83 +189,81 @@ const Clouds = () => {
   return (
     <>
       {isClient && (
-        <section className="d-inline-block w-100">
-          <div className="container">
-            <br />
-            <br />
-            <br />
-            <br />
-            <form className="searchform">
-              <div className="Weather">
-                <div className="row">
-                  <div className="col-sm-6 col-md-3 mb-3">
-                    <input
-                      type="search"
-                      defaultValue={city}
-                      ref={cityInputRef}
-                      placeholder={t("cCloudsCityInput")}
-                      className="form-control-weather"
-                      autoFocus={true}
-                    />
-                  </div>
-                  <div className="col-1">
-                    <button
-                      type="button"
-                      className="btn btn-more02 w-40"
-                      onClick={handleSearchWithCityChange}
-                    >
-                      {t("cCloudsSearch")}
-                    </button>
-                  </div>
-                  {apiKey && (
-                    <>
-                      <div className="col-sm-6 col-md-3 mb-3">
-                        <input
-                          type="text"
-                          value={apiKey}
-                          placeholder={t("cCloudsApiKeyInput")}
-                          className="form-control-weather"
-                          onChange={handleApiKeyChange}
-                        />
-                      </div>
-                      <div className="col-api-clouds mb-3">
-                        <button
-                          type="submit"
-                          className="btn btn-more02 w-40"
-                          onClick={handleApiKeySave}
-                        >
-                          {t("cCloudsSaveAPIKey")}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  <div className="col-1">
-                    <Daypicker
-                      selectedDate={selectedDate}
-                      setSelectedDate={handleDateChange}
-                    />
-                  </div>
-                </div>
+        <div className="dw-page">
+          <PageHeader
+            eyebrow="Conditions"
+            title="Cloud forecast"
+            description="Compare cloud cover, humidity and wind across the observing window."
+          />
+          <section className="dw-panel dw-conditions-panel">
+            <form className="dw-conditions-form">
+              <label>
+                <span>City</span>
+                <input
+                  type="search"
+                  defaultValue={city}
+                  ref={cityInputRef}
+                  placeholder={t("cCloudsCityInput")}
+                  className="form-control-weather"
+                />
+              </label>
+              <label>
+                <span>OpenWeather API key</span>
+                <input
+                  type="password"
+                  value={apiKey}
+                  placeholder={t("cCloudsApiKeyInput")}
+                  className="form-control-weather"
+                  onChange={handleApiKeyChange}
+                />
+              </label>
+              <div className="dw-action-row">
+                <button
+                  type="button"
+                  className="dw-button"
+                  onClick={handleSearchWithCityChange}
+                >
+                  {t("cCloudsSearch")}
+                </button>
+                <button
+                  type="button"
+                  className="dw-button is-secondary"
+                  onClick={handleApiKeySave}
+                >
+                  {t("cCloudsSaveAPIKey")}
+                </button>
+                <Daypicker
+                  selectedDate={selectedDate}
+                  setSelectedDate={handleDateChange}
+                />
               </div>
             </form>
-            {error && <div>{error}</div>}
-            {errorMessage && <div>{errorMessage}</div>}
-          </div>
-          <CustomChart
-            forecastTimes={forecastTimes}
-            cloudArray={cloudArray}
-            humidityArray={humidityArray.map(String)}
-            windArray={windArray.map(String)}
-          />
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
-          <br />
-        </section>
+            {error && (
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
+            )}
+            {errorMessage && (
+              <div className="alert alert-warning" role="alert">
+                {errorMessage}
+              </div>
+            )}
+            {forecastTimes.length > 0 ? (
+              <CustomChart
+                forecastTimes={forecastTimes}
+                cloudArray={cloudArray}
+                humidityArray={humidityArray.map(String)}
+                windArray={windArray.map(String)}
+              />
+            ) : (
+              <div className="dw-inline-empty">
+                <i className="bi bi-clouds" aria-hidden="true" />
+                <h2>No forecast loaded</h2>
+                <p>Enter a city and API key to see tonight’s cloud outlook.</p>
+              </div>
+            )}
+          </section>
+        </div>
       )}
     </>
   );

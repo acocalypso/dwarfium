@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import PageHeader from "@/components/shared/PageHeader";
 
 export default function SkyMap() {
   useEffect(() => {
@@ -21,16 +22,15 @@ export default function SkyMap() {
   }, []);
 
   return (
-    <section className="daily-horp d-inline-block w-100">
-      <div
-        className="container"
-        style={{ display: "flex", justifyContent: "center" }}
-      >
-        <div
-          id="aladin-lite-div"
-          style={{ width: "800px", height: "800px", marginTop: "100px" }}
-        ></div>
-      </div>
-    </section>
+    <div className="dw-page">
+      <PageHeader
+        eyebrow="Explore"
+        title="Sky map"
+        description="Explore the sky, inspect coordinates and identify targets in an interactive atlas."
+      />
+      <section className="dw-panel dw-sky-map">
+        <div id="aladin-lite-div" />
+      </section>
+    </div>
   );
 }

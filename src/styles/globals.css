@@ -1633,27 +1633,6 @@ img {
         background-color: #0b604b;
     }
 
-.bg-standard {
-    background-image: url('/images/bg-bannerpic.jpg');
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-attachment: fixed;
-}
-
-.bg-stars {
-    background-image: url('/images/stars.jpg');
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-attachment: fixed;
-}
-
-.bg-stars2 {
-    background-image: url('/images/stars2.jpg');
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-attachment: fixed;
-}
-
 .theme-options label {
     display: block;
     margin-bottom: 10px;
