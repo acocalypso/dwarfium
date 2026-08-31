@@ -151,7 +151,9 @@ function Weather() {
             "OpenWeather request limit reached. Please try again later.",
           );
         } else {
-          setError("The weather forecast could not be loaded. Please try again.");
+          setError(
+            "The weather forecast could not be loaded. Please try again.",
+          );
         }
         setWeatherData({ ready: false });
       })

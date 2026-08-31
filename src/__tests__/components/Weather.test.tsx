@@ -1,4 +1,5 @@
 import React from "react";
+import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
 import Weather from "@/components/Weather";
@@ -6,6 +7,10 @@ import { ConnectionContext } from "@/stores/ConnectionContext";
 import { ConnectionContextType } from "@/types";
 
 jest.mock("axios");
+jest.mock("@/stores/ConnectionContext", () => {
+  const ReactModule = jest.requireActual<typeof React>("react");
+  return { ConnectionContext: ReactModule.createContext({}) };
+});
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) =>
