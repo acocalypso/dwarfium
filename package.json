@@ -41,8 +41,8 @@
     "format:fix": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\" \"server/*.ts\"",
     "typecheck": "next typegen && tsc --noEmit",
     "CI": "npm run lint && npm run format && npm run typecheck && npm run test",
-    "test": "jest",
-    "test:watch": "jest . --watch"
+    "test": "cross-env TZ=Europe/Berlin jest",
+    "test:watch": "cross-env TZ=Europe/Berlin jest . --watch"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
