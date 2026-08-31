@@ -6,7 +6,6 @@ import ConnectDwarf from "@/components/setup/ConnectDwarf";
 import ConnectStellarium from "@/components/setup/ConnectStellarium";
 import SetLocation from "@/components/setup/SetLocation";
 import { useSetupConnection } from "@/hooks/useSetupConnection";
-import StatusBar from "@/components/shared/StatusBar";
 import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 
 export default function SetupScope() {
@@ -25,26 +24,78 @@ export default function SetupScope() {
   }, []);
 
   return (
-    <section className="daily-horp d-inline-block w-100">
-      <div className="container">
-        <br /> <br /> <br /> <br />
-        <StatusBar />
-        <hr></hr>
-        <h2>{t("pFirstSteps")}</h2>
-        <p>{t("pFirstStepsContent")}.</p>
-        <hr></hr>
-        <SetLocation />
-        <hr />
-        <ConnectDwarfSTA />
-        <hr />
-        <ConnectDwarf />
-        <hr />
-        <ConnectStellarium showInfoTxt={true} />
+    <div className="dw-page dw-setup-page">
+      <header className="dw-page-header">
+        <div>
+          <p className="dw-eyebrow">Device</p>
+          <h1>Connection setup</h1>
+          <p>
+            Prepare your observing location, network and telescope integrations.
+            Your saved values remain available between sessions.
+          </p>
+        </div>
+      </header>
+
+      <div className="dw-setup-intro">
+        <section className="dw-panel">
+          <div className="dw-panel-header">
+            <div>
+              <h2>{t("pFirstSteps")}</h2>
+              <p>{t("pFirstStepsContent")}.</p>
+            </div>
+            <span className="dw-panel-icon">
+              <i className="bi bi-signpost-split" aria-hidden="true" />
+            </span>
+          </div>
+        </section>
+        <section className="dw-panel">
+          <div className="dw-panel-header">
+            <div>
+              <h2>Recommended order</h2>
+              <p>Location → network → DWARF → Stellarium</p>
+            </div>
+          </div>
+        </section>
       </div>
-      <br />
-      <br />
-      <br />
-      <br />
-    </section>
+
+      <div className="dw-setup-stack">
+        <details className="dw-setup-section" open>
+          <summary>
+            <i className="bi bi-geo-alt" aria-hidden="true" />
+            Observing location
+          </summary>
+          <div className="dw-setup-section-body">
+            <SetLocation />
+          </div>
+        </details>
+        <details className="dw-setup-section">
+          <summary>
+            <i className="bi bi-wifi" aria-hidden="true" />
+            DWARF network mode
+          </summary>
+          <div className="dw-setup-section-body">
+            <ConnectDwarfSTA />
+          </div>
+        </details>
+        <details className="dw-setup-section" open>
+          <summary>
+            <i className="bi bi-router" aria-hidden="true" />
+            Connect your DWARF
+          </summary>
+          <div className="dw-setup-section-body">
+            <ConnectDwarf />
+          </div>
+        </details>
+        <details className="dw-setup-section">
+          <summary>
+            <i className="bi bi-stars" aria-hidden="true" />
+            Stellarium integration
+          </summary>
+          <div className="dw-setup-section-body">
+            <ConnectStellarium showInfoTxt={true} />
+          </div>
+        </details>
+      </div>
+    </div>
   );
 }

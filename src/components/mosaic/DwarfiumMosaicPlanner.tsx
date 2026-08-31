@@ -142,7 +142,7 @@ const DwarfiumMosaicPlanner: React.FC = () => {
       <div className="new-layout">
         {/* Panel voor observatie-instellingen (1) */}
         <div className="panel panel-left">
-          <h2>Observatie-instellingen</h2>
+          <h2>Observation settings</h2>
 
           <form
             className="field"
@@ -156,6 +156,7 @@ const DwarfiumMosaicPlanner: React.FC = () => {
                 type="button"
                 className="btn-icon"
                 onClick={() => alert((window as any).target_info_text)}
+                aria-label="Show target format help"
               >
                 <img src="/images/information-outline.png" alt="Info" />
               </button>
@@ -201,7 +202,7 @@ const DwarfiumMosaicPlanner: React.FC = () => {
 
           <form
             className="field"
-            title="Select mosaic overlap, een aanbevolen waarde is 20% overlap."
+            title="Select the panel overlap. A value of 20% is recommended."
             onSubmit={(e) => handleViewImage(e, 0)}
           >
             <label htmlFor="overlap_percentage">Mosaic overlap (%):</label>
@@ -250,7 +251,7 @@ const DwarfiumMosaicPlanner: React.FC = () => {
 
         {/* Panel voor catalogus-instellingen (2) */}
         <div className="panel panel-right">
-          <h2>Catalogus-instellingen</h2>
+          <h2>Catalog settings</h2>
 
           <div className="field">
             <label htmlFor="catalog-selection">Catalog:</label>

@@ -63,6 +63,8 @@
       {
         "fullscreen": false,
         "height": 720,
+        "minHeight": 640,
+        "minWidth": 820,
         "resizable": true,
         "title": "Dwarfium",
         "width": 900,

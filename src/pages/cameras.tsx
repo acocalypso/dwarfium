@@ -1,5 +1,6 @@
 ﻿import { useContext, useState, useEffect } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 
@@ -7,7 +8,6 @@ import { ConnectionContext } from "@/stores/ConnectionContext";
 import { useSetupConnection } from "@/hooks/useSetupConnection";
 import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 
-import StatusBar from "@/components/shared/StatusBar";
 import DwarfCameras from "@/components/DwarfCameras";
 import ImagingMenu from "@/components/imaging/ImagingMenu";
 import OBSWebSocket from "obs-websocket-js";
@@ -119,55 +119,105 @@ export default function AstroPhoto() {
 
   if (hasErrors) {
     return (
-      <>
-        {" "}
-        <section className="d-inline-block w-100 w-100-small">
-          <div className="container">
-            <br />
-            <br />
-            <br />
-            <br />
-            <Head>
-              <title>{t("cCameraTitle")}</title>
-            </Head>
-            <StatusBar />
-            <hr />
-            <h1>{t("cCameraTitle")}</h1>
-
-            {notConnected && (
-              <p className="text-danger">
-                {t("cCameraConnection", {
-                  DwarfType: connectionCtx.typeNameDwarf,
-                })}
-              </p>
-            )}
-
-            {noCoordinates && (
-              <p className="text-danger">{t("cCameraLocation")}</p>
-            )}
+      <div className="dw-page">
+        <Head>
+          <title>{t("cCameraTitle")}</title>
+        </Head>
+        <header className="dw-page-header">
+          <div>
+            <p className="dw-eyebrow">Observe</p>
+            <h1>Camera workspace</h1>
+            <p>
+              Live preview, framing, focus and capture controls for your DWARF.
+            </p>
+          </div>
+        </header>
+        <section className="dw-empty-state" role="status">
+          <div className="dw-empty-state-icon">
+            <i className="bi bi-camera-video-off" aria-hidden="true" />
+          </div>
+          <h2>Camera workspace is not ready</h2>
+          <p>
+            Complete the items below, then return here to start the live
+            preview.
+          </p>
+          <ul className="dw-check-list">
+            <li>
+              <i
+                className={`bi ${notConnected ? "bi-exclamation-circle" : "bi-check-circle"}`}
+                aria-hidden="true"
+              />
+              <span>
+                {notConnected
+                  ? t("cCameraConnection", {
+                      DwarfType: connectionCtx.typeNameDwarf,
+                    })
+                  : `${connectionCtx.typeNameDwarf} is connected.`}
+              </span>
+            </li>
+            <li>
+              <i
+                className={`bi ${noCoordinates ? "bi-exclamation-circle" : "bi-check-circle"}`}
+                aria-hidden="true"
+              />
+              <span>
+                {noCoordinates
+                  ? t("cCameraLocation")
+                  : "Observing location is set."}
+              </span>
+            </li>
+          </ul>
+          <div className="dw-action-row" style={{ justifyContent: "center" }}>
+            <Link href="/setup-scope" className="dw-button">
+              <i className="bi bi-router" aria-hidden="true" />
+              Open connection setup
+            </Link>
+            <Link href="/" className="dw-button is-secondary">
+              Back to dashboard
+            </Link>
           </div>
         </section>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      {" "}
-      <section className="d-inline-block w-100 w-100-small">
-        <div className="container">
-          <br />
-          <br />
-          <br />
-          <br />
-          <Head>
-            <title>{t("cCameraTitle")}</title>
-          </Head>
-          <StatusBar />
-          <hr></hr>
+    <div className="dw-page">
+      <Head>
+        <title>{t("cCameraTitle")}</title>
+      </Head>
+      <header className="dw-page-header">
+        <div>
+          <p className="dw-eyebrow">Observe</p>
+          <h1>Camera workspace</h1>
+          <p>
+            Frame your target, tune the optics and control the active capture.
+          </p>
+        </div>
+        <div className="dw-header-actions">
+          <button
+            onClick={toggleStreaming}
+            disabled={!isObsConnected}
+            className={`dw-button ${isStreaming ? "is-secondary" : ""}`}
+          >
+            <i
+              className={`bi ${isStreaming ? "bi-stop-circle" : "bi-broadcast"}`}
+              aria-hidden="true"
+            />
+            {isStreaming ? "Stop OBS stream" : "Start OBS stream"}
+          </button>
+        </div>
+      </header>
+      {obsError && (
+        <div className="alert alert-warning" role="alert">
+          {obsError}
+        </div>
+      )}
+      <div className="dw-camera-layout">
+        <section className="dw-camera-stage" aria-label="Live camera preview">
           <div className="container">
             <div className="row px-0">
-              <div className="live-stream-container">
+              <div className="live-stream-container" hidden>
                 <button
                   onClick={toggleStreaming}
                   disabled={!isObsConnected}
@@ -176,8 +226,6 @@ export default function AstroPhoto() {
                   {isStreaming ? "Stop Stream" : "Start Stream"}
                 </button>
               </div>
-              {obsError && <p className="text-danger">{obsError}</p>}
-
               <main className="col">
                 <DwarfCameras
                   setExchangeCamerasStatus={setExchangeCamerasStatus}
@@ -185,35 +233,20 @@ export default function AstroPhoto() {
                   useRawPreviewURL={useRawPreviewURL}
                   showControls={true}
                 />
-
-                <br />
-                <br />
-                <br />
-                <br />
               </main>
-
-              <div className="dropdown-wrapper px-0">
-                <br />
-                <br />
-                <ImagingMenu
-                  exchangeCamerasStatus={exchangeCamerasStatus}
-                  setShowWideangle={setShowWideangle}
-                  setUseRawPreviewURL={setUseRawPreviewURL}
-                />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-                <br />
-              </div>
             </div>
           </div>
-        </div>
-      </section>
-    </>
+        </section>
+        <section className="dw-camera-controls" aria-label="Camera controls">
+          <div className="dropdown-wrapper px-0">
+            <ImagingMenu
+              exchangeCamerasStatus={exchangeCamerasStatus}
+              setShowWideangle={setShowWideangle}
+              setUseRawPreviewURL={setUseRawPreviewURL}
+            />
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }

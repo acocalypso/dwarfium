@@ -5,6 +5,9 @@ import { getProxyUrl } from "@/lib/get_proxy_url";
 
 const RSSFeed = () => {
   const [feedItems, setFeedItems] = useState<Item[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   let connectionCtx = useContext(ConnectionContext);
 
   useEffect(() => {
@@ -17,6 +20,7 @@ const RSSFeed = () => {
       "https://in-the-sky.org/rss.php?feed=deepsky" + lat_long_info;
     console.log(`RSSFeed: rssUrl ${rssUrl}`);
     const fetchFeed = async () => {
+      setStatus("loading");
       try {
         const response = await fetch(
           `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(rssUrl)}`,
@@ -47,12 +51,14 @@ const RSSFeed = () => {
               : "",
           }));
           setFeedItems(sanitizedItems);
+          setStatus("ready");
         } else {
           console.error("RSS feed : Error during the request.");
-          return undefined;
+          setStatus("error");
         }
       } catch (error) {
         console.error("Error fetching RSS feed:", error);
+        setStatus("error");
       }
     };
 
@@ -61,6 +67,30 @@ const RSSFeed = () => {
 
   return (
     <div>
+      {status === "loading" && (
+        <div className="dw-inline-empty" role="status">
+          <i className="bi bi-calendar-event" aria-hidden="true" />
+          <h2>Loading celestial events</h2>
+          <p>Fetching the latest observing opportunities for your location.</p>
+        </div>
+      )}
+      {status === "error" && (
+        <div className="dw-inline-empty" role="alert">
+          <i className="bi bi-cloud-slash" aria-hidden="true" />
+          <h2>Calendar unavailable</h2>
+          <p>
+            Dwarfium could not reach the astronomy feed. Check the proxy service
+            and try this page again.
+          </p>
+        </div>
+      )}
+      {status === "ready" && feedItems.length === 0 && (
+        <div className="dw-inline-empty">
+          <i className="bi bi-calendar-check" aria-hidden="true" />
+          <h2>No upcoming events found</h2>
+          <p>The feed has no future events to show right now.</p>
+        </div>
+      )}
       {feedItems.map((item, index) => (
         <div
           key={index}
@@ -88,7 +118,7 @@ const RSSFeed = () => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Read more..
+                Read more
               </a>
             </div>
           </div>

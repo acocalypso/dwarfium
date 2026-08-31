@@ -128,6 +128,20 @@ export default function DwarfIIStatus() {
 */
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!connectionCtx.connectionStatus) {
+    return (
+      <div className="dw-inline-empty">
+        <i className="bi bi-activity" aria-hidden="true" />
+        <h2>Connect your DWARF to view telemetry</h2>
+        <p>
+          Live ISP parameters and camera fields will appear here when the
+          telescope is online.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <h2>ISP Parameters - Telephoto</h2>
@@ -137,7 +151,7 @@ export default function DwarfIIStatus() {
       <h2>Shot Field - Telephoto</h2>
       {shotFieldData && <pre>{JSON.stringify(shotFieldData, null, 2)}</pre>}
       <button
-        className=" btn btn-primary mb-3"
+        className="dw-button"
         onClick={() => {
           getCameraStatus();
           setTimeout(() => {

@@ -220,15 +220,18 @@ export default function ConnectStellarium(props: PropType) {
     if (showInfoTxtData)
       return (
         <div>
-          <div
+          <button
+            type="button"
             title={showHelp ? t("pHideHelp") : t("pShowHelp")}
-            className={`help-msg nav-link me-2`}
+            className="dw-help-toggle"
             onClick={() => setShowHelp((prev) => !prev)}
+            aria-expanded={showHelp}
           >
-            <i className="bi bi-info-square"></i>
-          </div>
+            <i className="bi bi-info-circle" aria-hidden="true"></i>
+            {showHelp ? t("pHideHelp") : t("pShowHelp")}
+          </button>
           {showHelp && (
-            <ol>
+            <ol className="dw-help-panel">
               <li className="mb-2">{t("pConnectStellariumContent1")}</li>
               <li className="mb-2">
                 {t("pConnectStellariumContent2")}{" "}
@@ -267,8 +270,7 @@ export default function ConnectStellarium(props: PropType) {
 
       <p>{showInfoTxtData && t("pConnectStellariumContent")}</p>
       {renderDetails()}
-      <br />
-      <form onSubmit={checkConnection}>
+      <form onSubmit={checkConnection} className="dw-connection-form">
         <div className="row mb-3">
           <div className="col-lg-2 col-md-3 text-lg-end">
             <label htmlFor="stellarium_ip" className="form-label">

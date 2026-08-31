@@ -8,7 +8,6 @@ import GotoStellarium from "@/components/GotoStellarium";
 import GotoLists from "@/components/GotoLists";
 import GotoUserLists from "@/components/GotoUserLists";
 import Asteroids from "@/components/Asteroids";
-import StatusBar from "@/components/shared/StatusBar";
 import CalibrationDwarf from "@/components/shared/CalibrationDwarf";
 import { useSetupConnection } from "@/hooks/useSetupConnection";
 import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
@@ -18,6 +17,7 @@ import { AstroObject } from "@/types";
 
 import ResizablePIP from "@/components/ResizablePIP";
 import DwarfCameras from "@/components/DwarfCameras";
+import PageHeader from "@/components/shared/PageHeader";
 
 export default function Goto() {
   let connectionCtx = useContext(ConnectionContext);
@@ -83,136 +83,142 @@ export default function Goto() {
   }, [prevErrors, errors, prevSuccess, success]);
 
   return (
-    <section className="daily-horp d-inline-block w-100">
-      <div className="container">
-        <br />
-        <br />
-        <br />
-        <br />
-
-        <StatusBar />
-        <hr></hr>
-        <CalibrationDwarf
-          setModule={setModule}
-          setErrors={setErrors}
-          setSuccess={setSuccess}
-        />
-        <hr />
-        <ul className=" nav nav-tabs mb-2">
+    <div className="dw-page">
+      <PageHeader
+        eyebrow="Observe"
+        title="Target explorer"
+        description="Choose a celestial target, calibrate the mount and start a precise GOTO."
+      />
+      <details className="dw-setup-section dw-target-calibration">
+        <summary>
+          <i className="bi bi-compass" aria-hidden="true" />
+          Mount calibration and position controls
+        </summary>
+        <div className="dw-setup-section-body">
+          <CalibrationDwarf
+            setModule={setModule}
+            setErrors={setErrors}
+            setSuccess={setSuccess}
+          />
+        </div>
+      </details>
+      <section className="dw-panel dw-target-browser">
+        <ul
+          className="dw-segmented-tabs"
+          role="tablist"
+          aria-label="Target sources"
+        >
           <li
-            className={`nav-item nav-link ${
-              connectionCtx.gotoType === "lists" ? "active" : ""
-            }`}
+            className={connectionCtx.gotoType === "lists" ? "active" : ""}
+            role="tab"
+            aria-selected={connectionCtx.gotoType === "lists"}
+            tabIndex={0}
             onClick={() => connectionCtx.setGotoType("lists")}
+            onKeyDown={(event) =>
+              event.key === "Enter" && connectionCtx.setGotoType("lists")
+            }
           >
             {t("pObjectsList")}
           </li>
           <li
-            className={`nav-item nav-link ${
-              connectionCtx.gotoType === "userLists" ? "active" : ""
-            }`}
+            className={connectionCtx.gotoType === "userLists" ? "active" : ""}
+            role="tab"
+            aria-selected={connectionCtx.gotoType === "userLists"}
+            tabIndex={0}
             onClick={() => connectionCtx.setGotoType("userLists")}
+            onKeyDown={(event) =>
+              event.key === "Enter" && connectionCtx.setGotoType("userLists")
+            }
           >
             {t("pObjectsCustomsList")}
           </li>
           <li
-            className={`nav-item nav-link ${
-              connectionCtx.gotoType === "stellarium" ? "active" : ""
-            }`}
+            className={connectionCtx.gotoType === "stellarium" ? "active" : ""}
+            role="tab"
+            aria-selected={connectionCtx.gotoType === "stellarium"}
+            tabIndex={0}
             onClick={() => connectionCtx.setGotoType("stellarium")}
+            onKeyDown={(event) =>
+              event.key === "Enter" && connectionCtx.setGotoType("stellarium")
+            }
           >
             Stellarium
           </li>
           <li
-            className={`nav-item nav-link ${
-              connectionCtx.gotoType === "asteroids" ? "active" : ""
-            }`}
+            className={connectionCtx.gotoType === "asteroids" ? "active" : ""}
+            role="tab"
+            aria-selected={connectionCtx.gotoType === "asteroids"}
+            tabIndex={0}
             onClick={() => connectionCtx.setGotoType("asteroids")}
+            onKeyDown={(event) =>
+              event.key === "Enter" && connectionCtx.setGotoType("asteroids")
+            }
           >
             Asteroids
           </li>
         </ul>
-        <hr />
-        {connectionCtx.connectionStatus && connectionCtx.PiPView && (
-          <div className="float-right-align">
-            <ResizablePIP
-              width={320}
-              height={190}
-              minConstraints={[320, 190]}
-              maxConstraints={[1280, 730]}
-            >
-              <DwarfCameras
-                setExchangeCamerasStatus={function () {}}
-                showWideangle={false}
-                useRawPreviewURL={false}
-                showControls={false}
-              />
-            </ResizablePIP>
-          </div>
-        )}
-        {connectionCtx.gotoType === "lists" && (
-          <GotoLists
-            objectFavoriteNames={objectFavoriteNames}
-            setObjectFavoriteNames={setObjectFavoriteNames}
-            objectPersonalList={objectPersonalList}
-            setObjectPersonalList={setObjectPersonalList}
-            setModule={setModule}
-            setErrors={setErrors}
-            setSuccess={setSuccess}
-          ></GotoLists>
-        )}
-        {connectionCtx.gotoType === "stellarium" && (
-          <GotoStellarium
-            objectFavoriteNames={objectFavoriteNames}
-            setObjectFavoriteNames={setObjectFavoriteNames}
-            objectPersonalList={objectPersonalList}
-            setObjectPersonalList={setObjectPersonalList}
-            setModule={setModule}
-            setErrors={setErrors}
-            setSuccess={setSuccess}
-          ></GotoStellarium>
-        )}
-        {connectionCtx.gotoType === "userLists" && (
-          <GotoUserLists
-            objectFavoriteNames={objectFavoriteNames}
-            setObjectFavoriteNames={setObjectFavoriteNames}
-            objectPersonalList={objectPersonalList}
-            setObjectPersonalList={setObjectPersonalList}
-            setModule={setModule}
-            setErrors={setErrors}
-            setSuccess={setSuccess}
-          ></GotoUserLists>
-        )}
-        {connectionCtx.gotoType === "asteroids" && (
-          <Asteroids
-            setModule={setModule}
-            setErrors={setErrors}
-            setSuccess={setSuccess}
-          ></Asteroids>
-        )}
-        <br />
-        <br />
-        <br />
-        <br />
-      </div>
+        <div className="dw-target-content" role="tabpanel">
+          {connectionCtx.connectionStatus && connectionCtx.PiPView && (
+            <div className="float-right-align">
+              <ResizablePIP
+                width={320}
+                height={190}
+                minConstraints={[320, 190]}
+                maxConstraints={[1280, 730]}
+              >
+                <DwarfCameras
+                  setExchangeCamerasStatus={function () {}}
+                  showWideangle={false}
+                  useRawPreviewURL={false}
+                  showControls={false}
+                />
+              </ResizablePIP>
+            </div>
+          )}
+          {connectionCtx.gotoType === "lists" && (
+            <GotoLists
+              objectFavoriteNames={objectFavoriteNames}
+              setObjectFavoriteNames={setObjectFavoriteNames}
+              objectPersonalList={objectPersonalList}
+              setObjectPersonalList={setObjectPersonalList}
+              setModule={setModule}
+              setErrors={setErrors}
+              setSuccess={setSuccess}
+            ></GotoLists>
+          )}
+          {connectionCtx.gotoType === "stellarium" && (
+            <GotoStellarium
+              objectFavoriteNames={objectFavoriteNames}
+              setObjectFavoriteNames={setObjectFavoriteNames}
+              objectPersonalList={objectPersonalList}
+              setObjectPersonalList={setObjectPersonalList}
+              setModule={setModule}
+              setErrors={setErrors}
+              setSuccess={setSuccess}
+            ></GotoStellarium>
+          )}
+          {connectionCtx.gotoType === "userLists" && (
+            <GotoUserLists
+              objectFavoriteNames={objectFavoriteNames}
+              setObjectFavoriteNames={setObjectFavoriteNames}
+              objectPersonalList={objectPersonalList}
+              setObjectPersonalList={setObjectPersonalList}
+              setModule={setModule}
+              setErrors={setErrors}
+              setSuccess={setSuccess}
+            ></GotoUserLists>
+          )}
+          {connectionCtx.gotoType === "asteroids" && (
+            <Asteroids
+              setModule={setModule}
+              setErrors={setErrors}
+              setSuccess={setSuccess}
+            ></Asteroids>
+          )}
+        </div>
+      </section>
       {isVisible && (prevErrors || errors || prevSuccess || success) && (
-        <div
-          className="slide-pane_from_bottom"
-          style={{
-            position: "fixed",
-            bottom: "60px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "fit-content",
-            height: "30px",
-            paddingTop: "5px",
-            paddingBottom: "20px",
-            paddingLeft: "50px",
-            paddingRight: "50px",
-            color: "rgb(0, 0, 0)",
-            backgroundColor: "rgba(255, 255, 255, 0.8)",
-          }}
-        >
+        <div className="dw-toast" role="status">
           {module && (
             <span>
               <b> {module} </b>{" "}
@@ -240,6 +246,6 @@ export default function Goto() {
           )}
         </div>
       )}
-    </section>
+    </div>
   );
 }

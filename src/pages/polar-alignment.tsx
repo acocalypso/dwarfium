@@ -8,6 +8,7 @@ import DwarfCameras from "@/components/DwarfCameras";
 import { useEffect, useState } from "react";
 import i18n from "@/i18n";
 import { useTranslation } from "react-i18next";
+import PageHeader from "@/components/shared/PageHeader";
 
 export default function WitSensorData() {
   const application = new Application();
@@ -24,8 +25,13 @@ export default function WitSensorData() {
   }, []);
 
   return (
-    <section className="daily-horp d-inline-block w-100">
-      <div className="container">
+    <div className="dw-page">
+      <PageHeader
+        eyebrow="Align"
+        title="Polar alignment"
+        description="Use the motion sensor and live camera view to align the mount with Polaris."
+      />
+      <section className="dw-panel dw-tool-panel">
         <ApplicationProvider application={application}>
           <div className="witsensor">
             <div className="witimage">
@@ -36,33 +42,30 @@ export default function WitSensorData() {
             </Grid2>
           </div>
         </ApplicationProvider>
-        {""}
-      </div>
-      <Grid2 container spacing={3}>
-        <Grid2 md={12} xs={12} className="camera-container">
-          <div className="camera-witmotion">
-            <main className="camera-con">
-              <DwarfCameras
-                setExchangeCamerasStatus={function () {}}
-                showWideangle={false}
-                useRawPreviewURL={false}
-                showControls={false}
-              />
-              <div className="overlay-circle"></div>
-            </main>
-          </div>
+      </section>
+      <section className="dw-panel dw-tool-panel dw-polar-camera">
+        <Grid2 container spacing={3}>
+          <Grid2 md={12} xs={12} className="camera-container">
+            <div className="camera-witmotion">
+              <main className="camera-con">
+                <DwarfCameras
+                  setExchangeCamerasStatus={function () {}}
+                  showWideangle={false}
+                  useRawPreviewURL={false}
+                  showControls={false}
+                />
+                <div className="overlay-circle"></div>
+              </main>
+            </div>
+          </Grid2>
+          <Grid2 md={12} xs={12} sm={12} className="altitude-description-wit">
+            <div className="camera-witmotion-content  ms-4">
+              <p>{t("cWitmotionPolaris1")}</p>
+              <p>{t("cWitmotionPolaris2")}</p>
+            </div>
+          </Grid2>
         </Grid2>
-        <Grid2 md={12} xs={12} sm={12} className="altitude-description-wit">
-          <div className="camera-witmotion-content  ms-4">
-            <p>{t("cWitmotionPolaris1")}</p>
-            <p>{t("cWitmotionPolaris2")}</p>
-          </div>
-        </Grid2>
-      </Grid2>
-      {""}
-      <br />
-      <br />
-      <br />
-    </section>
+      </section>
+    </div>
   );
 }

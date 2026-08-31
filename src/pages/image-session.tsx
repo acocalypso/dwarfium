@@ -3,11 +3,11 @@ import Head from "next/head";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { useSetupConnection } from "@/hooks/useSetupConnection";
 import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
-import StatusBar from "@/components/shared/StatusBar";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { getProxyUrl, getTransfomProxyImageUrl } from "@/lib/get_proxy_url";
 import PhotoEditor from "../components/photoeditor/PhotoEditor"; // Import de bewerkingsmodule
+import PageHeader from "@/components/shared/PageHeader";
 export default function AstroPhoto() {
   const connectionCtx = useContext(ConnectionContext);
   useSetupConnection();
@@ -395,20 +395,33 @@ export default function AstroPhoto() {
 
   return (
     <>
-      <section className="d-inline-block w-100">
-        <div className="container">
-          <br />
-          <br />
-          <br />
-          <br />
-          <Head>
-            <title>{t("pImageSessionData")}</title>
-          </Head>
-          <StatusBar />
-          <hr></hr>
-          <div className="container-image-session">
-            {notification && <div className="notification">{notification}</div>}
-            <p>{t("pImageSessionSortTable")} </p>
+      <div className="dw-page">
+        <Head>
+          <title>{t("pImageSessionData")}</title>
+        </Head>
+        <PageHeader
+          eyebrow="Library"
+          title={t("pImageSessionData")}
+          description="Review, download and edit astronomy captures stored on your DWARF."
+        />
+        <section className="dw-panel dw-session-library">
+          {notification && <div className="notification">{notification}</div>}
+          {sessions.length > 0 && (
+            <p className="dw-table-help">
+              <i className="bi bi-arrow-down-up" aria-hidden="true" />{" "}
+              {t("pImageSessionSortTable")}
+            </p>
+          )}
+          {sessions.length === 0 ? (
+            <div className="dw-inline-empty">
+              <i className="bi bi-images" aria-hidden="true" />
+              <h2>No imaging sessions found</h2>
+              <p>
+                Connect your DWARF to load captures, or start a new session from
+                the camera workspace.
+              </p>
+            </div>
+          ) : (
             <div className="table-responsive">
               <table className="styled-table">
                 <thead>
@@ -512,18 +525,18 @@ export default function AstroPhoto() {
                 </tbody>
               </table>
             </div>
-            {downloadClicked && (
-              <div className="progress-overlay">
-                <div
-                  className="progress-bar"
-                  style={{ width: `${progress}%` }}
-                ></div>
-                <span className="progress-text">{progress}%</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+          )}
+          {downloadClicked && (
+            <div className="progress-overlay">
+              <div
+                className="progress-bar"
+                style={{ width: `${progress}%` }}
+              ></div>
+              <span className="progress-text">{progress}%</span>
+            </div>
+          )}
+        </section>
+      </div>
       {isPhotoEditorOpen && selectedPhoto && (
         <PhotoEditor
           thumbnailUrl={selectedPhoto.thumbnailUrl}

@@ -244,15 +244,18 @@ export default function ConnectDwarf() {
         })}
       </p>
 
-      <div
+      <button
+        type="button"
         title={showHelp ? t("pHideHelp") : t("pShowHelp")}
-        className={`help-msg nav-link me-2`}
+        className="dw-help-toggle"
         onClick={() => setShowHelp((prev) => !prev)}
+        aria-expanded={showHelp}
       >
-        <i className="bi bi-info-square"></i>
-      </div>
+        <i className="bi bi-info-circle" aria-hidden="true"></i>
+        {showHelp ? t("pHideHelp") : t("pShowHelp")}
+      </button>
       {showHelp && (
-        <ol>
+        <ol className="dw-help-panel">
           <li className="mb-2">
             {t("pConnectDwarfIIContent1", {
               DwarfType: connectionCtx.typeNameDwarf,
@@ -277,8 +280,7 @@ export default function ConnectDwarf() {
           <li className="mb-4">{t("pConnectDwarfIIContent6")}</li>
         </ol>
       )}
-      <br />
-      <form onSubmit={checkConnection} className="mb-3">
+      <form onSubmit={checkConnection} className="mb-3 dw-connection-form">
         <div className="row mb-3">
           <div className="col-lg-2 col-md-3 text-lg-end">
             <label htmlFor="notify" className="form-label">
@@ -286,7 +288,12 @@ export default function ConnectDwarf() {
             </label>
           </div>
           <div className="col">
-            <button className="btn-refresh" onClick={handleReset}>
+            <button
+              type="button"
+              className="btn-refresh"
+              onClick={handleReset}
+              aria-label={t("pResetDwarfType")}
+            >
               <i className="fa fa-refresh" aria-hidden="true"></i>
             </button>{" "}
             {t("pResetDwarfType")}
@@ -306,7 +313,12 @@ export default function ConnectDwarf() {
               checked={isChecked}
               onChange={(e) => handleCheckboxChange(e)}
             />{" "}
-            <button className="btn-refresh" onClick={handleRefresh}>
+            <button
+              type="button"
+              className="btn-refresh"
+              onClick={handleRefresh}
+              aria-label={t("pConnectPrivateID")}
+            >
               <i className="fa fa-refresh" aria-hidden="true"></i>
             </button>{" "}
             {t("pConnectPrivateID")}

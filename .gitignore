@@ -11,6 +11,11 @@
 # next.js
 /.next/
 /out/
+/.playwright-cli/
+/output/playwright/after/audit-*.png
+/output/playwright/after/*-fixed.png
+/output/playwright/*.png
+/output/mockups/
 
 # production
 /build

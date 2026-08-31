@@ -353,7 +353,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
   }
 
   return (
-    <>
+    <div className="dw-calibration-controls">
       <h2>
         {t("cCalibrationDwarfTitle", {
           DwarfType: connectionCtx.typeNameDwarf,
@@ -377,24 +377,28 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
           className="col-2  col-sm-2 col-lg-1 d-flex nav nav-pills"
           style={{ width: "55px" }}
         >
-          <div
+          <button
+            type="button"
             title="Show Logs"
             className={`daily-horp nav nav-pills nav-item nav-link rounded-pill ${
               connectionCtx.loggerView ? "active" : ""
             }  me-2 mb-0`}
             onClick={toggleLogger}
+            aria-label="Show calibration logs"
           >
-            <i className="bi bi-info-square"></i>
-          </div>
-          <div
+            <i className="bi bi-info-square" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
             title="Show Camera Preview"
             className={`daily-horp nav nav-pills nav-item nav-link rounded-pill ${
               connectionCtx.PiPView ? "active" : ""
             }  me-2 mb-0`}
             onClick={togglePiP}
+            aria-label="Show camera preview"
           >
             <i className="bi bi-pip" aria-hidden="true"></i>
-          </div>
+          </button>
         </div>
         <div className="col-auto">
           <button
@@ -488,6 +492,7 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
         {showPolarAlign && (
           <div className="polar-align-object">
             <button
+              type="button"
               className={`btn ${
                 connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
               } me-4 mt-5`}
@@ -537,26 +542,30 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
         {showPolarAlign && (
           <div className="connect-dwarf-1" title={t("cMotorActionHide")}>
             <button
+              type="button"
               className={`btn ${
                 connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
               } mb-3`}
               onClick={togglePolarAlignAction}
               disabled={!connectionCtx.connectionStatus}
+              aria-expanded={showPolarAlign}
             >
-              {t(">")}
+              Hide advanced motor controls
             </button>
           </div>
         )}
         {!showPolarAlign && (
           <div className="connect-dwarf-1" title={t("cMotorActionShow")}>
             <button
+              type="button"
               className={`btn ${
                 connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
               } mb-3`}
               onClick={togglePolarAlignAction}
               disabled={!connectionCtx.connectionStatus}
+              aria-expanded={showPolarAlign}
             >
-              {t("<")}
+              Show advanced motor controls
             </button>
           </div>
         )}
@@ -574,6 +583,6 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
           setMessages={setGotoMessages}
         />
       </div>
-    </>
+    </div>
   );
 }

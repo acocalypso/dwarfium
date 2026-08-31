@@ -19,6 +19,7 @@ import "@/styles/witsensordata.css";
 import "@/styles/mosaic.css";
 import "@/styles/sheduler.css";
 import "@/styles/camera.css";
+import "@/styles/dwarfium-ui.css";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "@/fontello/css/custom-focus.css";

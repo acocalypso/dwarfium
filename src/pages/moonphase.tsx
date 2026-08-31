@@ -3,6 +3,7 @@ import MoonPhaseCalculator from "../components/MoonPhaseCalculator";
 import { useTranslation } from "react-i18next";
 //import i18n from "@/i18n";
 import SunCalc from "suncalc";
+import PageHeader from "@/components/shared/PageHeader";
 
 export default function Moonphase() {
   const currentDate = new Date();
@@ -183,60 +184,74 @@ export default function Moonphase() {
   };
 
   return (
-    <div>
-      <section className="d-inline-block w-100">
-        <div className="container">
-          <br />
-          {/* Flex-container voor stad en maand selectie */}
-          <div className="input-container">
-            {/* Stad invoerveld + zoekknop */}
-            <div className="city-input">
-              <label htmlFor="city">{t("pMoonphaseSelectCity")}</label>
-              <div className="city-search-box">
-                <input
-                  type="text"
-                  id="city"
-                  defaultValue={city}
-                  ref={cityInputRef}
-                  placeholder={t("cCloudsCityInput")}
-                  onChange={handleCityInput}
-                />
-                <button onClick={handleSearch}>{t("pMoonphaseSearch")}</button>
-              </div>
-            </div>
-
-            {/* Maand selecteren */}
-            <div className="month-input">
-              <label htmlFor="start">{t("pMoonphaseSelectMonth")}</label>
+    <div className="dw-page">
+      <PageHeader
+        eyebrow="Conditions"
+        title="Moon planner"
+        description="Review illumination, rise and set times, and lunar distance for each night."
+      />
+      <section className="dw-panel dw-moon-panel">
+        {/* Flex-container voor stad en maand selectie */}
+        <div className="input-container dw-conditions-form">
+          {/* Stad invoerveld + zoekknop */}
+          <div className="city-input">
+            <label htmlFor="city">{t("pMoonphaseSelectCity")}</label>
+            <div className="city-search-box">
               <input
-                type="month"
-                id="start"
-                name="start"
-                min="2024-01"
-                value={selectedMonth}
-                onChange={handleChange}
+                type="text"
+                id="city"
+                defaultValue={city}
+                ref={cityInputRef}
+                placeholder={t("cCloudsCityInput")}
+                onChange={handleCityInput}
               />
+              <button onClick={handleSearch}>{t("pMoonphaseSearch")}</button>
             </div>
           </div>
 
-          {/* Kalender */}
-          <div className="calendar">
-            <table>
-              <thead>
-                <tr>
-                  <th>{t("cMoonDaySun")}</th>
-                  <th>{t("cMoonDayMon")}</th>
-                  <th>{t("cMoonDayTue")}</th>
-                  <th>{t("cMoonDayWed")}</th>
-                  <th>{t("cMoonDayThu")}</th>
-                  <th>{t("cMoonDayFri")}</th>
-                  <th>{t("cMoonDaySat")}</th>
-                </tr>
-              </thead>
-              <tbody>{latitude && longitude && renderMoonPhasesTable()}</tbody>
-            </table>
+          {/* Maand selecteren */}
+          <div className="month-input">
+            <label htmlFor="start">{t("pMoonphaseSelectMonth")}</label>
+            <input
+              type="month"
+              id="start"
+              name="start"
+              min="2024-01"
+              value={selectedMonth}
+              onChange={handleChange}
+            />
           </div>
         </div>
+
+        {/* Kalender */}
+        <div className="calendar dw-calendar-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>{t("cMoonDaySun")}</th>
+                <th>{t("cMoonDayMon")}</th>
+                <th>{t("cMoonDayTue")}</th>
+                <th>{t("cMoonDayWed")}</th>
+                <th>{t("cMoonDayThu")}</th>
+                <th>{t("cMoonDayFri")}</th>
+                <th>{t("cMoonDaySat")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {latitude && longitude ? renderMoonPhasesTable() : null}
+            </tbody>
+          </table>
+        </div>
+        {(!latitude || !longitude) && (
+          <div className="dw-inline-empty">
+            <i className="bi bi-moon-stars" aria-hidden="true" />
+            <h2>Choose a city to build the lunar calendar</h2>
+            <p>
+              An OpenWeather API key saved on the Weather page is required to
+              resolve the location.
+            </p>
+          </div>
+        )}
       </section>
     </div>
   );
