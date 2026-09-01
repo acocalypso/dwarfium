@@ -23,6 +23,10 @@ export type DwarfDeviceProfile = Readonly<{
   displayName: string;
   clientId: string;
   protocolMinorVersion: number;
+  teleFieldOfView: Readonly<{
+    widthDegrees: number;
+    heightDegrees: number;
+  }>;
   capabilities: DwarfCapabilities;
 }>;
 
@@ -35,6 +39,7 @@ const profiles: Record<number, DwarfDeviceProfile> = {
     displayName: "DWARF II",
     clientId: DEFAULT_CLIENT_ID,
     protocolMinorVersion: WsMinorVersionV3,
+    teleFieldOfView: { widthDegrees: 3, heightDegrees: 1.69 },
     capabilities: {
       teleCamera: true,
       wideCamera: true,
@@ -50,6 +55,7 @@ const profiles: Record<number, DwarfDeviceProfile> = {
     displayName: "DWARF 3",
     clientId: DEFAULT_CLIENT_ID,
     protocolMinorVersion: WsMinorVersionV3,
+    teleFieldOfView: { widthDegrees: 2.93, heightDegrees: 1.65 },
     capabilities: {
       teleCamera: true,
       wideCamera: true,
@@ -65,6 +71,7 @@ const profiles: Record<number, DwarfDeviceProfile> = {
     displayName: "DWARF mini",
     clientId: DwarfClientIdDwarfMini,
     protocolMinorVersion: WsMinorVersionV3,
+    teleFieldOfView: { widthDegrees: 2.14, heightDegrees: 1.22 },
     capabilities: {
       teleCamera: true,
       wideCamera: true,

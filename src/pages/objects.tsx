@@ -108,54 +108,25 @@ export default function Goto() {
           role="tablist"
           aria-label="Target sources"
         >
-          <li
-            className={connectionCtx.gotoType === "lists" ? "active" : ""}
-            role="tab"
-            aria-selected={connectionCtx.gotoType === "lists"}
-            tabIndex={0}
-            onClick={() => connectionCtx.setGotoType("lists")}
-            onKeyDown={(event) =>
-              event.key === "Enter" && connectionCtx.setGotoType("lists")
-            }
-          >
-            {t("pObjectsList")}
-          </li>
-          <li
-            className={connectionCtx.gotoType === "userLists" ? "active" : ""}
-            role="tab"
-            aria-selected={connectionCtx.gotoType === "userLists"}
-            tabIndex={0}
-            onClick={() => connectionCtx.setGotoType("userLists")}
-            onKeyDown={(event) =>
-              event.key === "Enter" && connectionCtx.setGotoType("userLists")
-            }
-          >
-            {t("pObjectsCustomsList")}
-          </li>
-          <li
-            className={connectionCtx.gotoType === "stellarium" ? "active" : ""}
-            role="tab"
-            aria-selected={connectionCtx.gotoType === "stellarium"}
-            tabIndex={0}
-            onClick={() => connectionCtx.setGotoType("stellarium")}
-            onKeyDown={(event) =>
-              event.key === "Enter" && connectionCtx.setGotoType("stellarium")
-            }
-          >
-            Stellarium
-          </li>
-          <li
-            className={connectionCtx.gotoType === "asteroids" ? "active" : ""}
-            role="tab"
-            aria-selected={connectionCtx.gotoType === "asteroids"}
-            tabIndex={0}
-            onClick={() => connectionCtx.setGotoType("asteroids")}
-            onKeyDown={(event) =>
-              event.key === "Enter" && connectionCtx.setGotoType("asteroids")
-            }
-          >
-            Asteroids
-          </li>
+          {[
+            { value: "lists", label: t("pObjectsList") },
+            { value: "userLists", label: t("pObjectsCustomsList") },
+            { value: "stellarium", label: "Stellarium" },
+            { value: "asteroids", label: "Asteroids" },
+          ].map((tab) => (
+            <li key={tab.value} role="presentation">
+              <button
+                type="button"
+                className={connectionCtx.gotoType === tab.value ? "active" : ""}
+                role="tab"
+                aria-selected={connectionCtx.gotoType === tab.value}
+                tabIndex={connectionCtx.gotoType === tab.value ? 0 : -1}
+                onClick={() => connectionCtx.setGotoType(tab.value)}
+              >
+                {tab.label}
+              </button>
+            </li>
+          ))}
         </ul>
         <div className="dw-target-content" role="tabpanel">
           {connectionCtx.connectionStatus && connectionCtx.PiPView && (

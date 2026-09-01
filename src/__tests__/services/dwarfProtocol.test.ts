@@ -46,6 +46,8 @@ describe("DWARF V3 protocol boundary", () => {
     expect(profile.displayName).toBe(name);
     expect(profile.protocolMinorVersion).toBe(20);
     expect(profile.capabilities.filterWheel).toBe(filterWheel);
+    expect(profile.teleFieldOfView.widthDegrees).toBeGreaterThan(2);
+    expect(profile.teleFieldOfView.heightDegrees).toBeGreaterThan(1);
   });
 
   test("uses the Mini identity before constructing session packets", () => {

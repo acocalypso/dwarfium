@@ -35,9 +35,10 @@
       "providerShortName": null,
       "signingIdentity": null
     },
-    "resources": [
-      "mediamtx.yml"
-    ],
+    "resources": {
+      "mediamtx.yml": "mediamtx.yml",
+      "../install/config/mediamtx-https.yml": "mediamtx-https.yml"
+    },
     "shortDescription": "",
     "linux": {
       "deb": {
@@ -48,7 +49,7 @@
   },
   "productName": "Dwarfium",
   "mainBinaryName": "Dwarfium",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "identifier": "com.Dwarfium.build",
   "plugins": {
     "updater": {

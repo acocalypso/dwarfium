@@ -18,9 +18,9 @@ let objectTypesMenu = [
   { value: "galaxies", label: "Galaxies" },
   { value: "nebulae", label: "Nebulae" },
   { value: "stars", label: "Stars" },
-  { value: "large", label: "Large Dso" },
-  { value: "small", label: "Small Dso" },
-  { value: "tiny", label: "Tiny Dso" },
+  { value: "large", label: "Large DSO" },
+  { value: "small", label: "Small DSO" },
+  { value: "tiny", label: "Tiny DSO" },
   { value: "mosaic", label: "Mosaic" },
 ];
 
@@ -37,6 +37,7 @@ type PropType = {
 };
 
 export default function DSOList(props: PropType) {
+  const resultDisplayLimit = 100;
   let connectionCtx = useContext(ConnectionContext);
   let dsoObjects: AstroObject[] = props.objects;
   const { objectFavoriteNames, setObjectFavoriteNames } = props;
@@ -78,7 +79,7 @@ export default function DSOList(props: PropType) {
   }, [selectedCategories, dsoObjects, searchTxtValue, visibleSkyLimitValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Function to update the search text in the context
-  const updateSearchTextInContext = (searchValue) => {
+  const updateSearchTextInContext = (searchValue: string) => {
     if (searchValue === "") {
       setSearchTxtValue("");
       connectionCtx.setSearchTxt("");
@@ -96,7 +97,7 @@ export default function DSOList(props: PropType) {
   };
 
   // Function to update the search text in the context
-  const updateVisibleSkyLimitInContext = (skyLimitValue) => {
+  const updateVisibleSkyLimitInContext = (skyLimitValue: string) => {
     if (skyLimitValue === "") {
       setVisibleSkyLimitValue("");
       connectionCtx.setVisibleSkyLimit("");
@@ -182,7 +183,7 @@ export default function DSOList(props: PropType) {
   }
 
   // Function to remove spaces
-  const removeSpaces = (str) => str.replace(/\s+/g, "");
+  const removeSpaces = (str: string) => str.replace(/\s+/g, "");
 
   function filterObjects() {
     let dataSearchTxt = "";
@@ -420,44 +421,39 @@ export default function DSOList(props: PropType) {
   }
 
   return (
-    <div>
-      <div className="container">
-        <ul className="nav nav-pills mt-3">
-          {objectTypesMenu.map((type) => (
-            <li
-              key={type.value}
-              className={`daily-horp nav-item nav-link rounded-pill ${
-                selectedCategories.includes(type.value) ? "active" : ""
-              }`}
-              onClick={() => selectCategoryHandler(type.value)}
-            >
-              {t(type.label)}
-            </li>
-          ))}
-        </ul>
-        <hr />
-        <div className="row">
-          <div className="">
-            <DSOSearch updateSearchText={updateSearchTextInContext} />
-          </div>
-          <div className="d-block d-md-none w-100">
-            <br />
-          </div>
-          <div className="d-block d-md-none w-100">
-            <br />
-          </div>
-          <div className="">
-            <DSOVisibleSky
-              updateVisibleSkyLimit={updateVisibleSkyLimitInContext}
-            />
-          </div>
-        </div>
-        <hr />
-        <h4 className="mt-3">
-          {objects.length}{" "}
-          {pluralize(objects.length, t("Object"), t("Objects"))}
-        </h4>
-        {objects.map((object) => (
+    <div className="dw-dso-browser">
+      <div
+        className="dw-target-filter-chips"
+        role="group"
+        aria-label="Filter targets by category"
+      >
+        {objectTypesMenu.map((type) => (
+          <button
+            type="button"
+            key={type.value}
+            className={selectedCategories.includes(type.value) ? "active" : ""}
+            aria-pressed={selectedCategories.includes(type.value)}
+            onClick={() => selectCategoryHandler(type.value)}
+          >
+            {t(type.label)}
+          </button>
+        ))}
+      </div>
+      <div className="dw-target-filters">
+        <DSOSearch updateSearchText={updateSearchTextInContext} />
+        <DSOVisibleSky updateVisibleSkyLimit={updateVisibleSkyLimitInContext} />
+      </div>
+      <h2 className="dw-target-results-heading">
+        {objects.length} {pluralize(objects.length, t("Object"), t("Objects"))}
+      </h2>
+      {objects.length > resultDisplayLimit && (
+        <p className="dw-target-result-limit">
+          Showing the first {resultDisplayLimit} results. Use search or filters
+          to narrow the catalog.
+        </p>
+      )}
+      <div className="dw-target-results">
+        {objects.slice(0, resultDisplayLimit).map((object) => (
           <DSOObject
             key={object.designation}
             object={object}

@@ -177,49 +177,70 @@ export const Asteroid: React.FC<AsteroidProps> = ({
   };
 
   return (
-    <div className="asteroid">
-      <div className="container">
-        <div className="details">
-          <h3 className="name">{data.name?.match(/\(([^)]+)\)/)?.[1] || ""}</h3>
-          <p>Estimated Size - {asteroidEstimatedSize} м</p>
-          <p>Approach Time - {asteroidApproachTime} UTC</p>
-          <p>Distance - {asteroidMissDistance} au</p>
-          <p>Speed - {asteroidSpeed} KM/Sec</p>
+    <article className="dw-asteroid-card">
+      <div className="dw-asteroid-details">
+        <header>
+          <div>
+            <span>Near-Earth object</span>
+            <h3>{data.name?.match(/\(([^)]+)\)/)?.[1] || data.name}</h3>
+          </div>
           {data.is_potentially_hazardous_asteroid ? (
-            <div className="dangerous">Potentially Dangerous</div>
+            <span className="dw-asteroid-risk is-danger">
+              Potentially hazardous
+            </span>
           ) : (
-            <div className="notDangerous">Not Dangerous</div>
+            <span className="dw-asteroid-risk">No known hazard</span>
           )}
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatusStellarium
-                ? "btn btn-more02"
-                : "btn-more02"
-            } me-4 mt-3`}
-            onClick={handleGotoClick}
-            disabled={!connectionCtx.connectionStatusStellarium}
-          >
-            Goto
-          </button>
-        </div>
-        <div className="comparison">
-          <Image
-            className="comparisonSizeImage"
-            src={compareSize.img || ""}
-            alt={compareSize.text}
-          />
-          <div>{compareSize.text}</div>
-        </div>
-        <div className="comparison">
-          <Image
-            className="comparisonSpeedImage"
-            src={imgBullet}
-            alt={"Asteroid speed"}
-          />
-          <div>{asteroidSpeed > 1 && `${asteroidSpeed}X`} Bullet speed</div>
-        </div>
+        </header>
+        <dl className="dw-asteroid-metrics">
+          <div>
+            <dt>Estimated diameter</dt>
+            <dd>{asteroidEstimatedSize} m</dd>
+          </div>
+          <div>
+            <dt>Approach time</dt>
+            <dd>{asteroidApproachTime || "—"} UTC</dd>
+          </div>
+          <div>
+            <dt>Miss distance</dt>
+            <dd>{asteroidMissDistance} au</dd>
+          </div>
+          <div>
+            <dt>Relative speed</dt>
+            <dd>{asteroidSpeed} km/s</dd>
+          </div>
+        </dl>
+        <button
+          type="button"
+          className="dw-target-action"
+          onClick={handleGotoClick}
+          disabled={
+            !connectionCtx.connectionStatusStellarium ||
+            !connectionCtx.connectionStatus
+          }
+          title={
+            connectionCtx.connectionStatusStellarium &&
+            connectionCtx.connectionStatus
+              ? undefined
+              : "Connect Stellarium and your DWARF to start GOTO"
+          }
+        >
+          Goto asteroid
+        </button>
       </div>
-    </div>
+      <div className="dw-asteroid-comparisons">
+        <figure>
+          <Image src={compareSize.img || ""} alt={compareSize.text} />
+          <figcaption>{compareSize.text}</figcaption>
+        </figure>
+        <figure>
+          <Image src={imgBullet} alt="Bullet used as a speed comparison" />
+          <figcaption>
+            {asteroidSpeed > 1 && `${asteroidSpeed}× `}bullet speed
+          </figcaption>
+        </figure>
+      </div>
+    </article>
   );
 };
 

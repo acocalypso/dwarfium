@@ -2,13 +2,13 @@ import React from "react";
 import AstroDwarfSessionUI from "@/components/scheduler/AstroScheduler";
 import PageHeader from "@/components/shared/PageHeader";
 
-const WeatherForeCast = () => {
+const ObservationPlanner = () => {
   return (
     <div className="dw-page">
       <PageHeader
         eyebrow="Plan"
-        title="Observation scheduler"
-        description="Build and manage automated target sequences for your observing window."
+        title="Observation planner"
+        description="Prepare targets, timing and capture recipes for repeatable DWARF imaging sessions."
       />
       <section className="dw-panel dw-tool-panel">
         <AstroDwarfSessionUI />
@@ -17,4 +17,4 @@ const WeatherForeCast = () => {
   );
 };
 
-export default WeatherForeCast;
+export default ObservationPlanner;

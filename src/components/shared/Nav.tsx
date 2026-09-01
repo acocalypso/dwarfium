@@ -25,7 +25,11 @@ const navigation: NavGroup[] = [
   {
     label: "Plan",
     items: [
-      { href: "/scheduler", label: "Scheduler", icon: "bi-calendar-check" },
+      {
+        href: "/scheduler",
+        label: "Observation planner",
+        icon: "bi-calendar-check",
+      },
       {
         href: "/mosaicplannner",
         label: "Mosaic planner",

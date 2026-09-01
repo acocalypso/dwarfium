@@ -249,10 +249,6 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
     connectionCtx.setPiPView((prev) => !prev);
   }
 
-  function togglePolarAlignAction() {
-    setShowPolarAlign(!showPolarAlign);
-  }
-
   function initCamera() {
     {
       setTimeout(() => {
@@ -288,29 +284,23 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
     if (connectionCtx.statusRingLightsDwarf)
       return (
         <button
-          className={`btn ${
-            connectionCtx.connectionStatus ? "btn-lights" : "btn-lights"
-          } me-2 mt-3`}
+          className="dw-calibration-action is-secondary is-active"
           onClick={RingLightsOffFn}
           disabled={!connectionCtx.connectionStatus}
         >
-          {t("cCalibrationDwarfLights")}
-          <br />
-          {t("cCalibrationDwarfRingOn")}
+          <span>{t("cCalibrationDwarfLights")}</span>
+          <strong>{t("cCalibrationDwarfRingOn")}</strong>
         </button>
       );
     else
       return (
         <button
-          className={`btn ${
-            connectionCtx.connectionStatus ? "btn-more03" : "btn-more03"
-          } me-2 mt-3`}
+          className="dw-calibration-action is-secondary"
           onClick={RingLightsOnFn}
           disabled={!connectionCtx.connectionStatus}
         >
-          {t("cCalibrationDwarfLights")}
-          <br />
-          {t("cCalibrationDwarfRingOff")}
+          <span>{t("cCalibrationDwarfLights")}</span>
+          <strong>{t("cCalibrationDwarfRingOff")}</strong>
         </button>
       );
   }
@@ -319,270 +309,250 @@ export default function CalibrationDwarf(props: CalibrationDwarfPropType) {
     if (connectionCtx.statusPowerLightsDwarf)
       return (
         <button
-          className={`btn ${
-            connectionCtx.connectionStatus ? "btn-lights" : "btn-lights"
-          } me-2 mt-3`}
+          className="dw-calibration-action is-secondary is-active"
           onClick={PowerLightsOffFn}
           disabled={
             !connectionCtx.connectionStatus ||
             connectionCtx.statusRingLightsDwarf === undefined
           }
         >
-          {t("cCalibrationDwarfLights")}
-          <br />
-          {t("cCalibrationDwarfPowerOn")}
+          <span>{t("cCalibrationDwarfLights")}</span>
+          <strong>{t("cCalibrationDwarfPowerOn")}</strong>
         </button>
       );
     else
       return (
         <button
-          className={`btn ${
-            connectionCtx.connectionStatus ? "btn-more03" : "btn-more03"
-          } me-2 mt-3`}
+          className="dw-calibration-action is-secondary"
           onClick={PowerLightsOnFn}
           disabled={
             !connectionCtx.connectionStatus ||
             connectionCtx.statusPowerLightsDwarf === undefined
           }
         >
-          {t("cCalibrationDwarfLights")}
-          <br />
-          {t("cCalibrationDwarfPowerOff")}
+          <span>{t("cCalibrationDwarfLights")}</span>
+          <strong>{t("cCalibrationDwarfPowerOff")}</strong>
         </button>
       );
   }
 
   return (
     <div className="dw-calibration-controls">
-      <h2>
-        {t("cCalibrationDwarfTitle", {
-          DwarfType: connectionCtx.typeNameDwarf,
-        })}
-      </h2>
-
-      <p>
-        {t("cCalibrationDwarfTitleDesc", {
-          DwarfType: connectionCtx.typeNameDwarf,
-        })}
-        <br />
-        <span className="text-danger">
-          <b> {t("cCalibrationDwarfWarning")} </b>
-        </span>
-        {t("cCalibrationDwarfWarningDesc")}
-      </p>
-      <br />
-
-      <div className="row mb-3">
+      <header className="dw-calibration-header">
+        <div>
+          <h2>
+            {t("cCalibrationDwarfTitle", {
+              DwarfType: connectionCtx.typeNameDwarf,
+            })}
+          </h2>
+          <p>
+            {t("cCalibrationDwarfTitleDesc", {
+              DwarfType: connectionCtx.typeNameDwarf,
+            })}
+          </p>
+        </div>
         <div
-          className="col-2  col-sm-2 col-lg-1 d-flex nav nav-pills"
-          style={{ width: "55px" }}
+          className="dw-calibration-view-toggles"
+          aria-label="Calibration views"
         >
           <button
             type="button"
             title="Show Logs"
-            className={`daily-horp nav nav-pills nav-item nav-link rounded-pill ${
-              connectionCtx.loggerView ? "active" : ""
-            }  me-2 mb-0`}
+            className={connectionCtx.loggerView ? "active" : ""}
             onClick={toggleLogger}
             aria-label="Show calibration logs"
+            aria-pressed={connectionCtx.loggerView}
           >
-            <i className="bi bi-info-square" aria-hidden="true"></i>
+            <i className="bi bi-info-square" aria-hidden="true" />
+            Logs
           </button>
           <button
             type="button"
             title="Show Camera Preview"
-            className={`daily-horp nav nav-pills nav-item nav-link rounded-pill ${
-              connectionCtx.PiPView ? "active" : ""
-            }  me-2 mb-0`}
+            className={connectionCtx.PiPView ? "active" : ""}
             onClick={togglePiP}
             aria-label="Show camera preview"
+            aria-pressed={connectionCtx.PiPView}
           >
-            <i className="bi bi-pip" aria-hidden="true"></i>
+            <i className="bi bi-pip" aria-hidden="true" />
+            Preview
           </button>
         </div>
-        <div className="col-auto">
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-            } me-2 mt-3`}
-            onClick={calibrateFn}
-            disabled={!connectionCtx.connectionStatus}
-          >
-            {t("CCalibrationDwarfCalibrate")}
-          </button>
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-            } me-4 mt-3`}
-            onClick={stopGotoFn}
-            disabled={!connectionCtx.connectionStatus}
-          >
-            {t("cCalibrationDwarfStopGoto")}
-          </button>
-        </div>
-        <div className="col-12 col-sm-12 col-sd-10 col-lg-6 col-xl-5">
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus && connectionCtx.savePositionStatus
-                ? "btn-more02"
-                : "btn-more02"
-            } me-2 mt-3`}
-            onClick={savePositionFn}
-            disabled={
-              !connectionCtx.connectionStatus &&
-              !connectionCtx.savePositionStatus
-            }
-          >
-            {t("cCalibrationDwarfSavePosition")}
-          </button>
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus && connectionCtx.isSavedPosition
-                ? "btn-more02"
-                : "btn-more02"
-            }  me-2 mt-3`}
-            onClick={resetPositionFn}
-            disabled={
-              !connectionCtx.connectionStatus && !connectionCtx.isSavedPosition
-            }
-          >
-            {t("cCalibrationDwarfResetPosition")}
-          </button>
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus && connectionCtx.isSavedPosition
-                ? "btn-more02"
-                : "btn-more02"
-            } mt-3`}
-            onClick={gotoPositionFn}
-            disabled={
-              !connectionCtx.connectionStatus && !connectionCtx.isSavedPosition
-            }
-          >
-            {t("cCalibrationDwarfGoToPosition")}
-          </button>
-        </div>
-        <div className="col-12 col-sm-10 col-sm-10 col-lg-8 col-xl-4">
-          {showStatusRingLightsDwarf()}
-          {showStatusPowerLightsDwarf()}
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus ? "btn-more03" : "btn-more03"
-            } me-2 mt-3`}
-            onClick={shutDownFn}
-            disabled={!connectionCtx.connectionStatus}
-          >
-            {t("cCalibrationDwarfShutdown")}
-          </button>
-          <button
-            className={`btn ${
-              connectionCtx.connectionStatus ? "btn-more03" : "btn-more03"
-            } mt-3`}
-            onClick={rebootFn}
-            disabled={!connectionCtx.connectionStatus}
-          >
-            {t("cCalibrationDwarfReboot")}
-          </button>
-        </div>
+      </header>
+
+      <div className="dw-calibration-warning" role="note">
+        <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+        <span>
+          <strong>{t("cCalibrationDwarfWarning")}</strong>{" "}
+          {t("cCalibrationDwarfWarningDesc")}
+        </span>
       </div>
-      <div>
-        <div className="col-sm-12 mt-2">
-          &nbsp; {position && <span className="text-success">{position}</span>}
+
+      {!connectionCtx.connectionStatus && (
+        <div className="dw-calibration-offline" role="status">
+          Connect your DWARF to enable calibration and mount controls.
         </div>
-        {showPolarAlign && (
-          <div className="polar-align-object">
+      )}
+
+      <div className="dw-calibration-grid">
+        <section className="dw-calibration-group">
+          <h3>Mount</h3>
+          <p>Calibrate the mount or stop the current movement.</p>
+          <div className="dw-calibration-actions">
             <button
               type="button"
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } me-4 mt-5`}
-              onClick={dwarfResetMotorFn}
+              className="dw-calibration-action"
+              onClick={calibrateFn}
               disabled={!connectionCtx.connectionStatus}
             >
-              {t("cMotorResetAction")}
+              {t("CCalibrationDwarfCalibrate")}
             </button>
-            <button
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } me-2 mt-5`}
-              onClick={polarAlignFn}
-              disabled={!connectionCtx.connectionStatus}
-            >
-              {t("cPolarAlignAction")}
-            </button>
-            <button
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } me-2 mt-5`}
-              onClick={polarAlignMode90Fn}
-              disabled={!connectionCtx.connectionStatus}
-            >
-              {t("cPolarAlignTo90")}
-            </button>
-            <button
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } me-2 mt-5`}
-              onClick={polarAlignMode0Fn}
-              disabled={!connectionCtx.connectionStatus}
-            >
-              {t("cPolarAlignInitial")}
-            </button>
-            <button
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } mt-5`}
-              onClick={polarAlignTurnDownFn}
-              disabled={!connectionCtx.connectionStatus}
-            >
-              {t("cPolarAlignTurnDownLens")}
-            </button>
-          </div>
-        )}
-        {showPolarAlign && (
-          <div className="connect-dwarf-1" title={t("cMotorActionHide")}>
             <button
               type="button"
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } mb-3`}
-              onClick={togglePolarAlignAction}
+              className="dw-calibration-action is-danger"
+              onClick={stopGotoFn}
               disabled={!connectionCtx.connectionStatus}
-              aria-expanded={showPolarAlign}
             >
-              Hide advanced motor controls
+              {t("cCalibrationDwarfStopGoto")}
             </button>
           </div>
-        )}
-        {!showPolarAlign && (
-          <div className="connect-dwarf-1" title={t("cMotorActionShow")}>
+        </section>
+
+        <section className="dw-calibration-group">
+          <h3>Saved position</h3>
+          <p>Store a safe reference position and return to it later.</p>
+          <div className="dw-calibration-actions">
             <button
               type="button"
-              className={`btn ${
-                connectionCtx.connectionStatus ? "btn-more02" : "btn-more02"
-              } mb-3`}
-              onClick={togglePolarAlignAction}
-              disabled={!connectionCtx.connectionStatus}
-              aria-expanded={showPolarAlign}
+              className="dw-calibration-action is-secondary"
+              onClick={savePositionFn}
+              disabled={
+                !connectionCtx.connectionStatus ||
+                !connectionCtx.savePositionStatus
+              }
             >
-              Show advanced motor controls
+              {t("cCalibrationDwarfSavePosition")}
+            </button>
+            <button
+              type="button"
+              className="dw-calibration-action is-secondary"
+              onClick={resetPositionFn}
+              disabled={
+                !connectionCtx.connectionStatus ||
+                !connectionCtx.isSavedPosition
+              }
+            >
+              {t("cCalibrationDwarfResetPosition")}
+            </button>
+            <button
+              type="button"
+              className="dw-calibration-action"
+              onClick={gotoPositionFn}
+              disabled={
+                !connectionCtx.connectionStatus ||
+                !connectionCtx.isSavedPosition
+              }
+            >
+              {t("cCalibrationDwarfGoToPosition")}
             </button>
           </div>
-        )}
-        <GotoModal
-          object={
-            {
-              displayName: "Calibration",
-              ra: "",
-              dec: "",
-            } as AstroObject
-          }
-          showModal={showModal}
-          setShowModal={setShowModal}
-          messages={gotoMessages}
-          setMessages={setGotoMessages}
-        />
+          {position && <p className="dw-calibration-feedback">{position}</p>}
+        </section>
+
+        <section className="dw-calibration-group">
+          <h3>Device</h3>
+          <p>Control illumination or restart the connected DWARF.</p>
+          <div className="dw-calibration-actions">
+            {showStatusRingLightsDwarf()}
+            {showStatusPowerLightsDwarf()}
+            <button
+              type="button"
+              className="dw-calibration-action is-danger"
+              onClick={shutDownFn}
+              disabled={!connectionCtx.connectionStatus}
+            >
+              {t("cCalibrationDwarfShutdown")}
+            </button>
+            <button
+              type="button"
+              className="dw-calibration-action is-secondary"
+              onClick={rebootFn}
+              disabled={!connectionCtx.connectionStatus}
+            >
+              {t("cCalibrationDwarfReboot")}
+            </button>
+          </div>
+        </section>
       </div>
+
+      <details
+        className="dw-calibration-advanced"
+        open={showPolarAlign}
+        onToggle={(event) => setShowPolarAlign(event.currentTarget.open)}
+      >
+        <summary>
+          {showPolarAlign ? "Hide" : "Show"} advanced motor controls
+        </summary>
+        <p>
+          Use these controls for polar alignment and manual lens positioning.
+        </p>
+        <div className="dw-calibration-actions">
+          <button
+            type="button"
+            className="dw-calibration-action is-secondary"
+            onClick={dwarfResetMotorFn}
+            disabled={!connectionCtx.connectionStatus}
+          >
+            {t("cMotorResetAction")}
+          </button>
+          <button
+            type="button"
+            className="dw-calibration-action"
+            onClick={polarAlignFn}
+            disabled={!connectionCtx.connectionStatus}
+          >
+            {t("cPolarAlignAction")}
+          </button>
+          <button
+            type="button"
+            className="dw-calibration-action is-secondary"
+            onClick={polarAlignMode90Fn}
+            disabled={!connectionCtx.connectionStatus}
+          >
+            {t("cPolarAlignTo90")}
+          </button>
+          <button
+            type="button"
+            className="dw-calibration-action is-secondary"
+            onClick={polarAlignMode0Fn}
+            disabled={!connectionCtx.connectionStatus}
+          >
+            {t("cPolarAlignInitial")}
+          </button>
+          <button
+            type="button"
+            className="dw-calibration-action is-secondary"
+            onClick={polarAlignTurnDownFn}
+            disabled={!connectionCtx.connectionStatus}
+          >
+            {t("cPolarAlignTurnDownLens")}
+          </button>
+        </div>
+      </details>
+
+      <GotoModal
+        object={
+          {
+            displayName: "Calibration",
+            ra: "",
+            dec: "",
+          } as AstroObject
+        }
+        showModal={showModal}
+        setShowModal={setShowModal}
+        messages={gotoMessages}
+        setMessages={setGotoMessages}
+      />
     </div>
   );
 }

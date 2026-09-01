@@ -1149,20 +1149,24 @@ export async function EQSolvingHandlerFn(
   callback?: (options: any) => void, // eslint-disable-line no-unused-vars
 ) {
   if (connectionCtx.IPDwarf === undefined) {
+    setErrors("Connect your DWARF before starting EQ calibration.");
+    callback?.({ error: true });
     return;
   }
 
-  let lat = 0;
-  if (connectionCtx.latitude) lat = connectionCtx.latitude;
+  if (
+    connectionCtx.latitude === undefined ||
+    connectionCtx.longitude === undefined
+  ) {
+    setErrors("Set your observing location before starting EQ calibration.");
+    return;
+  }
+
+  const lat = connectionCtx.latitude;
   /////////////////////////////////////////
   // Reverse the Longitude for the dwarf : positive for WEST
   /////////////////////////////////////////
-  let lon = 0;
-  if (connectionCtx.longitude) lon = -connectionCtx.longitude;
-  if (lat === undefined || lon === undefined) {
-    setErrors("Longitude or Lattitude are not defined");
-    return;
-  }
+  const lon = -connectionCtx.longitude;
 
   setErrors(undefined);
   setSuccess("Start EQ Solving Process");
@@ -1273,6 +1277,9 @@ export async function EQSolvingHandlerFn(
   );
 
   if (!webSocketHandler.run()) {
+    setSuccess(undefined);
+    setErrors("DWARF EQ calibration could not be started.");
+    callback?.({ error: true });
     console.error(" Can't launch Web Socket Run Action!");
   }
 }

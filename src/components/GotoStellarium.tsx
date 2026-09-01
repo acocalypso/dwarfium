@@ -242,189 +242,189 @@ export default function ManualGoto(props: PropType) {
   }, []);
 
   return (
-    <div>
+    <div className="dw-stellarium-browser">
+      <div className="dw-target-notices" aria-live="polite">
+        {!connectionCtx.connectionStatusStellarium && (
+          <div className="dw-target-notice is-warning">
+            <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+            <span>{t("cGoToStellariumConnectStellarium")}</span>
+          </div>
+        )}
+        {!connectionCtx.connectionStatus && (
+          <div className="dw-target-notice is-warning">
+            <i className="bi bi-exclamation-triangle" aria-hidden="true" />
+            <span>
+              {t("cGoToListConnectDwarf", {
+                DwarfType: connectionCtx.typeNameDwarf,
+              })}
+            </span>
+          </div>
+        )}
+      </div>
+
       {!connectionCtx.connectionStatusStellarium && (
-        <p className="text-danger">{t("cGoToStellariumConnectStellarium")}</p>
-      )}
-      {!connectionCtx.connectionStatusStellarium && (
-        <ConnectStellarium showInfoTxt={false} />
-      )}
-      {!connectionCtx.connectionStatusStellarium && <br />}
-      {!connectionCtx.connectionStatus && (
-        <p className="text-danger">
-          {t("cGoToListConnectDwarf", {
-            DwarfType: connectionCtx.typeNameDwarf,
-          })}
-        </p>
+        <section className="dw-stellarium-connect-panel">
+          <h2>Connect Stellarium</h2>
+          <ConnectStellarium showInfoTxt={false} />
+        </section>
       )}
 
-      <p>{t("cGoToStellariumPickObject")}</p>
-      <ol>
-        <li>{t("cGoToStellariumListTitle")}</li>
-        <li>{t("cGoToStellariumList1")}</li>
-        <li>{t("cGoToStellariumList2")}</li>
-      </ol>
-      <br />
-      <button
-        className={`btn ${
-          connectionCtx.connectionStatusStellarium
-            ? "btn btn-more02"
-            : "btn-more02"
-        } me-4 mb-3`}
-        onClick={fetchStellariumData}
-        disabled={!connectionCtx.connectionStatusStellarium}
-      >
-        {t("cGoToStellariumImportData")}
-      </button>
-      <button
-        className={`btn btn btn-more02
-        } me-4 mb-3`}
-        onClick={importManualData}
-      >
-        {objectName && t("cGoToStellariumImportModifyData")}{" "}
-        {!objectName && t("cGoToStellariumImportManualData")}
-      </button>
-      <button
-        className={`btn ${
-          connectionCtx.saveAstroData
-            ? connectionCtx.saveAstroData.displayName
-              ? "btn btn-more02"
-              : "btn-more02"
-            : "btn-more02"
-        } me-4 mb-3`}
-        onClick={pasteData}
-        disabled={
-          !connectionCtx.saveAstroData ||
-          !connectionCtx.saveAstroData.displayName
-        }
-      >
-        {t("cGoToStellariumPasteData")}
-      </button>
-      <div className="row mb-3">
-        <div className="col-sm-4">{t("pLatitude")}</div>
-        <div className="col-sm-8">{connectionCtx.latitude}</div>
-      </div>
-      <div className="row mb-3">
-        <div className="col-sm-4">{t("pLongitude")}</div>
-        <div className="col-sm-8">{connectionCtx.longitude}</div>
-      </div>
-      <div className="row mb-3">
-        <div className="col-sm-4">{t("cGoToStellariumObject")}</div>
-        <div className="col-sm-8">{objectName}</div>
-      </div>
-      <div className="row mb-3">
-        <div className="col-sm-4">{t("cGoToStellariumRightAscension")}</div>
-        <div className="col-sm-8">{RA}</div>
-      </div>
-      <div className="row mb-3">
-        <div className="col-sm-4">{t("cGoToStellariumDeclination")}</div>
-        <div className="col-sm-8">{declination}</div>
-      </div>
+      <section className="dw-stellarium-workspace">
+        <header>
+          <div>
+            <h2>Target coordinates</h2>
+            <p>{t("cGoToStellariumPickObject")}</p>
+          </div>
+          <div className="dw-target-toolbar-actions">
+            <button
+              type="button"
+              className="dw-target-action"
+              onClick={fetchStellariumData}
+              disabled={!connectionCtx.connectionStatusStellarium}
+            >
+              <i className="bi bi-download" aria-hidden="true" />
+              {t("cGoToStellariumImportData")}
+            </button>
+            <button
+              type="button"
+              className="dw-target-action is-secondary"
+              onClick={importManualData}
+            >
+              <i className="bi bi-pencil" aria-hidden="true" />
+              {objectName && t("cGoToStellariumImportModifyData")}
+              {!objectName && t("cGoToStellariumImportManualData")}
+            </button>
+            <button
+              type="button"
+              className="dw-target-action is-secondary"
+              onClick={pasteData}
+              disabled={
+                !connectionCtx.saveAstroData ||
+                !connectionCtx.saveAstroData.displayName
+              }
+            >
+              <i className="bi bi-clipboard" aria-hidden="true" />
+              {t("cGoToStellariumPasteData")}
+            </button>
+          </div>
+        </header>
+
+        <dl className="dw-coordinate-grid">
+          <div>
+            <dt>{t("pLatitude")}</dt>
+            <dd>{connectionCtx.latitude ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>{t("pLongitude")}</dt>
+            <dd>{connectionCtx.longitude ?? "—"}</dd>
+          </div>
+          <div className="is-wide">
+            <dt>{t("cGoToStellariumObject")}</dt>
+            <dd>{objectName || "No target loaded"}</dd>
+          </div>
+          <div>
+            <dt>{t("cGoToStellariumRightAscension")}</dt>
+            <dd>{RA || "—"}</dd>
+          </div>
+          <div>
+            <dt>{t("cGoToStellariumDeclination")}</dt>
+            <dd>{declination || "—"}</dd>
+          </div>
+        </dl>
+
+        <div className="dw-coordinate-actions">
+          <div className="dw-target-toolbar-actions">
+            <button
+              type="button"
+              className="dw-target-action"
+              onClick={gotoFn}
+              disabled={!connectionCtx.connectionStatus || RA === undefined}
+            >
+              Goto
+            </button>
+            <button
+              type="button"
+              className="dw-target-action is-secondary"
+              onClick={() =>
+                centerCoordinatesHandler(
+                  RA,
+                  declination,
+                  connectionCtx,
+                  setErrors,
+                )
+              }
+              disabled={
+                !connectionCtx.connectionStatusStellarium || RA === undefined
+              }
+            >
+              {t("cGoToStellariumCenter")}
+            </button>
+          </div>
+          <div
+            className="dw-coordinate-nudge"
+            aria-label="Fine coordinate adjustment"
+          >
+            <span>Fine adjustment</span>
+            <button
+              type="button"
+              onClick={() => changeCoordinate(+1 / 60, 0)}
+              disabled={RA === undefined}
+            >
+              RA + 1 min
+            </button>
+            <button
+              type="button"
+              onClick={() => changeCoordinate(-1 / 60, 0)}
+              disabled={RA === undefined}
+            >
+              RA − 1 min
+            </button>
+            <button
+              type="button"
+              onClick={() => changeCoordinate(0, +0.1)}
+              disabled={RA === undefined}
+            >
+              Dec + 0.1°
+            </button>
+            <button
+              type="button"
+              onClick={() => changeCoordinate(0, -0.1)}
+              disabled={RA === undefined}
+            >
+              Dec − 0.1°
+            </button>
+          </div>
+        </div>
+      </section>
+
       {objectNGC && (
-        <div className="row mb-3">
-          <div className="col-sm-4">{t("cGoToStellariumFoundInCatalog")}</div>
-        </div>
+        <section className="dw-catalog-match">
+          <h2>{t("cGoToStellariumFoundInCatalog")}</h2>
+          <DSOObject
+            key={objectNGC.designation}
+            object={objectNGC}
+            objectFavoriteNames={objectFavoriteNames}
+            setObjectFavoriteNames={setObjectFavoriteNames}
+            objectPersonalList={objectPersonalList}
+            setObjectPersonalList={setObjectPersonalList}
+            isInObjectPersonalList={false}
+            setModule={setModule}
+            setErrors={setErrors}
+            setSuccess={setSuccess}
+          />
+        </section>
       )}
-      {objectNGC && (
-        <DSOObject
-          key={objectNGC.designation}
-          object={objectNGC}
-          objectFavoriteNames={objectFavoriteNames}
-          setObjectFavoriteNames={setObjectFavoriteNames}
-          objectPersonalList={objectPersonalList}
-          setObjectPersonalList={setObjectPersonalList}
-          isInObjectPersonalList={false}
-          setModule={setModule}
-          setErrors={setErrors}
-          setSuccess={setSuccess}
-        />
-      )}
-      {objectNGC && <br />}
-      <div className="row mb-3">
-        <div className="col-sm-4">
-          <button
-            className={`btn ${
-              RA !== undefined ? "btn-more02" : "btn-more02"
-            } me-4 mb-2`}
-            onClick={gotoFn}
-            disabled={!connectionCtx.connectionStatus || RA === undefined}
-          >
-            Goto
-          </button>
-        </div>
-        <div className="col-sm-8">
-          <button
-            className={`btn ${
-              RA !== undefined ? "btn-more02" : "btn-more02"
-            } me-4 mb-4`}
-            onClick={() =>
-              centerCoordinatesHandler(
-                RA,
-                declination,
-                connectionCtx,
-                setErrors,
-              )
-            }
-            disabled={
-              !connectionCtx.connectionStatusStellarium || RA === undefined
-            }
-          >
-            {t("cGoToStellariumCenter")}
-          </button>
-          <button
-            className={`btn ${
-              RA !== undefined ? "btn-more02" : "btn-more02"
-            } me-2 mb-4`}
-            onClick={() => changeCoordinate(+1 / 60, 0)}
-            disabled={RA === undefined}
-          >
-            RA + 1 min
-          </button>
-          <button
-            className={`btn ${
-              RA !== undefined ? "btn-more02" : "btn-more02"
-            } me-2 mb-4`}
-            onClick={() => changeCoordinate(-1 / 60, 0)}
-            disabled={RA === undefined}
-          >
-            RA - 1 min
-          </button>
-          <button
-            className={`btn ${
-              RA !== undefined ? "btn-more02" : "btn-more02"
-            } me-2 mb-4`}
-            onClick={() => changeCoordinate(0, +0.1)}
-            disabled={RA === undefined}
-          >
-            Dec + 0.1°
-          </button>
-          <button
-            className={`btn ${
-              RA !== undefined ? "btn-more02" : "btn-more02"
-            } mb-4`}
-            onClick={() => changeCoordinate(0, -0.1)}
-            disabled={RA === undefined}
-          >
-            Dec - 0.1°
-          </button>
-        </div>
-      </div>
-      <div className="row mb-3">
-        <div className="col-sm-4 text-end">
-          <p>
-            {t("cGoToStellariumMoveCenter")}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-          </p>
-        </div>
-        <div className="col-sm-8">
-          <ol>
-            <li>{t("cGoToStellariumMoveCenterli1")}</li>
-            <li>{t("cGoToStellariumMoveCenterli2")}</li>
-            <li>{t("cGoToStellariumMoveCenterli3")}</li>
-            <li>{t("cGoToStellariumMoveCenterli4")}</li>
-            <li>{t("cGoToStellariumMoveCenterli5")}</li>
-          </ol>
-        </div>
-      </div>
+
+      <details className="dw-target-instructions">
+        <summary>{t("cGoToStellariumMoveCenter")}</summary>
+        <ol>
+          <li>{t("cGoToStellariumMoveCenterli1")}</li>
+          <li>{t("cGoToStellariumMoveCenterli2")}</li>
+          <li>{t("cGoToStellariumMoveCenterli3")}</li>
+          <li>{t("cGoToStellariumMoveCenterli4")}</li>
+          <li>{t("cGoToStellariumMoveCenterli5")}</li>
+        </ol>
+      </details>
       <ImportManualModal
         showImportModal={showImportModal}
         setShowImportModal={setShowImportModal}

@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import i18n from "@/i18n";
 import { useSetupConnection } from "@/hooks/useSetupConnection";
 import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
-
 import RSSFeed from "@/components/RSSFeed";
 import PageHeader from "@/components/shared/PageHeader";
 
@@ -12,14 +11,13 @@ export default function AstroCalendar() {
   useLoadIntialValues();
 
   const { t } = useTranslation();
-  // eslint-disable-next-line no-unused-vars
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
+  const [, setSelectedLanguage] = useState("en");
 
   useEffect(() => {
     const storedLanguage = localStorage.getItem("language");
     if (storedLanguage) {
       setSelectedLanguage(storedLanguage);
-      i18n.changeLanguage(storedLanguage);
+      void i18n.changeLanguage(storedLanguage);
     }
   }, []);
 
