@@ -5,12 +5,8 @@ import ConnectDwarfSTA from "@/components/setup/ConnectDwarfSTA";
 import ConnectDwarf from "@/components/setup/ConnectDwarf";
 import ConnectStellarium from "@/components/setup/ConnectStellarium";
 import SetLocation from "@/components/setup/SetLocation";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 
 export default function SetupScope() {
-  useSetupConnection();
-  useLoadIntialValues();
   const { t } = useTranslation();
   // eslint-disable-next-line no-unused-vars
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");

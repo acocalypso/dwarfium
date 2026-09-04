@@ -48,10 +48,8 @@ export function saveConnectionStatusDB(status: boolean) {
 
 export function fetchConnectionStatusDB(): boolean | undefined {
   let status = localStorage.getItem("connectionStatus");
-  if (status) {
-    // Initial Value deconnected
-    return false;
-  }
+  if (status === null) return undefined;
+  return status === "true";
 }
 
 export function saveInitialConnectionTimeDB() {
@@ -181,10 +179,8 @@ export function saveConnectionStatusStellariumDB(status: boolean) {
 
 export function fetchConnectionStatusStellariumDB(): boolean | undefined {
   let status = localStorage.getItem("connectionStatusStellarium");
-  if (status) {
-    // Initial Value deconnected
-    return false;
-  }
+  if (status === null) return undefined;
+  return status === "true";
 }
 
 export function saveIPStellariumDB(ip: string) {

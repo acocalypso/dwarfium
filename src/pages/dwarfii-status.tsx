@@ -1,12 +1,7 @@
 import DwarfIIStatus from "@/components/DwarfIIStatus";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 import PageHeader from "@/components/shared/PageHeader";
 
 export default function DwarfiiStatusPage() {
-  useSetupConnection();
-  useLoadIntialValues();
-
   return (
     <div className="dw-page">
       <PageHeader

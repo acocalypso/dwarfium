@@ -1,8 +1,6 @@
 import { useContext, useState, useEffect } from "react";
 import Head from "next/head";
 import { ConnectionContext } from "@/stores/ConnectionContext";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { getProxyUrl, getTransfomProxyImageUrl } from "@/lib/get_proxy_url";
@@ -10,8 +8,6 @@ import PhotoEditor from "../components/photoeditor/PhotoEditor"; // Import de be
 import PageHeader from "@/components/shared/PageHeader";
 export default function AstroPhoto() {
   const connectionCtx = useContext(ConnectionContext);
-  useSetupConnection();
-  useLoadIntialValues();
   let thumbnailUrl = "";
   const [notification] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);

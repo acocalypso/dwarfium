@@ -1,15 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import i18n from "@/i18n";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 import RSSFeed from "@/components/RSSFeed";
 import PageHeader from "@/components/shared/PageHeader";
 
 export default function AstroCalendar() {
-  useSetupConnection();
-  useLoadIntialValues();
-
   const { t } = useTranslation();
   const [, setSelectedLanguage] = useState("en");
 

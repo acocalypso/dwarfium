@@ -16,14 +16,58 @@ import {
 } from "@/db/db_utils";
 import { firmwareVersion, WebSocketHandler } from "@/services/dwarf";
 import { ConnectionContextType } from "@/types";
+import { connectionHandler } from "@/lib/connect_utils";
 
 export function useSetupConnection() {
   let connectionCtx = useContext(ConnectionContext);
   let errorCount = useRef(0);
   let errorCountStellarium = useRef(0);
+  const restoringConnection = useRef(false);
   console.debug("Start Dwarf useSetupConnection", connectionCtx.IPDwarf);
 
   let errorCountMax = 5;
+
+  useEffect(() => {
+    const IPDwarf = connectionCtx.IPDwarf;
+    if (
+      connectionCtx.connectionStatus !== true ||
+      !IPDwarf ||
+      restoringConnection.current ||
+      connectionCtx.socketIPDwarf?.isConnected()
+    ) {
+      return;
+    }
+
+    restoringConnection.current = true;
+    const setRestoring = (restoring: boolean) => {
+      restoringConnection.current = restoring;
+    };
+    const setRestoreError = (message: string) => {
+      if (!message) return;
+      restoringConnection.current = false;
+      connectionCtx.setConnectionStatus(false);
+      saveConnectionStatusDB(false);
+    };
+
+    void connectionHandler(
+      connectionCtx,
+      IPDwarf,
+      true,
+      setRestoring,
+      connectionCtx.setConnectionStatusSlave,
+      () => undefined,
+      setRestoreError,
+    ).catch((error) => {
+      console.error("Could not restore the DWARF connection", error);
+      restoringConnection.current = false;
+      connectionCtx.setConnectionStatus(false);
+      saveConnectionStatusDB(false);
+    });
+  }, [
+    connectionCtx.IPDwarf,
+    connectionCtx.connectionStatus,
+    connectionCtx.socketIPDwarf,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     let timerDwarf: any = undefined;

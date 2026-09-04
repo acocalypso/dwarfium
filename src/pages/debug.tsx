@@ -1,12 +1,7 @@
 import Link from "next/link";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 import PageHeader from "@/components/shared/PageHeader";
 
 export default function DebugPage() {
-  useSetupConnection();
-  useLoadIntialValues();
-
   return (
     <div className="dw-page">
       <PageHeader

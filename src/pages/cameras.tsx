@@ -5,8 +5,6 @@ import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 
 import DwarfCameras from "@/components/DwarfCameras";
 import ImagingMenu from "@/components/imaging/ImagingMenu";
@@ -27,9 +25,6 @@ export default function AstroPhoto() {
   }, []);
 
   let connectionCtx = useContext(ConnectionContext);
-  useSetupConnection();
-  useLoadIntialValues();
-
   const [exchangeCamerasStatus, setExchangeCamerasStatus] = useState(false);
   const [showWideangle, setShowWideangle] = useState(false);
   const [useRawPreviewURL, setUseRawPreviewURL] = useState(false);

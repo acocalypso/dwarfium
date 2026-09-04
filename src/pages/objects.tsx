@@ -9,8 +9,6 @@ import GotoLists from "@/components/GotoLists";
 import GotoUserLists from "@/components/GotoUserLists";
 import Asteroids from "@/components/Asteroids";
 import CalibrationDwarf from "@/components/shared/CalibrationDwarf";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { fetchObjectFavoriteNamesDb } from "@/db/db_utils";
 import { AstroObject } from "@/types";
@@ -21,9 +19,6 @@ import PageHeader from "@/components/shared/PageHeader";
 
 export default function Goto() {
   let connectionCtx = useContext(ConnectionContext);
-  useSetupConnection();
-  useLoadIntialValues();
-
   const { t } = useTranslation();
   // eslint-disable-next-line no-unused-vars
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
