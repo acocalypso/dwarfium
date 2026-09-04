@@ -17,7 +17,7 @@ const languages: Record<string, string> = {
 export default function ThemeSettings() {
   const [open, setOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(15);
   const [language, setLanguage] = useState("en");
 
   useEffect(() => {

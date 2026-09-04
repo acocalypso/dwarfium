@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import PageHeader from "@/components/shared/PageHeader";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { getDwarfDeviceProfile } from "@/services/dwarf/deviceProfile";
@@ -8,6 +9,7 @@ import {
   padNumber,
 } from "@/lib/math_utils";
 import { startGotoHandler } from "@/lib/goto_utils";
+import { savePlannerSkySelection } from "@/lib/observation_planner_transfer";
 
 type SkyTarget = {
   name: string;
@@ -48,6 +50,7 @@ function footprintVertices(target: SkyTarget, width: number, height: number) {
 }
 
 export default function SkyMap() {
+  const router = useRouter();
   const connection = useContext(ConnectionContext);
   const aladinRef = useRef<AladinInstance | null>(null);
   const apiRef = useRef<any>(null);
@@ -187,21 +190,40 @@ export default function SkyMap() {
     aladinRef.current.setFoV(Math.max(fov.widthDegrees * 2.2, 3));
   };
 
-  const gotoSelection = () => {
+  const gotoSelection = async () => {
     if (!selectedTarget) return;
     if (!connection.connectionStatus) {
       setGotoError("Connect your DWARF before sending a GOTO command.");
       return;
     }
-    startGotoHandler(
-      connection,
-      setGotoError,
-      setGotoSuccess,
-      undefined,
-      formatRa(selectedTarget.ra),
-      formatDec(selectedTarget.dec),
-      selectedTarget.name,
-    );
+    try {
+      await startGotoHandler(
+        connection,
+        setGotoError,
+        setGotoSuccess,
+        undefined,
+        formatRa(selectedTarget.ra),
+        formatDec(selectedTarget.dec),
+        selectedTarget.name,
+      );
+    } catch (error) {
+      setGotoSuccess(undefined);
+      setGotoError(
+        error instanceof Error ? error.message : "Could not send GOTO command.",
+      );
+    }
+  };
+
+  const sendToPlanner = async () => {
+    if (!selectedTarget) return;
+    savePlannerSkySelection({
+      name: selectedTarget.name,
+      rightAscension: formatRa(selectedTarget.ra),
+      declination: formatDec(selectedTarget.dec),
+      fovWidthDegrees: fov.widthDegrees,
+      fovHeightDegrees: fov.heightDegrees,
+    });
+    await router.push("/scheduler");
   };
 
   return (
@@ -270,6 +292,13 @@ export default function SkyMap() {
                   disabled={!connection.connectionStatus}
                 >
                   <i className="bi bi-send" aria-hidden="true" /> GOTO target
+                </button>
+                <button
+                  className="dw-button dw-button-secondary"
+                  onClick={sendToPlanner}
+                >
+                  <i className="bi bi-calendar-plus" aria-hidden="true" /> Add
+                  to planner
                 </button>
               </div>
             </div>

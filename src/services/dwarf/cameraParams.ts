@@ -7,6 +7,71 @@ export type V3ParameterValue = {
   value: number;
 };
 
+export type V3CameraSettingSummary = {
+  cameraId: number;
+  settings: { label: string; value: string }[];
+};
+
+type CatalogParameter = {
+  name?: string;
+  currentMode?: number;
+  currentValue?: unknown;
+  values?: ({ name?: string; value?: unknown } | string | number)[];
+};
+
+function formatCatalogValue(parameter: CatalogParameter): string {
+  const match = parameter.values?.find(
+    (candidate) =>
+      typeof candidate === "object" &&
+      candidate !== null &&
+      candidate.value === parameter.currentValue,
+  );
+  if (typeof match === "object" && match?.name) return match.name;
+  if (typeof parameter.currentValue === "boolean")
+    return parameter.currentValue ? "On" : "Off";
+  return String(parameter.currentValue ?? "Unavailable");
+}
+
+function displayParameterName(name = "Parameter") {
+  const knownNames: Record<string, string> = {
+    exp: "Exposure",
+    wb: "White balance",
+  };
+  if (knownNames[name]) return knownNames[name];
+  return name
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/^./, (character) => character.toUpperCase());
+}
+
+export function summarizeV3CameraCatalog(
+  catalog: unknown,
+): V3CameraSettingSummary[] {
+  const root = catalog as {
+    data?: {
+      cameraParams?: {
+        cameraId?: number;
+        generalParams?: CatalogParameter[];
+        specialParams?: Record<string, CatalogParameter>;
+      }[];
+    };
+  };
+  return (root?.data?.cameraParams ?? []).map((camera) => {
+    const parameters = [
+      ...(camera.generalParams ?? []),
+      ...Object.values(camera.specialParams ?? {}),
+    ];
+    return {
+      cameraId: camera.cameraId ?? -1,
+      settings: parameters
+        .filter((parameter) => parameter.currentValue !== undefined)
+        .map((parameter) => ({
+          label: displayParameterName(parameter.name),
+          value: formatCatalogValue(parameter),
+        })),
+    };
+  });
+}
+
 let astroParameterCatalog: unknown;
 const authoritativeValues = new Map<string, number>();
 

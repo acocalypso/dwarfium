@@ -1,5 +1,9 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ConnectionContext } from "@/stores/ConnectionContext";
+import {
+  PLANNER_SELECTION_KEY,
+  type PlannerSkySelection,
+} from "@/lib/observation_planner_transfer";
 
 type PlannerTab = "overview" | "plans" | "editor" | "preferences";
 type ObservationPlan = {
@@ -92,6 +96,7 @@ function downloadJson(filename: string, value: unknown) {
 export default function AstroScheduler() {
   const connection = useContext(ConnectionContext);
   const importRef = useRef<HTMLInputElement>(null);
+  const selectionHandledRef = useRef(false);
   const [activeTab, setActiveTab] = useState<PlannerTab>("overview");
   const [plans, setPlans] = useState<ObservationPlan[]>([]);
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
@@ -104,14 +109,34 @@ export default function AstroScheduler() {
     try {
       const storedPlans = localStorage.getItem(PLANS_KEY);
       const storedPreferences = localStorage.getItem(PREFERENCES_KEY);
+      const storedSelection = localStorage.getItem(PLANNER_SELECTION_KEY);
+      let nextPreferences = DEFAULT_PREFERENCES;
       if (storedPlans) setPlans(JSON.parse(storedPlans));
       if (storedPreferences) {
-        const parsed = {
+        nextPreferences = {
           ...DEFAULT_PREFERENCES,
           ...JSON.parse(storedPreferences),
         };
-        setPreferences(parsed);
-        setDraft(blankPlan(parsed));
+        setPreferences(nextPreferences);
+      }
+      if (storedSelection && !selectionHandledRef.current) {
+        const selection = JSON.parse(storedSelection) as PlannerSkySelection;
+        selectionHandledRef.current = true;
+        setDraft({
+          ...blankPlan(nextPreferences),
+          name: `${selection.name} observation`,
+          target: selection.name,
+          rightAscension: selection.rightAscension,
+          declination: selection.declination,
+          notes: `Framed in Sky Map for ${selection.fovWidthDegrees.toFixed(2)}° × ${selection.fovHeightDegrees.toFixed(2)}° telephoto FoV.`,
+        });
+        localStorage.removeItem(PLANNER_SELECTION_KEY);
+        setActiveTab("editor");
+        setNotice(
+          "Sky Map framing added. Choose a start time and review the capture settings.",
+        );
+      } else if (!selectionHandledRef.current) {
+        setDraft(blankPlan(nextPreferences));
       }
     } catch {
       setNotice(

@@ -56,7 +56,7 @@ const navigation: NavGroup[] = [
     label: "Device",
     items: [
       { href: "/setup-scope", label: "Connection", icon: "bi-router" },
-      { href: "/dwarfii-status", label: "Device status", icon: "bi-activity" },
+      { href: "/device-status", label: "Device status", icon: "bi-activity" },
       { href: "/logs", label: "Logs", icon: "bi-terminal" },
       { href: "/editor", label: "Image editor", icon: "bi-sliders" },
       { href: "/about", label: "About", icon: "bi-info-circle" },

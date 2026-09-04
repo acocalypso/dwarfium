@@ -17,7 +17,7 @@ export default function DebugPage() {
             <small>Inspect app and device communication</small>
           </span>
         </Link>
-        <Link href="/dwarfii-status" className="dw-quick-action">
+        <Link href="/device-status" className="dw-quick-action">
           <i className="bi bi-activity" aria-hidden="true" />
           <span>
             <strong>Camera status</strong>

@@ -2,7 +2,6 @@ import React, { useState, useContext, useRef, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import SlidingPane from "react-sliding-pane";
 import JoystickController from "joystick-controller";
-import CircularSlider from "@fseehawer/react-circular-slider";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Popover from "react-bootstrap/Popover";
 import Link from "next/link";
@@ -59,6 +58,7 @@ export default function CameraAddOn(props: PropTypes) {
     undefined,
   );
   const joystickSpeed = useRef(2.2);
+  const [joystickSpeedValue, setJoystickSpeedValue] = useState(2.2);
 
   const [activeAction, setActiveAction] = useState<string | undefined>(
     undefined,
@@ -178,8 +178,6 @@ export default function CameraAddOn(props: PropTypes) {
   let leftContainer = useRef("10px");
   let bottomContainer = useRef("75px");
   let WidthSlidePane = useRef("1500px");
-  let WidthCircularSlider = useRef(150);
-  let trackSize = useRef(24);
   let intervalTimer = useRef<ReturnType<typeof setInterval> | undefined>(
     undefined,
   );
@@ -543,8 +541,6 @@ export default function CameraAddOn(props: PropTypes) {
       leftContainer.current = "10px";
       bottomContainer.current = "75px";
       WidthSlidePane.current = "1500px";
-      WidthCircularSlider.current = 150;
-      trackSize.current = 24;
       if (ChangeWindowSize.current < 1500) {
         setShowModal(false);
       }
@@ -559,8 +555,6 @@ export default function CameraAddOn(props: PropTypes) {
       leftContainer.current = "7px";
       bottomContainer.current = "57px";
       WidthSlidePane.current = "1250px";
-      WidthCircularSlider.current = 110;
-      trackSize.current = 24;
       if (ChangeWindowSize.current <= 1300 || ChangeWindowSize.current > 1500) {
         setShowModal(false);
       }
@@ -575,8 +569,6 @@ export default function CameraAddOn(props: PropTypes) {
       leftContainer.current = "7px";
       bottomContainer.current = "57px";
       WidthSlidePane.current = "1100px";
-      WidthCircularSlider.current = 110;
-      trackSize.current = 24;
       if (ChangeWindowSize.current <= 1200 || ChangeWindowSize.current > 1300) {
         setShowModal(false);
       }
@@ -591,8 +583,6 @@ export default function CameraAddOn(props: PropTypes) {
       leftContainer.current = "5px";
       bottomContainer.current = "50px";
       WidthSlidePane.current = "1060px";
-      WidthCircularSlider.current = 100;
-      trackSize.current = 12;
       if (ChangeWindowSize.current > 1200) {
         setShowModal(false);
       }
@@ -741,8 +731,9 @@ export default function CameraAddOn(props: PropTypes) {
     }
   }
 
-  function updateNewSpeed(value) {
+  function updateNewSpeed(value: number) {
     joystickSpeed.current = value;
+    setJoystickSpeedValue(value);
   }
 
   function create_button_joystick(
@@ -865,47 +856,28 @@ export default function CameraAddOn(props: PropTypes) {
         <div id="main_SlidingPane" className="box-element">
           {(showOnlyControls || !showOnlyActions) && (
             <div className="speed-meter">
-              <CircularSlider
-                width={WidthCircularSlider.current}
-                min={1.1}
-                max={5}
-                initialValue={2.2}
-                label="SPEED"
-                labelColor="#005a58"
-                knobColor="#005a58"
-                progressColorFrom="#00bfbd"
-                progressColorTo="#009c9a"
-                progressSize={trackSize.current}
-                trackColor="#eeeeee"
-                trackSize={trackSize.current}
-                data={[
-                  "1.1",
-                  "1.2",
-                  "1.4",
-                  "1.6",
-                  "1.8",
-                  "2.0",
-                  "2.2",
-                  "2.4",
-                  "2.6",
-                  "2.8",
-                  "3.0",
-                  "3.2",
-                  "3.4",
-                  "3.6",
-                  "3.8",
-                  "4.0",
-                  "4.2",
-                  "4.4",
-                  "4.6",
-                  "4.8",
-                  "5",
-                ]}
-                dataIndex={6}
-                onChange={(value) => {
-                  updateNewSpeed(value);
-                }}
-              />
+              <label className="speed-control" htmlFor="camera-motor-speed">
+                <span className="speed-control__label">Motor speed</span>
+                <strong className="speed-control__value">
+                  {joystickSpeedValue.toFixed(1)}×
+                </strong>
+                <input
+                  id="camera-motor-speed"
+                  className="speed-control__range"
+                  type="range"
+                  min="1.1"
+                  max="5"
+                  step="0.1"
+                  value={joystickSpeedValue}
+                  onChange={(event) =>
+                    updateNewSpeed(Number(event.currentTarget.value))
+                  }
+                />
+                <span className="speed-control__limits" aria-hidden="true">
+                  <span>Fine</span>
+                  <span>Fast</span>
+                </span>
+              </label>
             </div>
           )}
           {(showOnlyActions || !showOnlyControls) && (

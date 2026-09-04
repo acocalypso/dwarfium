@@ -8,8 +8,8 @@ import {
   messageSystemSetTime,
   messageSystemSetTimezone,
   messageAstroStartCalibration,
-  messageV3AstroGotoSolar,
-  messageV3AstroGotoDSO,
+  createV3OneClickGotoSolarPacket,
+  createV3OneClickGotoDsoPacket,
   messageV3AstroGotoDone,
   messageV3CameraTeleCloseCamera,
   messageV3CameraWideCloseCamera,
@@ -275,6 +275,7 @@ export async function startGotoHandler(
   stopGoto: boolean = false,
 ) {
   if (connectionCtx.IPDwarf === undefined) {
+    setGotoErrors("The connected DWARF has no network address.");
     return;
   }
   setGotoErrors(undefined);
@@ -302,7 +303,12 @@ export async function startGotoHandler(
   const customMessageHandler = (txt_info, result_data) => {
     if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_GOTO_DSO ||
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_GOTO_SOLAR_SYSTEM
+      result_data.cmd ==
+        Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_GOTO_SOLAR_SYSTEM ||
+      result_data.cmd ==
+        Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_ONE_CLICK_GOTO_DSO ||
+      result_data.cmd ==
+        Dwarfii_Api.DwarfCMD.CMD_ASTRO_START_ONE_CLICK_GOTO_SOLAR_SYSTEM
     ) {
       if (result_data.data.code != Dwarfii_Api.DwarfErrorCode.OK) {
         setGotoSuccess("");
@@ -325,6 +331,21 @@ export async function startGotoHandler(
           resetCameraData(connectionCtx);
         }
       }
+    } else if (
+      !goto_status &&
+      result_data.cmd ==
+        Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_ONE_CLICK_GOTO
+    ) {
+      const phase =
+        result_data.data.trackingState ??
+        result_data.data.gotoState ??
+        result_data.data.phase_2;
+      setGotoSuccess(
+        phase?.targetName
+          ? `GOTO ${phase.targetName}: state ${phase.state}`
+          : `GOTO in progress: state ${result_data.data.state}`,
+      );
+      setGotoErrors(undefined);
     } else if (
       !goto_status &&
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_GOTO
@@ -417,20 +438,20 @@ export async function startGotoHandler(
     // Send Command : cmdAstroStartGotoDso
     if (Dwarfii_Api.SolarSystemTarget[planet]) {
       targetName = Dwarfii_Api.SolarSystemTarget[planet];
-      WS_Packet = messageV3AstroGotoSolar(
+      WS_Packet = createV3OneClickGotoSolarPacket(
         planet,
         lon,
         lat,
         Dwarfii_Api.SolarSystemTarget[planet],
       );
     } else if (targetName) {
-      WS_Packet = messageV3AstroGotoSolar(planet, lon, lat, targetName);
+      WS_Packet = createV3OneClickGotoSolarPacket(planet, lon, lat, targetName);
     } else {
-      WS_Packet = messageV3AstroGotoSolar(planet, lon, lat, "-");
+      WS_Packet = createV3OneClickGotoSolarPacket(planet, lon, lat, "-");
     }
   } else if (targetName) {
     // Send Command : messageAstroStartGotoDso
-    WS_Packet = messageV3AstroGotoDSO(
+    WS_Packet = createV3OneClickGotoDsoPacket(
       RA_number,
       declination_number,
       targetName,
@@ -455,7 +476,12 @@ export async function startGotoHandler(
   // Send Command
   let txtInfoCommand = "Start Goto";
 
-  webSocketHandler.prepare(
+  if (!WS_Packet) {
+    setGotoErrors("Select a named target before starting GOTO.");
+    return;
+  }
+
+  await webSocketHandler.prepare(
     WS_Packet,
     txtInfoCommand,
     [
@@ -468,8 +494,10 @@ export async function startGotoHandler(
     customMessageHandler,
   );
   if (!webSocketHandler.run()) {
-    console.error(" Can't launch Web Socket Run Action!");
+    setGotoErrors("Could not start the DWARF command connection.");
+    return;
   }
+  setGotoSuccess(`GOTO command sent for ${objectName || targetName}.`);
 }
 
 function resetCameraData(connectionCtx) {

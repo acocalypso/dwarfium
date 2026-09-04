@@ -4,7 +4,23 @@ jest.mock("dwarfii_api", () => ({
   DwarfDeviceIdDwarf3: 2,
   DwarfDeviceIdDwarfMini: 4,
   WsMinorVersionV3: 20,
-  Dwarfii_Api: { WsPacket: { decode: (packet: unknown) => packet } },
+  Dwarfii_Api: {
+    WsPacket: { decode: (packet: unknown) => packet },
+    ModuleId: { MODULE_ASTRO: 11 },
+    DwarfCMD: {
+      CMD_ASTRO_START_ONE_CLICK_GOTO_DSO: 11013,
+      CMD_ASTRO_START_ONE_CLICK_GOTO_SOLAR_SYSTEM: 11014,
+    },
+    MessageTypeId: { TYPE_REQUEST: 1 },
+    ReqOneClickGotoDSO: { create: (value: unknown) => value },
+    ReqOneClickGotoSolarSystem: { create: (value: unknown) => value },
+  },
+  createPacket: jest.fn((message, _class, moduleId, cmd, typeId) => ({
+    message,
+    moduleId,
+    cmd,
+    typeId,
+  })),
   setDwarfClientID: jest.fn(() => true),
   setDwarfDeviceID: jest.fn(() => true),
   setDwarfMinorVersion: jest.fn(() => true),
@@ -36,9 +52,11 @@ jest.mock("dwarfii_api", () => ({
 
 import {
   configureDwarfProtocol,
+  createV3OneClickGotoDsoPacket,
   createV3SessionPackets,
   Dwarfii_Api,
   getDwarfDeviceProfile,
+  summarizeV3CameraCatalog,
 } from "@/services/dwarf";
 
 describe("DWARF V3 protocol boundary", () => {
@@ -83,5 +101,59 @@ describe("DWARF V3 protocol boundary", () => {
 
   test("rejects unknown hardware", () => {
     expect(() => getDwarfDeviceProfile(3)).toThrow("Unsupported DWARF");
+  });
+
+  test("serializes the V3 one-click GOTO fields expected by firmware", () => {
+    const packet = createV3OneClickGotoDsoPacket(
+      5.588,
+      -5.391,
+      "M42",
+      -10.9,
+      49.4,
+    ) as unknown as { cmd: number; message: Record<string, unknown> };
+
+    expect(packet.cmd).toBe(11013);
+    expect(packet.message).toEqual({
+      ra: 5.588,
+      dec: -5.391,
+      targetName: "M42",
+      lon: -10.9,
+      lat: 49.4,
+      shootingMode: 2,
+      gotoOnly: false,
+    });
+    expect(packet.message).not.toHaveProperty("mode");
+  });
+
+  test("summarizes current V3 camera values for device status", () => {
+    expect(
+      summarizeV3CameraCatalog({
+        data: {
+          cameraParams: [
+            {
+              cameraId: 0,
+              generalParams: [
+                { name: "filterType", currentValue: 1, values: [1, 2] },
+              ],
+              specialParams: {
+                exp: {
+                  name: "exp",
+                  currentValue: 96,
+                  values: [{ name: "1/6", value: 96 }],
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ).toEqual([
+      {
+        cameraId: 0,
+        settings: [
+          { label: "Filter Type", value: "1" },
+          { label: "Exposure", value: "1/6" },
+        ],
+      },
+    ]);
   });
 });

@@ -193,9 +193,7 @@ export default function DwarfCameras(props: PropType) {
         iImgRefWide.current = null;
       }
       console.info(
-        `Device type read: ${connectionCtx.typeIdDwarf} - ${
-          connectionCtx.typeIdDwarf === 1 ? "Dwarf II" : "Dwarf 3"
-        }`,
+        `Device type read: ${connectionCtx.typeIdDwarf} - ${connectionCtx.typeNameDwarf}`,
       );
       console.debug("End Of Effect DwarfCameras");
     };

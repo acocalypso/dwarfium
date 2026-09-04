@@ -844,7 +844,10 @@ export default function ImagingMenu(props: PropType) {
   }
 
   return (
-    <ul className="nav nav-pills flex-column mb-auto border">
+    <ul
+      className="nav nav-pills dw-imaging-toolbar"
+      aria-label="Imaging controls"
+    >
       {screenWidth >= sizeSmallScreen && (
         <li className={`nav-item ${styles.box}`}>
           {checkPhotoMode()}

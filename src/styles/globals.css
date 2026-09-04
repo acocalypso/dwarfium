@@ -674,10 +674,48 @@ img {
 .speed-meter {
     align-items: center;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     margin-left: 50px;
     margin-right: 19px;
     width: 180px;
+}
+
+.speed-control {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.35rem 0.75rem;
+    width: 100%;
+    color: var(--bs-body-color);
+}
+
+.speed-control__label {
+    align-self: center;
+    color: var(--bs-secondary-color);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.speed-control__value {
+    color: var(--bs-body-color);
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.speed-control__range {
+    grid-column: 1 / -1;
+    width: 100%;
+    accent-color: #00bfbd;
+    cursor: pointer;
+}
+
+.speed-control__limits {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    color: var(--bs-secondary-color);
+    font-size: 0.7rem;
 }
 
 .joystick-button-up {

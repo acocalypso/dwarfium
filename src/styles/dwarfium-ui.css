@@ -39,7 +39,7 @@ body.dark-theme {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  font-size: var(--dw-user-font-size, 16px);
+  font-size: var(--dw-user-font-size, 15px);
 }
 
 body h1,
@@ -479,7 +479,7 @@ textarea {
 }
 .dw-page-header h1 {
   margin: 0;
-  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
   font-weight: 760;
   letter-spacing: -0.035em;
 }
@@ -488,6 +488,7 @@ textarea {
   margin: 8px 0 0;
   color: var(--dw-text-muted);
   line-height: 1.55;
+  font-size: 0.92rem;
 }
 .dw-header-actions,
 .dw-action-row {
@@ -737,6 +738,65 @@ textarea {
   max-width: none;
   margin: 0;
   padding: 0;
+}
+.dw-imaging-toolbar {
+  width: 100%;
+  min-height: 0;
+  display: flex !important;
+  align-items: center;
+  flex-flow: row wrap !important;
+  gap: 6px;
+  margin: 0 !important;
+  padding: 8px !important;
+  border-color: var(--dw-border) !important;
+  border-radius: 10px;
+  list-style: none;
+}
+.dw-imaging-toolbar > div {
+  display: contents;
+}
+.dw-imaging-toolbar .nav-item {
+  width: 42px !important;
+  height: 42px !important;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.dw-imaging-toolbar > .nav-item:first-child,
+.dw-imaging-toolbar > .nav-item:last-of-type {
+  width: auto !important;
+  min-width: 74px;
+  padding-inline: 10px;
+}
+.dw-imaging-toolbar .nav-item:hover {
+  background: var(--dw-surface-soft);
+  border-color: var(--dw-border);
+}
+.dw-imaging-toolbar .nav-item > a {
+  position: static !important;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dw-text) !important;
+  transform: none !important;
+}
+.dw-imaging-toolbar .nav-item svg {
+  width: 28px;
+  height: 28px;
+}
+.dw-imaging-toolbar > hr {
+  width: 1px;
+  height: 28px;
+  flex: 0 0 1px;
+  margin: 0 3px;
+  color: var(--dw-border-strong);
+  background: currentColor;
+  border: 0;
+  opacity: 1;
 }
 .dw-setup-intro {
   display: grid;
@@ -2162,6 +2222,81 @@ textarea {
 .dw-tool-panel {
   margin-bottom: 16px;
   overflow: auto;
+}
+.dw-tool-panel > div > h2 {
+  font-size: 1.2rem;
+}
+.dw-tool-panel > div > p {
+  max-width: 760px;
+  color: var(--dw-text-muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.dw-device-status {
+  display: grid;
+  gap: 16px;
+}
+.dw-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.dw-status-grid > div,
+.dw-camera-status-grid article {
+  min-width: 0;
+  padding: 14px;
+  background: rgba(7, 11, 18, 0.5);
+  border: 1px solid var(--dw-border);
+  border-radius: 9px;
+}
+.dw-status-grid dt,
+.dw-camera-status-grid dt {
+  color: var(--dw-text-muted);
+  font-size: 0.72rem;
+}
+.dw-status-grid dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.dw-camera-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dw-camera-status-grid article > h3 {
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+.dw-camera-status-grid dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.dw-camera-status-grid dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(52, 72, 94, 0.5);
+}
+.dw-camera-status-grid dl > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+.dw-camera-status-grid dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: right;
+}
+.dw-status-updated {
+  margin: 12px 0 0;
+  color: var(--dw-text-muted);
+  font-size: 0.74rem;
 }
 .dw-tool-panel > :first-child {
   margin-top: 0 !important;
@@ -3891,6 +4026,9 @@ body.light-theme .dw-statusbar {
   .dw-adjustment-grid {
     grid-template-columns: 1fr;
   }
+  .dw-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .dw-sky-inspector {
     grid-row: 1;
   }
@@ -3922,6 +4060,43 @@ body.light-theme .dw-statusbar {
   .dw-form-grid,
   .dw-check-grid {
     grid-template-columns: 1fr;
+  }
+  .dw-status-grid,
+  .dw-camera-status-grid {
+    grid-template-columns: 1fr;
+  }
+  .dw-camera-stage .top-buttons-container {
+    width: 100%;
+    gap: 8px;
+  }
+  .dw-camera-stage .controls-container {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .dw-camera-stage .controls-container .btn-more02,
+  .dw-camera-stage .float-end-buttons .btn-more02 {
+    width: 100%;
+    margin: 0 !important;
+    padding-inline: 8px;
+    font-size: 0.8rem;
+  }
+  .dw-camera-stage .float-end-buttons,
+  .dw-camera-stage .float-end-buttons > div {
+    width: 100%;
+    display: grid;
+    gap: 8px;
+    margin-top: 0;
+  }
+  .dw-camera-stage .float-end-buttons {
+    grid-template-columns: 1fr;
+  }
+  .dw-camera-stage .float-end-buttons > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dw-imaging-toolbar > .nav-item:last-of-type {
+    min-width: 84px;
   }
   .dw-form-grid label.is-wide,
   .dw-form-grid .is-wide,
