@@ -18,6 +18,10 @@ import {
   WebSocketHandler as ApiWebSocketHandler,
 } from "dwarfii_api";
 import type { DwarfDeviceProfile } from "./deviceProfile";
+import {
+  decodeV3DeviceStateTelemetry,
+  type V3DeviceTelemetry,
+} from "./telemetry";
 
 export type DwarfSocket = {
   setDeviceIdDwarf(deviceId: number): boolean;
@@ -48,6 +52,37 @@ export class WebSocketHandler extends ApiWebSocketHandler {
   private openedAt = 0;
   private rapidCloseCount = 0;
   private reconnectSuppressed = false;
+  private telemetryHandler?: (telemetry: V3DeviceTelemetry) => void;
+  private protocolResponseHandler?: (command: number) => void;
+  private telemetryTimer?: ReturnType<typeof setInterval>;
+
+  setTelemetryHandler(
+    handler: ((telemetry: V3DeviceTelemetry) => void) | undefined,
+  ): void {
+    this.telemetryHandler = handler;
+  }
+
+  setProtocolResponseHandler(
+    handler: ((command: number) => void) | undefined,
+  ): void {
+    this.protocolResponseHandler = handler;
+  }
+
+  startTelemetryPolling(intervalMs = 10_000): void {
+    this.stopTelemetryPolling();
+    this.telemetryTimer = setInterval(() => {
+      if (this.isConnected()) {
+        void this.prepare(messageV3GetDeviceStateInfo(), "");
+      }
+    }, intervalMs);
+  }
+
+  stopTelemetryPolling(): void {
+    if (this.telemetryTimer !== undefined) {
+      clearInterval(this.telemetryTimer);
+      this.telemetryTimer = undefined;
+    }
+  }
 
   resetReconnectGuard(): void {
     this.openedAt = 0;
@@ -62,6 +97,38 @@ export class WebSocketHandler extends ApiWebSocketHandler {
   override start(): void {
     this.openedAt = Date.now();
     super.start();
+  }
+
+  override async handleMessage(event: MessageEvent): Promise<void> {
+    if (typeof event.data !== "string") {
+      try {
+        const bytes =
+          event.data instanceof ArrayBuffer
+            ? new Uint8Array(event.data)
+            : ArrayBuffer.isView(event.data)
+              ? new Uint8Array(
+                  event.data.buffer,
+                  event.data.byteOffset,
+                  event.data.byteLength,
+                )
+              : undefined;
+        if (bytes) {
+          const packet = Dwarfii_Api.WsPacket.decode(bytes);
+          const command = Number(packet.cmd);
+          if (Number.isFinite(command)) this.protocolResponseHandler?.(command);
+          if (command === V3_SESSION_READY_COMMAND && packet.data) {
+            const telemetry = decodeV3DeviceStateTelemetry(
+              packet.data as Uint8Array,
+            );
+            if (telemetry) this.telemetryHandler?.(telemetry);
+          }
+        }
+      } catch (error) {
+        console.debug("Could not inspect V3 telemetry payload", error);
+      }
+    }
+
+    await super.handleMessage(event);
   }
 
   override async handleClose(message: unknown): Promise<void> {
@@ -85,6 +152,11 @@ export class WebSocketHandler extends ApiWebSocketHandler {
     }
 
     await super.handleClose(message);
+  }
+
+  override async cleanup(forceStop = false): Promise<void> {
+    await super.cleanup(forceStop);
+    if (forceStop || !this.is_running) this.stopTelemetryPolling();
   }
 }
 

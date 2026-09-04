@@ -66,4 +66,26 @@ describe("applyDeviceTelemetry", () => {
 
     expect(connection.setStatusTemperatureDwarf).toHaveBeenCalledWith(35);
   });
+
+  it("reads current V3 device telemetry from the complete schema", () => {
+    const connection = createConnectionContext();
+
+    applyDeviceTelemetry(connection, {
+      cmd: 16405,
+      data: {
+        deviceStateInfo: {
+          batteryInfo: { percentage: 73 },
+          chargingState: { state: 1 },
+          storageInfo: { availableSize: 42, totalSize: 64, isValid: true },
+          temperature: { code: 0, temperature: 36 },
+        },
+      },
+    });
+
+    expect(connection.setBatteryLevelDwarf).toHaveBeenCalledWith(73);
+    expect(connection.setBatteryStatusDwarf).toHaveBeenCalledWith(1);
+    expect(connection.setAvailableSizeDwarf).toHaveBeenCalledWith(42);
+    expect(connection.setTotalSizeDwarf).toHaveBeenCalledWith(64);
+    expect(connection.setStatusTemperatureDwarf).toHaveBeenCalledWith(36);
+  });
 });

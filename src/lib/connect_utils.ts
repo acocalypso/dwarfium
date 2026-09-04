@@ -108,8 +108,26 @@ export function applyDeviceTelemetry(
   }
 
   if (cmd === V3_SESSION_READY_COMMAND) {
+    const deviceState = data.deviceStateInfo;
+    const battery = Number(deviceState?.batteryInfo?.percentage);
+    if (Number.isFinite(battery)) {
+      connectionCtx.setBatteryLevelDwarf(
+        Math.max(0, Math.min(100, Math.round(battery))),
+      );
+    }
+    const chargeState = Number(deviceState?.chargingState?.state);
+    if (Number.isFinite(chargeState)) {
+      connectionCtx.setBatteryStatusDwarf(chargeState);
+    }
+    const availableSize = Number(deviceState?.storageInfo?.availableSize);
+    const totalSize = Number(deviceState?.storageInfo?.totalSize);
+    if (Number.isFinite(availableSize) && Number.isFinite(totalSize)) {
+      connectionCtx.setAvailableSizeDwarf(availableSize);
+      connectionCtx.setTotalSizeDwarf(totalSize);
+    }
     const temperature = Number(
-      data.teleCameraStateInfo?.cmosTemperature?.temperature,
+      data.teleCameraStateInfo?.cmosTemperature?.temperature ??
+        deviceState?.temperature?.temperature,
     );
     if (Number.isFinite(temperature)) {
       connectionCtx.setStatusTemperatureDwarf(temperature);
@@ -128,6 +146,11 @@ export async function connectionHandler(
   setGoLive: Function,
   setErrorTxt: Function,
 ) {
+  connectionCtx.setBatteryLevelDwarf(undefined);
+  connectionCtx.setAvailableSizeDwarf(undefined);
+  connectionCtx.setTotalSizeDwarf(undefined);
+  connectionCtx.setStatusTemperatureDwarf(undefined);
+
   if (IPDwarf === undefined) {
     return;
   }
@@ -395,6 +418,45 @@ export async function connectionHandler(
     logger(txt_info, result_data, connectionCtx);
   };
 
+  let hasProtocolResponse = false;
+  const markProtocolConnected = () => {
+    cancelPendingDisconnect();
+    connectionCtx.setConnectionStatus(true);
+    saveConnectionStatusDB(true);
+    if (!hasProtocolResponse) {
+      hasProtocolResponse = true;
+      connectionCtx.setInitialConnectionTime(Date.now());
+      saveInitialConnectionTimeDB();
+      saveIPConnectDB(IPDwarf);
+    }
+  };
+
+  webSocketHandler.setProtocolResponseHandler(() => {
+    markProtocolConnected();
+    setConnecting(false);
+  });
+  webSocketHandler.setTelemetryHandler((telemetry) => {
+    if (telemetry.batteryPercentage !== undefined) {
+      connectionCtx.setBatteryLevelDwarf(
+        Math.max(0, Math.min(100, Math.round(telemetry.batteryPercentage))),
+      );
+    }
+    if (telemetry.chargingState !== undefined) {
+      connectionCtx.setBatteryStatusDwarf(telemetry.chargingState);
+    }
+    if (
+      telemetry.availableSize !== undefined &&
+      telemetry.totalSize !== undefined &&
+      telemetry.storageValid !== false
+    ) {
+      connectionCtx.setAvailableSizeDwarf(telemetry.availableSize);
+      connectionCtx.setTotalSizeDwarf(telemetry.totalSize);
+    }
+    if (telemetry.temperature !== undefined) {
+      connectionCtx.setStatusTemperatureDwarf(telemetry.temperature);
+    }
+  });
+
   let disconnectTimer: ReturnType<typeof setTimeout> | undefined;
   const cancelPendingDisconnect = () => {
     if (disconnectTimer !== undefined) {
@@ -404,6 +466,7 @@ export async function connectionHandler(
   };
   const markDisconnected = () => {
     cancelPendingDisconnect();
+    hasProtocolResponse = false;
     connectionCtx.setConnectionStatus(false);
     saveConnectionStatusDB(false);
   };
@@ -430,13 +493,10 @@ export async function connectionHandler(
   const customStateHandler = (state) => {
     if (state) {
       cancelPendingDisconnect();
-      if (state != fetchConnectionStatusDB()) {
-        connectionCtx.setConnectionStatus(true);
-        saveConnectionStatusDB(true);
-      }
     } else if (webSocketHandler.isReconnectSuppressed?.()) {
       markDisconnected();
     } else {
+      hasProtocolResponse = false;
       scheduleDisconnect();
     }
   };
@@ -498,6 +558,7 @@ export async function connectionHandler(
       customErrorHandler,
       customReconnectHandler,
     );
+    webSocketHandler.startTelemetryPolling();
   }
 
   // Start Connection
