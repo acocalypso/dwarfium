@@ -89,6 +89,8 @@ export async function connectionHandler(
     ? connectionCtx.socketIPDwarf
     : new WebSocketHandler(IPDwarf);
 
+  webSocketHandler.resetReconnectGuard?.();
+
   connectionCtx.setSocketIPDwarf(webSocketHandler);
   const proxyLocalIP =
     connectionCtx.proxyInLan && connectionCtx.proxyLocalIP
@@ -334,17 +336,49 @@ export async function connectionHandler(
     logger(txt_info, result_data, connectionCtx);
   };
 
-  const customErrorHandler = () => {
-    console.error("ConnectDwarf : Socket Close!");
-    setConnecting(false);
+  let disconnectTimer: ReturnType<typeof setTimeout> | undefined;
+  const cancelPendingDisconnect = () => {
+    if (disconnectTimer !== undefined) {
+      clearTimeout(disconnectTimer);
+      disconnectTimer = undefined;
+    }
+  };
+  const markDisconnected = () => {
+    cancelPendingDisconnect();
     connectionCtx.setConnectionStatus(false);
     saveConnectionStatusDB(false);
   };
+  const scheduleDisconnect = () => {
+    cancelPendingDisconnect();
+    disconnectTimer = setTimeout(() => {
+      if (!webSocketHandler.isConnected()) markDisconnected();
+    }, 6_500);
+  };
+
+  const customErrorHandler = () => {
+    console.error("ConnectDwarf : Socket Close!");
+    setConnecting(false);
+    if (webSocketHandler.isReconnectSuppressed?.()) {
+      setErrorTxt(
+        "Another Dwarfium or DWARFLAB client may be controlling this telescope. Close the other client, then select Connect.",
+      );
+      markDisconnected();
+    } else {
+      scheduleDisconnect();
+    }
+  };
 
   const customStateHandler = (state) => {
-    if (state != fetchConnectionStatusDB()) {
-      connectionCtx.setConnectionStatus(state);
-      saveConnectionStatusDB(state);
+    if (state) {
+      cancelPendingDisconnect();
+      if (state != fetchConnectionStatusDB()) {
+        connectionCtx.setConnectionStatus(true);
+        saveConnectionStatusDB(true);
+      }
+    } else if (webSocketHandler.isReconnectSuppressed?.()) {
+      markDisconnected();
+    } else {
+      scheduleDisconnect();
     }
   };
 
@@ -353,7 +387,6 @@ export async function connectionHandler(
   };
   webSocketHandler.onStopTimerHandler = () => {
     setConnecting(false);
-    saveConnectionStatusDB(false);
   };
 
   // close socket is request takes too long
@@ -361,8 +394,7 @@ export async function connectionHandler(
     webSocketHandler.handleClose("");
     console.log(" -> Close Timer2.....");
     setConnecting(false);
-    connectionCtx.setConnectionStatus(false);
-    saveConnectionStatusDB(false);
+    scheduleDisconnect();
   }, 10000);
 
   // function for connection and reconnection

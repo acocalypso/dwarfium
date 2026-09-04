@@ -774,7 +774,9 @@ textarea {
   background: var(--dw-surface-soft);
   border-color: var(--dw-border);
 }
-.dw-imaging-toolbar .nav-item > a {
+.dw-imaging-toolbar .nav-item > a,
+.dw-imaging-toolbar .nav-item > button,
+.dw-imaging-toolbar .nav-item > span {
   position: static !important;
   width: 100%;
   height: 100%;

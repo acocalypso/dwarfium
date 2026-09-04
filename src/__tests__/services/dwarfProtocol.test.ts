@@ -6,12 +6,19 @@ jest.mock("dwarfii_api", () => ({
   WsMinorVersionV3: 20,
   Dwarfii_Api: {
     WsPacket: { decode: (packet: unknown) => packet },
-    ModuleId: { MODULE_ASTRO: 11 },
+    ModuleId: {
+      MODULE_CAMERA_WIDE: 2,
+      MODULE_ASTRO: 11,
+      MODULE_DEVICE_CONFIG: 14,
+    },
     DwarfCMD: {
       CMD_ASTRO_START_ONE_CLICK_GOTO_DSO: 11013,
       CMD_ASTRO_START_ONE_CLICK_GOTO_SOLAR_SYSTEM: 11014,
+      CMD_V3_CAMERA_WIDE_OPEN_CAMERA: 12036,
     },
     MessageTypeId: { TYPE_REQUEST: 1 },
+    V3ReqOpenWideCamera: { create: (value: unknown) => value },
+    V3ReqModeQuery: { create: (value: unknown) => value },
     ReqOneClickGotoDSO: { create: (value: unknown) => value },
     ReqOneClickGotoSolarSystem: { create: (value: unknown) => value },
   },
@@ -20,6 +27,9 @@ jest.mock("dwarfii_api", () => ({
     moduleId,
     cmd,
     typeId,
+    minorVersion: 20,
+    deviceId: 4,
+    clientId: "0000DAF4-0000-1000-8000-00805F9B34FB",
   })),
   setDwarfClientID: jest.fn(() => true),
   setDwarfDeviceID: jest.fn(() => true),
@@ -48,18 +58,44 @@ jest.mock("dwarfii_api", () => ({
     deviceId: 4,
     clientId: "0000DAF4-0000-1000-8000-00805F9B34FB",
   })),
+  WebSocketHandler: class {
+    is_running = true;
+
+    start() {
+      this.is_running = true;
+    }
+
+    async handleClose() {}
+  },
 }));
 
 import {
   configureDwarfProtocol,
+  createV3ShootingModePacket,
   createV3OneClickGotoDsoPacket,
   createV3SessionPackets,
   Dwarfii_Api,
   getDwarfDeviceProfile,
   summarizeV3CameraCatalog,
+  WebSocketHandler,
 } from "@/services/dwarf";
 
 describe("DWARF V3 protocol boundary", () => {
+  test("stops automatic reconnect after three rapid controller conflicts", async () => {
+    const socket = new WebSocketHandler("192.0.2.1");
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      socket.start();
+      await socket.handleClose({ code: 1006 });
+    }
+
+    expect(socket.isReconnectSuppressed()).toBe(true);
+    expect(socket.is_running).toBe(false);
+
+    socket.resetReconnectGuard();
+    expect(socket.isReconnectSuppressed()).toBe(false);
+  });
+
   test.each([
     [1, "dwarf2", "DWARF II", false],
     [2, "dwarf3", "DWARF 3", true],
@@ -89,6 +125,9 @@ describe("DWARF V3 protocol boundary", () => {
     expect(packets.map((packet) => packet.cmd)).toEqual([
       16405, 16404, 10050, 12036,
     ]);
+    expect((packets[3] as unknown as { message: unknown }).message).toEqual({
+      action: 1,
+    });
     expect(
       packets.every(
         (packet) =>
@@ -101,6 +140,20 @@ describe("DWARF V3 protocol boundary", () => {
 
   test("rejects unknown hardware", () => {
     expect(() => getDwarfDeviceProfile(3)).toThrow("Unsupported DWARF");
+  });
+
+  test("builds the current task-manager astronomy mode packet", () => {
+    const packet = createV3ShootingModePacket() as unknown as {
+      cmd: number;
+      moduleId: number;
+      message: unknown;
+    };
+
+    expect(packet).toMatchObject({
+      cmd: 16402,
+      moduleId: 14,
+      message: { targetMode: 8 },
+    });
   });
 
   test("serializes the V3 one-click GOTO fields expected by firmware", () => {

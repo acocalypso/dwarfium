@@ -21,7 +21,7 @@ import {
   telephotoURL,
   messageCameraTeleGetSystemWorkingState,
   messageV3CameraTeleOpenCamera,
-  messageV3CameraWideOpenCamera,
+  createV3WidePreviewPacket,
   WebSocketHandler,
 } from "@/services/dwarf";
 
@@ -534,13 +534,21 @@ export default function DwarfCameras(props: PropType) {
 
   function turnOnCameraHandler(cameraId: number, connectionCtx) {
     if (cameraId === telephotoCamera) {
-      turnOnTeleCameraFn(
+      // Mount the HLS player immediately. DWARF mini can start the RTSP stream
+      // without returning a decoded open-camera acknowledgement, and waiting
+      // for that callback leaves the placeholder visible forever. The command
+      // handler still rolls this state back when the device reports an error.
+      setTelephotoCameraStatus("on");
+      setSrcTeleCamera(true);
+      void turnOnTeleCameraFn(
         connectionCtx,
         setTelephotoCameraStatus,
         setSrcTeleCamera,
       );
     } else {
-      turnOnWideCameraFn(
+      setWideangleCameraStatus("on");
+      setSrcWideCamera(true);
+      void turnOnWideCameraFn(
         connectionCtx,
         setWideangleCameraStatus,
         setSrcWideCamera,
@@ -575,7 +583,14 @@ export default function DwarfCameras(props: PropType) {
       setMainMediaScreenCameraStatus("off");
     }
 
-    if (mainScreenStatus == "off") {
+    // Legacy devices expose a reliable camera-state response. V3/Mini camera
+    // responses are not decoded by the old client package, and the former
+    // fallback was actually opening both cameras every second. Leave V3
+    // cameras off until the user explicitly starts a preview.
+    if (
+      mainScreenStatus == "off" &&
+      (!connectionCtx.typeIdDwarf || connectionCtx.typeIdDwarf === 1)
+    ) {
       console.debug("mainScreenStatus : ", mainScreenStatus);
       setTimeout(() => {
         checkCameraStatusLater();
@@ -699,7 +714,7 @@ export default function DwarfCameras(props: PropType) {
     let txtInfoCommand = "";
     let WS_Packet1 = messageCameraTeleGetSystemWorkingState();
     let WS_Packet2 = messageV3CameraTeleOpenCamera();
-    let WS_Packet3 = messageV3CameraWideOpenCamera();
+    let WS_Packet3 = createV3WidePreviewPacket();
     txtInfoCommand = "CheckCamera";
     webSocketHandler.prepare(
       [WS_Packet1, WS_Packet2, WS_Packet3],
@@ -713,8 +728,10 @@ export default function DwarfCameras(props: PropType) {
       customMessageHandlerTeleWide,
     );
 
-    if (!webSocketHandler.run()) {
-      console.error(" Can't launch Web Socket Run Action!");
+    if (!webSocketHandler.isConnected()) {
+      void webSocketHandler.run().then((started) => {
+        if (!started) console.error(" Can't launch Web Socket Run Action!");
+      });
     }
   }
 
@@ -910,7 +927,7 @@ export default function DwarfCameras(props: PropType) {
         )}
         <div
           className={`${
-            mainMediaScreenCameraStatus == "on" ? "styles.telephoto" : "d-none"
+            mainMediaScreenCameraStatus == "on" ? styles.telephoto : "d-none"
           }`}
         >
           {!connectionCtx.typeIdDwarf ||
@@ -1025,26 +1042,39 @@ export default function DwarfCameras(props: PropType) {
     return (
       <div className="controls-container">
         <button
+          type="button"
           className="btn btn-more02 me-3 top-align"
           onClick={() => resetTransform()}
+          aria-label="Reset camera zoom and position"
         >
           {buttonReset}
         </button>
         <button
+          type="button"
           className="btn btn-more02 me-3 top-align"
           onClick={() => zoomIn()}
+          aria-label="Zoom camera preview in"
         >
           Zoom +
         </button>
         <button
+          type="button"
           className="btn btn-more02 me-3 top-align"
           onClick={() => zoomOut()}
+          aria-label="Zoom camera preview out"
         >
           Zoom -
         </button>
         <button
+          type="button"
           className="btn btn-more02 me-3 top-align"
           onClick={() => exchangeCameras()}
+          disabled={
+            !showWideangle ||
+            mainMediaScreenCameraStatus === "off" ||
+            smallMediaScreenCameraStatus === "off"
+          }
+          aria-label="Switch main and overlay cameras"
         >
           {buttonSwap}
         </button>
@@ -1169,8 +1199,10 @@ export default function DwarfCameras(props: PropType) {
             </div>
           </div>
           <TransformComponent>
-            {renderSmallScreen()}
-            {renderMainScreen()}
+            <div className={styles.previewStage}>
+              {renderMainScreen()}
+              {renderSmallScreen()}
+            </div>
           </TransformComponent>
         </TransformWrapper>
       </div>
@@ -1180,8 +1212,10 @@ export default function DwarfCameras(props: PropType) {
       <div>
         <TransformWrapper>
           <TransformComponent>
-            {renderSmallScreen()}
-            {renderMainScreen()}
+            <div className={styles.previewStage}>
+              {renderMainScreen()}
+              {renderSmallScreen()}
+            </div>
           </TransformComponent>
         </TransformWrapper>
       </div>

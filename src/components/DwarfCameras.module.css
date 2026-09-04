@@ -1,15 +1,21 @@
+.previewStage {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
 .telephoto {
   width: 100%;
-  height: auto; /* Ensures proportional resizing */
+  aspect-ratio: 16 / 9;
   overflow: hidden;
-  z-index : 200;
+  background: #05090f;
 }
 
 .telephoto iframe {
   width: 100%;
-  height: auto; /* Ensures proportional resizing */
+  height: 100%;
   display: block;
-  z-index : 250;
+  border: 0;
 }
 
 .telephoto img {
@@ -18,21 +24,38 @@
 }
 
 .wideangle {
-    width: 35%;
-    height: 36%;
-    position: absolute;
-    top: 10px;
-    border: 1px solid white;
-    z-index: 300;
-   
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: min(34%, 25rem);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 0.5rem;
+  background: #05090f;
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+  z-index: 3;
 }
 
 .wideangle iframe {
-  width: 50%;
-  height: auto;
-  overflow: hidden;
+  width: 100% !important;
+  height: 100% !important;
   border: none;
-  display: block; /* Removes unwanted spaces between elements */
+  display: block;
+}
+
+.wideangle img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .wideangle {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 42%;
+  }
 }
 
 .section {

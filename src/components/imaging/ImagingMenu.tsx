@@ -3,7 +3,6 @@ import type { Dispatch, SetStateAction } from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Popover from "react-bootstrap/Popover";
 import Tooltip from "react-bootstrap/Tooltip";
-import Link from "next/link";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
@@ -825,9 +824,9 @@ export default function ImagingMenu(props: PropType) {
     ) {
       if (showModal) setShowModal(false);
       return (
-        <Link href="#" className="" onClick={() => {}}>
+        <span className={styles.statusLabel} aria-live="polite">
           {getAstroText()}
-        </Link>
+        </span>
       );
     }
     return "";
@@ -854,34 +853,41 @@ export default function ImagingMenu(props: PropType) {
           {!showModal &&
             !connectionCtx.imagingSession.isRecording &&
             !connectionCtx.imagingSession.endRecording && (
-              <Link
-                href="#"
-                className=""
+              <button
+                type="button"
+                className={styles.toolbarButton}
                 onClick={() => {
                   setShowModal(true);
                 }}
+                aria-label={`Open ${getAstroText()} camera controls`}
               >
                 {getAstroText()}
-              </Link>
+              </button>
             )}
           {showModal &&
             !connectionCtx.imagingSession.isRecording &&
             !connectionCtx.imagingSession.endRecording && (
-              <Link
-                href="#"
-                className=""
+              <button
+                type="button"
+                className={styles.toolbarButton}
                 onClick={() => {
                   setShowModal(false);
                   anim_close();
                 }}
+                aria-label="Close camera controls"
               >
                 Photo
-              </Link>
+              </button>
             )}
         </li>
       )}
       <li className={`nav-item ${styles.box}`}>
-        <Link href="#" className="" title="Show Settings">
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          title="Astrophotography settings"
+          aria-label="Open astrophotography settings"
+        >
           <OverlayTrigger
             trigger="click"
             placement={popoverPlacement}
@@ -901,23 +907,37 @@ export default function ImagingMenu(props: PropType) {
           >
             <i className="bi bi-sliders" style={{ fontSize: "1.75rem" }}></i>
           </OverlayTrigger>
-        </Link>
+        </button>
       </li>
       <li className={`nav-item ${styles.box}`}>
-        <Link href="#" className="">
+        <button
+          type="button"
+          className={styles.toolbarButton}
+          onClick={
+            !validSettings && !showSettingsMenu
+              ? () => setShowSettingsMenu(true)
+              : undefined
+          }
+          aria-label={
+            validSettings
+              ? "Astrophotography capture control"
+              : "Configure required astrophotography settings"
+          }
+        >
           {renderRecordButton()}
-        </Link>
+        </button>
       </li>
       <li className={`nav-item ${styles.box}`}>
         {!showWideAngle && (
-          <Link
-            href="#"
-            className=""
+          <button
+            type="button"
+            className={styles.toolbarButton}
             onClick={() => {
               setShowWideangle((prev) => !prev);
               setShowWideAngle((prev) => !prev);
             }}
             title="Show Wideangle"
+            aria-label="Show wide-angle overlay"
           >
             <i
               className="bi bi-pip"
@@ -927,17 +947,18 @@ export default function ImagingMenu(props: PropType) {
                 display: "inline-block",
               }}
             ></i>
-          </Link>
+          </button>
         )}
         {showWideAngle && !exchangeCamerasStatus && (
-          <Link
-            href="#"
-            className=""
+          <button
+            type="button"
+            className={styles.toolbarButton}
             onClick={() => {
               setShowWideangle((prev) => !prev);
               setShowWideAngle((prev) => !prev);
             }}
             title="Hide Wideangle"
+            aria-label="Hide wide-angle overlay"
           >
             <i
               className="bi bi-pip"
@@ -947,22 +968,22 @@ export default function ImagingMenu(props: PropType) {
                 display: "inline-block",
               }}
             ></i>
-          </Link>
+          </button>
         )}
       </li>
       {!connectionCtx.imagingSession.isRecording &&
         connectionCtx.imagingSession.isGoLive && (
           <li className={`nav-item ${styles.box}`}>
-            <Link
-              href="#"
-              className=""
+            <button
+              type="button"
+              className={styles.toolbarButton}
               onClick={() => {
                 goLiveHandler();
               }}
               title="End Current Session"
             >
               Live
-            </Link>
+            </button>
           </li>
         )}
       <hr />
@@ -971,11 +992,12 @@ export default function ImagingMenu(props: PropType) {
         !astroFocus && (
           <div onContextMenu={handleRightClick}>
             <li className={`nav-item ${styles.box}`}>
-              <Link
-                href="#"
-                className=""
+              <button
+                type="button"
+                className={styles.toolbarButton}
                 onClick={focusAutoAstro}
-                title="Astro Infinite Focus, Right Click Auto Focus"
+                title="Start astrophotography autofocus"
+                aria-label="Start astrophotography autofocus"
               >
                 <i
                   className="icon-bullseye"
@@ -983,7 +1005,7 @@ export default function ImagingMenu(props: PropType) {
                     fontSize: "2rem",
                   }}
                 ></i>
-              </Link>
+              </button>
             </li>
             {connectionCtx.valueFocusDwarf !== undefined && (
               <span style={{ display: "block", textAlign: "center" }}>
@@ -997,11 +1019,12 @@ export default function ImagingMenu(props: PropType) {
         astroFocus && (
           <div>
             <li className={`nav-item ${styles.box}`}>
-              <Link
-                href="#"
-                className=""
+              <button
+                type="button"
+                className={styles.toolbarButton}
                 onClick={focusAutoAstroStop}
-                title="Astro Focus Stop"
+                title="Stop astrophotography autofocus"
+                aria-label="Stop astrophotography autofocus"
               >
                 <i
                   className="icon-bullseye"
@@ -1009,7 +1032,7 @@ export default function ImagingMenu(props: PropType) {
                     fontSize: "2rem",
                   }}
                 ></i>
-              </Link>
+              </button>
             </li>
             {connectionCtx.valueFocusDwarf !== undefined && (
               <span style={{ display: "block", textAlign: "center" }}>
@@ -1022,11 +1045,12 @@ export default function ImagingMenu(props: PropType) {
       {!connectionCtx.imagingSession.isRecording &&
         !connectionCtx.imagingSession.endRecording && (
           <li className={`nav-item ${styles.box}`}>
-            <Link
-              href="#"
-              className=""
+            <button
+              type="button"
+              className={styles.toolbarButton}
               onClick={focusPlus}
-              title="Focus + Click"
+              title="Move focus one step forward"
+              aria-label="Focus one step forward"
             >
               <i
                 className="icon-plus-squared-alt"
@@ -1034,18 +1058,19 @@ export default function ImagingMenu(props: PropType) {
                   fontSize: "2rem",
                 }}
               ></i>
-            </Link>
+            </button>
           </li>
         )}
       <hr />
       {!connectionCtx.imagingSession.isRecording &&
         !connectionCtx.imagingSession.endRecording && (
           <li className={`nav-item ${styles.box}`}>
-            <Link
-              href="#"
-              className=""
+            <button
+              type="button"
+              className={styles.toolbarButton}
               onClick={focusMinus}
-              title="Focus - Click"
+              title="Move focus one step backward"
+              aria-label="Focus one step backward"
             >
               <i
                 className="icon-minus-squared-alt"
@@ -1053,19 +1078,22 @@ export default function ImagingMenu(props: PropType) {
                   fontSize: "2rem",
                 }}
               ></i>
-            </Link>
+            </button>
           </li>
         )}
       <hr />
       {!connectionCtx.imagingSession.isRecording &&
         !connectionCtx.imagingSession.endRecording && (
           <li className={`nav-item ${styles.box}`}>
-            <Link
-              href="#"
-              className=""
-              onMouseDown={focusPlusLong}
-              onMouseUp={focusLongStop}
-              title="Focus + Long Press"
+            <button
+              type="button"
+              className={styles.toolbarButton}
+              onPointerDown={focusPlusLong}
+              onPointerUp={focusLongStop}
+              onPointerLeave={focusLongStop}
+              onPointerCancel={focusLongStop}
+              title="Hold to move focus forward"
+              aria-label="Hold to focus forward"
             >
               <i
                 className="icon-plus-squared"
@@ -1073,19 +1101,22 @@ export default function ImagingMenu(props: PropType) {
                   fontSize: "2rem",
                 }}
               ></i>
-            </Link>
+            </button>
           </li>
         )}
       <hr />
       {!connectionCtx.imagingSession.isRecording &&
         !connectionCtx.imagingSession.endRecording && (
           <li className={`nav-item ${styles.box}`}>
-            <Link
-              href="#"
-              className=""
-              onMouseDown={focusMinusLong}
-              onMouseUp={focusLongStop}
-              title="Focus - Long Press"
+            <button
+              type="button"
+              className={styles.toolbarButton}
+              onPointerDown={focusMinusLong}
+              onPointerUp={focusLongStop}
+              onPointerLeave={focusLongStop}
+              onPointerCancel={focusLongStop}
+              title="Hold to move focus backward"
+              aria-label="Hold to focus backward"
             >
               <i
                 className="icon-minus-squared"
@@ -1093,7 +1124,7 @@ export default function ImagingMenu(props: PropType) {
                   fontSize: "2rem",
                 }}
               ></i>
-            </Link>
+            </button>
           </li>
         )}
       {screenWidth < sizeSmallScreen && (
@@ -1104,23 +1135,25 @@ export default function ImagingMenu(props: PropType) {
             {!showModal &&
               !connectionCtx.imagingSession.isRecording &&
               !connectionCtx.imagingSession.endRecording && (
-                <Link
-                  href="#"
-                  className=""
+                <button
+                  type="button"
+                  className={styles.toolbarButton}
+                  aria-label={`Open ${getAstroText()} capture controls`}
                   onClick={() => {
                     setShowModal(true);
                     setShowOnlyActions(true);
                   }}
                 >
                   {getAstroText()}
-                </Link>
+                </button>
               )}
             {showModal &&
               !connectionCtx.imagingSession.isRecording &&
               !connectionCtx.imagingSession.endRecording && (
-                <Link
-                  href="#"
-                  className=""
+                <button
+                  type="button"
+                  className={styles.toolbarButton}
+                  aria-label="Close capture controls"
                   onClick={() => {
                     setShowModal(false);
                     setShowOnlyActions(false);
@@ -1128,7 +1161,7 @@ export default function ImagingMenu(props: PropType) {
                   }}
                 >
                   Photo
-                </Link>
+                </button>
               )}
           </li>
           <hr />
@@ -1137,23 +1170,25 @@ export default function ImagingMenu(props: PropType) {
             {!showModal &&
               !connectionCtx.imagingSession.isRecording &&
               !connectionCtx.imagingSession.endRecording && (
-                <Link
-                  href="#"
-                  className=""
+                <button
+                  type="button"
+                  className={styles.toolbarButton}
+                  aria-label="Open telescope movement controls"
                   onClick={() => {
                     setShowModal(true);
                     setShowOnlyControls(true);
                   }}
                 >
                   Show Controls
-                </Link>
+                </button>
               )}
             {showModal &&
               !connectionCtx.imagingSession.isRecording &&
               !connectionCtx.imagingSession.endRecording && (
-                <Link
-                  href="#"
-                  className=""
+                <button
+                  type="button"
+                  className={styles.toolbarButton}
+                  aria-label="Close telescope movement controls"
                   onClick={() => {
                     setShowModal(false);
                     setShowOnlyControls(false);
@@ -1161,7 +1196,7 @@ export default function ImagingMenu(props: PropType) {
                   }}
                 >
                   Hide Controls
-                </Link>
+                </button>
               )}
           </li>
         </>

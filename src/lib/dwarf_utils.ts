@@ -7,7 +7,9 @@ import {
   modeManual,
   modeAuto,
   messageV3CameraTeleOpenCamera,
-  messageV3CameraWideOpenCamera,
+  createV3WidePreviewPacket,
+  createV3ShootingModePacket,
+  messageV3DeviceConfigModeSwitch,
   encodeParamId,
   getDwarfDeviceProfile,
   messageV3AstroExposureSet,
@@ -92,7 +94,11 @@ export async function turnOnTeleCameraFn(
     if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA
     ) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
+      const responseCode = result_data.data?.code;
+      if (
+        responseCode === undefined ||
+        responseCode == Dwarfii_Api.DwarfErrorCode.OK
+      ) {
         logger(txt_info, result_data, connectionCtx);
         if (setTelephotoCameraStatus) {
           setTelephotoCameraStatus("on");
@@ -118,21 +124,46 @@ export async function turnOnTeleCameraFn(
 
   // Send Command : messageCameraTeleOpenCamera
   void binning;
-  let WS_Packet = messageV3CameraTeleOpenCamera();
+  const WS_Packet = messageV3CameraTeleOpenCamera();
+  const usesTaskManager =
+    connectionCtx.typeIdDwarf !== undefined && connectionCtx.typeIdDwarf !== 1;
   let txtInfoCommand = "turnOnTeleCamera";
 
-  webSocketHandler.prepare(
-    WS_Packet,
-    txtInfoCommand,
-    [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA],
-    customMessageHandler,
-  );
+  if (usesTaskManager) {
+    await webSocketHandler.prepare(
+      [createV3ShootingModePacket(), messageV3DeviceConfigModeSwitch()],
+      txtInfoCommand,
+      [16402, Dwarfii_Api.DwarfCMD.CMD_V3_DEVICE_CONFIG_MODE_SWITCH],
+      customMessageHandler,
+    );
+  } else {
+    await webSocketHandler.prepare(
+      WS_Packet,
+      txtInfoCommand,
+      [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA],
+      customMessageHandler,
+    );
 
-  if (!webSocketHandler.run()) {
-    console.error(" Can't launch Web Socket Run Action!");
   }
 
-  await sleep(100);
+  if (!webSocketHandler.isConnected()) {
+    if (!(await webSocketHandler.run())) {
+      console.error(" Can't launch Web Socket Run Action!");
+      return;
+    }
+  }
+
+  if (usesTaskManager) {
+    // Allow the task manager to finish selecting astronomy mode and entering
+    // the camera before publishing the telephoto preview.
+    await sleep(1000);
+    await webSocketHandler.prepare(
+      WS_Packet,
+      txtInfoCommand,
+      [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA],
+      customMessageHandler,
+    );
+  }
 }
 
 export async function turnOnWideCameraFn(
@@ -157,7 +188,11 @@ export async function turnOnWideCameraFn(
     if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA
     ) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
+      const responseCode = result_data.data?.code;
+      if (
+        responseCode === undefined ||
+        responseCode == Dwarfii_Api.DwarfErrorCode.OK
+      ) {
         logger(txt_info, result_data, connectionCtx);
         if (setWideangleCameraStatus) {
           setWideangleCameraStatus("on");
@@ -182,21 +217,43 @@ export async function turnOnWideCameraFn(
     : new WebSocketHandler(connectionCtx.IPDwarf);
 
   // Send Command : messageCameraWideOpenCamera
-  let WS_Packet = messageV3CameraWideOpenCamera();
+  const WS_Packet = createV3WidePreviewPacket();
+  const usesTaskManager =
+    connectionCtx.typeIdDwarf !== undefined && connectionCtx.typeIdDwarf !== 1;
   let txtInfoCommand = "turnOnWideCamera";
 
-  webSocketHandler.prepare(
-    WS_Packet,
-    txtInfoCommand,
-    [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA],
-    customMessageHandler,
-  );
-
-  if (!webSocketHandler.run()) {
-    console.error(" Can't launch Web Socket Run Action!");
+  if (usesTaskManager) {
+    await webSocketHandler.prepare(
+      messageV3DeviceConfigModeSwitch(),
+      txtInfoCommand,
+      [Dwarfii_Api.DwarfCMD.CMD_V3_DEVICE_CONFIG_MODE_SWITCH],
+      customMessageHandler,
+    );
+  } else {
+    await webSocketHandler.prepare(
+      WS_Packet,
+      txtInfoCommand,
+      [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA],
+      customMessageHandler,
+    );
   }
 
-  await sleep(100);
+  if (!webSocketHandler.isConnected()) {
+    if (!(await webSocketHandler.run())) {
+      console.error(" Can't launch Web Socket Run Action!");
+      return;
+    }
+  }
+
+  if (usesTaskManager) {
+    await sleep(750);
+    await webSocketHandler.prepare(
+      WS_Packet,
+      txtInfoCommand,
+      [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA],
+      customMessageHandler,
+    );
+  }
 }
 
 export async function updateTelescopeISPSetting(

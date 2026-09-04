@@ -26,7 +26,9 @@ export default function AstroPhoto() {
 
   let connectionCtx = useContext(ConnectionContext);
   const [exchangeCamerasStatus, setExchangeCamerasStatus] = useState(false);
-  const [showWideangle, setShowWideangle] = useState(false);
+  // The wide camera is the framing overlay for the telephoto preview. Keep it
+  // visible by default so starting the wide stream cannot succeed invisibly.
+  const [showWideangle, setShowWideangle] = useState(true);
   const [useRawPreviewURL, setUseRawPreviewURL] = useState(false);
 
   let notConnected =

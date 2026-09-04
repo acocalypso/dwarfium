@@ -4,7 +4,6 @@ import SlidingPane from "react-sliding-pane";
 import JoystickController from "joystick-controller";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Popover from "react-bootstrap/Popover";
-import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import CameraPanoSettings from "@/components/imaging/CameraPanoSettings";
@@ -224,13 +223,17 @@ export default function CameraAddOn(props: PropTypes) {
   }, []); // Empty dependency array means this effect runs only once on mount
 
   useEffect(() => {
-    getWideAllParamsFn(connectionCtx);
-    updateWideData();
+    if (showSettingsWideMenu) {
+      void getWideAllParamsFn(connectionCtx);
+      updateWideData();
+    }
   }, [showSettingsWideMenu]);
 
   useEffect(() => {
-    getTeleAllParamsFn(connectionCtx);
-    updateTeleData();
+    if (showSettingsTeleMenu) {
+      void getTeleAllParamsFn(connectionCtx);
+      updateTeleData();
+    }
   }, [showSettingsTeleMenu]);
 
   function updateWideData() {
@@ -266,14 +269,7 @@ export default function CameraAddOn(props: PropTypes) {
   }
 
   const handleBtnPhotoClick = (buttonName) => {
-    // Update state to set the active button
-    setActiveBtnPhoto(
-      buttonName === activeBtnPhoto
-        ? buttonName === "tele"
-          ? "wide"
-          : "tele"
-        : buttonName,
-    );
+    setActiveBtnPhoto(buttonName);
   };
 
   const handleBtnVideoClick = (buttonName) => {
@@ -285,34 +281,34 @@ export default function CameraAddOn(props: PropTypes) {
     setActiveBtnPano(buttonName);
   };
   const handleBtnBurstClick = (buttonName) => {
-    // Update state to set the active button
-    setActiveBtnBurst(
-      buttonName === activeBtnBurst
-        ? buttonName === "tele"
-          ? "wide"
-          : "tele"
-        : buttonName,
-    );
+    setActiveBtnBurst(buttonName);
   };
   const handleBtnTimeLapseClick = (buttonName) => {
-    // Update state to set the active button
-    setActiveBtnTimeLapse(
-      buttonName === activeBtnTimeLapse
-        ? buttonName === "tele"
-          ? "wide"
-          : "tele"
-        : buttonName,
-    );
+    setActiveBtnTimeLapse(buttonName);
   };
   const handleBtnSettingsClick = (buttonName) => {
-    // Update state to set the active button
-    setActiveBtnSettings(
-      buttonName === activeBtnSettings
-        ? buttonName === "tele"
-          ? "wide"
-          : "tele"
-        : buttonName,
-    );
+    setActiveBtnSettings(buttonName);
+  };
+
+  const closeCameraPanel = () => {
+    setShowModal(false);
+    setShowSettingsPanoMenu(false);
+    setShowSettingsBurstMenu(false);
+    setShowSettingsTimeLapseMenu(false);
+    setShowSettingsWideMenu(false);
+    setShowSettingsTeleMenu(false);
+  };
+
+  const openSelectedCameraSettings = () => {
+    if (activeBtnSettings === "wide") setShowSettingsWideMenu(true);
+    else setShowSettingsTeleMenu(true);
+  };
+
+  const canSendCameraCommand = () => {
+    if (connectionCtx.connectionStatus && connectionCtx.IPDwarf) return true;
+    setErrorTxt("Camera command not sent: reconnect your DWARF first.");
+    setActiveAction(undefined);
+    return false;
   };
 
   function changeColorButton(ImgID, Force = false) {
@@ -329,6 +325,10 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionPhoto: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt(
+      `Taking a ${activeBtnPhoto === "wide" ? "wide-angle" : "telephoto"} photo…`,
+    );
     // Update state to set the active button
     setActiveAction(PhotosModeActions[0].toString());
     // Wait for startPhoto() to finish before continuing
@@ -352,6 +352,10 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStartVideo: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt(
+      `Starting ${activeBtnVideo === "wide" ? "wide-angle" : "telephoto"} video…`,
+    );
     // Update state to set the active button
     setActiveAction(PhotosModeActions[1].toString());
 
@@ -366,6 +370,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStopVideo: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Stopping video…");
     // Wait for stopVideo() to finish before continuing
     await stopVideo(CameraType[activeBtnVideo], connectionCtx, setErrorTxt);
     // Change the image source using the ID
@@ -380,6 +386,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStartPano: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Starting panorama…");
     // Update state to set the active button
     setActiveAction(PhotosModeActions[2].toString());
 
@@ -402,6 +410,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStopPano: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Stopping panorama…");
     // Wait for stopPano() to finish before continuing
     await stopPano(CameraType[activeBtnPano], connectionCtx, setErrorTxt);
     // Change the image source using the ID
@@ -425,6 +435,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStartBurst: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Starting burst capture…");
     // Update state to set the active button
     setActiveAction(PhotosModeActions[3].toString());
 
@@ -451,6 +463,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStopBurst: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Stopping burst capture…");
     // Wait for stopBurst() to finish before continuing
     await stopBurst(CameraType[activeBtnBurst], connectionCtx, setErrorTxt);
     // Change the image source using the ID
@@ -474,6 +488,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStartTimeLapse: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Starting time-lapse capture…");
     // Update state to set the active button
     setActiveAction(PhotosModeActions[4].toString());
 
@@ -500,6 +516,8 @@ export default function CameraAddOn(props: PropTypes) {
   const handleClickActionStopTimeLapse: GenericMouseEventHandler<
     HTMLImageElement
   > = async () => {
+    if (!canSendCameraCommand()) return;
+    setErrorTxt("Stopping time-lapse capture…");
     // Wait for stopTimeLapse() to finish before continuing
     await stopTimeLapse(
       CameraType[activeBtnTimeLapse],
@@ -582,7 +600,7 @@ export default function CameraAddOn(props: PropTypes) {
       rightContainer.current = "5px";
       leftContainer.current = "5px";
       bottomContainer.current = "50px";
-      WidthSlidePane.current = "1060px";
+      WidthSlidePane.current = "100%";
       if (ChangeWindowSize.current > 1200) {
         setShowModal(false);
       }
@@ -743,24 +761,34 @@ export default function CameraAddOn(props: PropTypes) {
     angle,
     icon,
   ) {
-    // Create a button div element
-    const newDiv = document.createElement("div");
+    const newDiv = document.createElement("button");
+    newDiv.type = "button";
     // Set attributes and classes for the new div
     newDiv.title = title;
     newDiv.className = className;
     // Create the inner content (icon)
     const iconElement = document.createElement("i");
     iconElement.className = icon;
-    // Add a mouseup event listener to the new div
-    newDiv.addEventListener("mousedown", function (event) {
-      // Handle the mousedown event here
-      if (event.button == 0)
+    newDiv.setAttribute("aria-label", `Move telescope ${title}`);
+    newDiv.addEventListener("pointerdown", function (event) {
+      if (event.button == 0) {
+        newDiv.setPointerCapture(event.pointerId);
         move_joystick(angle, 0.8, joystickSpeed.current, false);
-      // right click
-      else move_joystick(angle, 0.8, joystickSpeed.current, true);
+      } else move_joystick(angle, 0.8, joystickSpeed.current, true);
     });
-    newDiv.addEventListener("mouseup", function () {
+    const stopMovement = () => {
       stop_motor();
+    };
+    newDiv.addEventListener("pointerup", stopMovement);
+    newDiv.addEventListener("pointercancel", stopMovement);
+    newDiv.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        move_joystick(angle, 0.8, joystickSpeed.current, false);
+      }
+    });
+    newDiv.addEventListener("keyup", (event) => {
+      if (event.key === "Enter" || event.key === " ") stopMovement();
     });
     // Append the icon to the new div
     newDiv.appendChild(iconElement);
@@ -816,23 +844,7 @@ export default function CameraAddOn(props: PropTypes) {
   return (
     <div>
       {isVisible && errorTxt && showModal && closePane.current && (
-        <div
-          className="slide-pane_from_bottom"
-          style={{
-            position: "fixed",
-            top: "-40px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "fit-content",
-            height: "30px",
-            paddingTop: "5px",
-            paddingBottom: "20px",
-            paddingLeft: "50px",
-            paddingRight: "50px",
-            color: "rgb(255, 255, 255)",
-            backgroundColor: "rgba(0,178,128, 0.7)",
-          }}
-        >
+        <div className="camera-action-status" role="status" aria-live="polite">
           {errorTxt}
         </div>
       )}
@@ -840,8 +852,8 @@ export default function CameraAddOn(props: PropTypes) {
         className="some-custom-class"
         overlayClassName="slide-pane__overlay_hide"
         isOpen={showModal && closePane.current}
-        title="Camera Add On"
-        hideHeader={true}
+        title="Camera controls"
+        hideHeader={false}
         from="bottom"
         width={WidthSlidePane.current}
         onAfterOpen={() => {
@@ -851,7 +863,7 @@ export default function CameraAddOn(props: PropTypes) {
         onAfterClose={() => {
           if (showOnlyControls || !showOnlyActions) close_joystick(joystickId);
         }}
-        onRequestClose={() => {}}
+        onRequestClose={closeCameraPanel}
       >
         <div id="main_SlidingPane" className="box-element">
           {(showOnlyControls || !showOnlyActions) && (
@@ -1008,7 +1020,12 @@ export default function CameraAddOn(props: PropTypes) {
                   <div className="column">
                     <div className="header-camera">
                       <div className="title">{t("cCameraAddOnPanorama")}</div>
-                      <Link href="#" className="" title="Show Settings">
+                      <button
+                        type="button"
+                        className="cameraAddon-settings-button"
+                        title="Panorama settings"
+                        aria-label="Open panorama settings"
+                      >
                         <OverlayTrigger
                           trigger="click"
                           placement={"left"}
@@ -1038,7 +1055,7 @@ export default function CameraAddOn(props: PropTypes) {
                             }}
                           ></i>
                         </OverlayTrigger>
-                      </Link>
+                      </button>
                     </div>
                     <div className="separator"></div>
                     <img
@@ -1081,7 +1098,8 @@ export default function CameraAddOn(props: PropTypes) {
                           className={`button ${
                             activeBtnPano === "wide" ? "active" : ""
                           }`}
-                          onClick={() => handleBtnPanoClick("wide")}
+                          disabled
+                          title="Panorama capture is only available on the telephoto camera"
                         >
                           Wide
                         </button>
@@ -1096,7 +1114,12 @@ export default function CameraAddOn(props: PropTypes) {
                   <div className="column">
                     <div className="header-camera">
                       <div className="title">{t("cCameraAddOnBurst")}</div>
-                      <Link href="#" className="" title="Show Settings">
+                      <button
+                        type="button"
+                        className="cameraAddon-settings-button"
+                        title="Burst settings"
+                        aria-label="Open burst settings"
+                      >
                         <OverlayTrigger
                           trigger="click"
                           placement={"left"}
@@ -1126,7 +1149,7 @@ export default function CameraAddOn(props: PropTypes) {
                             }}
                           ></i>
                         </OverlayTrigger>
-                      </Link>
+                      </button>
                     </div>
                     <div className="separator"></div>
                     <img
@@ -1170,7 +1193,12 @@ export default function CameraAddOn(props: PropTypes) {
                   <div className="column">
                     <div className="header-camera">
                       <div className="title">{t("cCameraAddOnTimeLapse")}</div>
-                      <Link href="#" className="" title="Show Settings">
+                      <button
+                        type="button"
+                        className="cameraAddon-settings-button"
+                        title="Time-lapse settings"
+                        aria-label="Open time-lapse settings"
+                      >
                         <OverlayTrigger
                           trigger="click"
                           placement={"left"}
@@ -1206,7 +1234,7 @@ export default function CameraAddOn(props: PropTypes) {
                             }}
                           ></i>
                         </OverlayTrigger>
-                      </Link>
+                      </button>
                     </div>
                     <div className="separator"></div>
                     <img
@@ -1247,7 +1275,12 @@ export default function CameraAddOn(props: PropTypes) {
                   {activeBtnSettings === "wide" && (
                     <div className="header-camera">
                       <div className="title">Settings</div>
-                      <Link href="#" className="" title="Show Settings">
+                      <button
+                        type="button"
+                        className="cameraAddon-settings-button"
+                        title="Wide-angle camera settings"
+                        aria-label="Open wide-angle camera settings"
+                      >
                         <OverlayTrigger
                           trigger="click"
                           placement={"left"}
@@ -1311,13 +1344,18 @@ export default function CameraAddOn(props: PropTypes) {
                             }}
                           ></i>
                         </OverlayTrigger>
-                      </Link>
+                      </button>
                     </div>
                   )}
                   {activeBtnSettings === "tele" && (
                     <div className="header-camera">
                       <div className="title">Settings</div>
-                      <Link href="#" className="" title="Show Settings">
+                      <button
+                        type="button"
+                        className="cameraAddon-settings-button"
+                        title="Telephoto camera settings"
+                        aria-label="Open telephoto camera settings"
+                      >
                         <OverlayTrigger
                           trigger="click"
                           placement={"left"}
@@ -1371,7 +1409,7 @@ export default function CameraAddOn(props: PropTypes) {
                             }}
                           ></i>
                         </OverlayTrigger>
-                      </Link>
+                      </button>
                     </div>
                   )}
                   <div className="separator"></div>
@@ -1379,6 +1417,16 @@ export default function CameraAddOn(props: PropTypes) {
                     src="/images/settings-white.png"
                     className="cameraAddon-image"
                     alt="Settings"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${activeBtnSettings === "wide" ? "wide-angle" : "telephoto"} camera settings`}
+                    onClick={openSelectedCameraSettings}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openSelectedCameraSettings();
+                      }
+                    }}
                     style={{ cursor: "pointer" }}
                   />
                   <div className="button-container">
