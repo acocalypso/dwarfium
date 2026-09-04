@@ -1,8 +1,8 @@
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Popover from "react-bootstrap/Popover";
 import Tooltip from "react-bootstrap/Tooltip";
+import Modal from "react-bootstrap/Modal";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
@@ -15,6 +15,7 @@ import {
   messageAstroStopWideCaptureLiveStacking,
   messageV3AstroStartTracking,
   messageV3FocusAutoFocusStart,
+  messageV3FocusInit,
   messageFocusStopAstroAutoFocus,
   messageV3FocusManualSingleStep,
   messageV3FocusManualContinuStart,
@@ -49,11 +50,11 @@ export default function ImagingMenu(props: PropType) {
   let connectionCtx = useContext(ConnectionContext);
   const [showWideAngle, setShowWideAngle] = useState(false);
   const [astroFocus, setAstroFocus] = useState(false);
+  const [focusStatus, setFocusStatus] = useState("");
+  const focusInitialized = useRef(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [validSettings, setValidSettings] = useState(isValid());
   const [showModal, setShowModal] = useState(false);
-  const [showOnlyControls, setShowOnlyControls] = useState(false);
-  const [showOnlyActions, setShowOnlyActions] = useState(false);
   const [screenWidth, setScreenWidth] = useState<number>(window.innerWidth);
 
   let timerSession: ReturnType<typeof setInterval>;
@@ -66,9 +67,21 @@ export default function ImagingMenu(props: PropType) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Dynamic placement
+  useEffect(() => {
+    focusInitialized.current = false;
+    setFocusStatus("");
+    setAstroFocus(false);
+  }, [connectionCtx.IPDwarf]);
+
+  useEffect(() => {
+    setValidSettings(isValid());
+  }, [
+    connectionCtx.astroSettings,
+    connectionCtx.currentAstroCamera,
+    connectionCtx.typeIdDwarf,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const sizeSmallScreen = 768;
-  const popoverPlacement = screenWidth < 1024 ? "auto" : "left";
 
   useEffect(() => {
     let testTimer: string | any = "";
@@ -136,7 +149,11 @@ export default function ImagingMenu(props: PropType) {
   }, [connectionCtx.imagingSession.isGoLive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function isValid() {
-    let errors = validateAstroSettings(connectionCtx.astroSettings as any);
+    const isWideCamera = connectionCtx.currentAstroCamera == wideangleCamera;
+    let errors = validateAstroSettings(connectionCtx.astroSettings as any, {
+      camera: isWideCamera ? "wide" : "telephoto",
+      requireLegacyFields: connectionCtx.typeIdDwarf !== 4,
+    });
     return (
       Object.keys(errors).length === 0 &&
       Object.keys(connectionCtx.astroSettings).length > 0
@@ -527,34 +544,34 @@ export default function ImagingMenu(props: PropType) {
   }
 
   function focusMinus() {
-    focusAction(false, false, false, 1);
+    void focusAction(false, false, false, 1);
   }
 
   function focusMinusLong() {
-    focusAction(false, true, false, 1);
+    void focusAction(false, true, false, 1);
   }
 
   function focusLongStop() {
-    focusAction(false, true, true, 0);
+    void focusAction(false, true, true, 0);
   }
 
   function focusPlus() {
-    focusAction(false, false, false, 0);
+    void focusAction(false, false, false, 0);
   }
 
   function focusPlusLong() {
-    focusAction(false, true, false, 0);
+    void focusAction(false, true, false, 0);
   }
 
   function focusAutoAstro() {
     console.log("Astro click");
     setAstroFocus(true);
-    focusAction(true, false, false, 0);
+    void focusAction(true, false, false, 0);
   }
 
   function focusAutoAstroStop() {
     setAstroFocus(false);
-    focusAction(true, false, true, 0);
+    void focusAction(true, false, true, 0);
   }
 
   const handleRightClick = (event) => {
@@ -563,11 +580,15 @@ export default function ImagingMenu(props: PropType) {
     // Your custom logic for right-click event
     console.log("Astro Right click");
     setAstroFocus(true);
-    focusAction(true, false, false, 0);
+    void focusAction(true, false, false, 0);
   };
 
-  function focusAction(Astro, Continu, Stop, Direction) {
-    if (connectionCtx.IPDwarf === undefined) {
+  async function focusAction(Astro, Continu, Stop, Direction) {
+    if (
+      connectionCtx.IPDwarf === undefined ||
+      !connectionCtx.connectionStatus
+    ) {
+      setFocusStatus("Connect the telescope to use focus controls.");
       return;
     }
 
@@ -577,7 +598,13 @@ export default function ImagingMenu(props: PropType) {
       // CMD_FOCUS_MANUAL_SINGLE_STEP_FOCUS
       // CMD_FOCUS_START_MANUAL_CONTINU_FOCUS
       // CMD_FOCUS_STOP_MANUAL_CONTINU_FOCUS
-      if (
+      if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_FOCUS_INIT) {
+        focusInitialized.current = true;
+        const position =
+          result_data.data.focusPosition ?? result_data.data.focus;
+        if (position !== undefined) connectionCtx.setValueFocusDwarf(position);
+        setFocusStatus("Focus controls ready.");
+      } else if (
         result_data.cmd ==
           Dwarfii_Api.DwarfCMD.CMD_FOCUS_START_ASTRO_AUTO_FOCUS ||
         result_data.cmd ==
@@ -591,8 +618,22 @@ export default function ImagingMenu(props: PropType) {
       ) {
         if (result_data.data.code != Dwarfii_Api.DwarfErrorCode.OK) {
           console.debug("Focus error", {}, connectionCtx);
+          setFocusStatus("The telescope rejected the focus command.");
         } else {
           console.debug("Focus ok", {}, connectionCtx);
+          setFocusStatus(Astro ? "Autofocus started." : "Focus adjusted.");
+        }
+      } else if (
+        result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_NOTIFY_AUTOFOCUS_STATE ||
+        result_data.cmd ==
+          Dwarfii_Api.DwarfCMD.CMD_V3_NOTIFY_AUTOFOCUS_STATE_ALT
+      ) {
+        const autofocusState = result_data.data.state;
+        if (autofocusState === 3) {
+          setAstroFocus(false);
+          setFocusStatus("Autofocus complete.");
+        } else {
+          setFocusStatus("Autofocus in progress…");
         }
       } else {
         console.debug("", result_data, connectionCtx);
@@ -606,7 +647,7 @@ export default function ImagingMenu(props: PropType) {
       : new WebSocketHandler(connectionCtx.IPDwarf);
 
     // Send Command : messageFocusStartAstroAutoFocus
-    let WS_Packet;
+    let WS_Packet: Uint8Array | undefined;
     let txtInfoCommand;
     let Cmd;
     if (Astro && !Continu && !Stop) {
@@ -644,15 +685,46 @@ export default function ImagingMenu(props: PropType) {
       console.log("Focus : CMD_FOCUS_MANUAL_SINGLE_STEP_FOCUS");
     }
 
-    webSocketHandler.prepare(
-      WS_Packet,
+    if (!WS_Packet || !txtInfoCommand || !Cmd) return;
+
+    const needsInitialization = !focusInitialized.current;
+    const packets = focusInitialized.current
+      ? WS_Packet
+      : [messageV3FocusInit(), WS_Packet];
+    const expectedCommands = focusInitialized.current
+      ? Cmd
+      : [Dwarfii_Api.DwarfCMD.CMD_V3_FOCUS_INIT, ...Cmd];
+
+    setFocusStatus(Astro && !Stop ? "Starting autofocus…" : "Adjusting focus…");
+
+    await webSocketHandler.prepare(
+      packets,
       txtInfoCommand,
-      Cmd,
+      expectedCommands,
       customMessageHandler,
     );
 
-    if (!webSocketHandler.run()) {
-      console.error(" Can't launch Web Socket Run Action!");
+    if (needsInitialization) focusInitialized.current = true;
+
+    if (Astro && Stop) {
+      setAstroFocus(false);
+      setFocusStatus("Autofocus stop requested.");
+    } else if (Astro) {
+      setFocusStatus("Autofocus started. Waiting for the telescope…");
+    } else if (Continu && Stop) {
+      setFocusStatus("Focus movement stopped.");
+    } else if (Continu) {
+      setFocusStatus("Focusing…");
+    } else {
+      setFocusStatus("Focus step sent.");
+    }
+
+    if (!webSocketHandler.isConnected()) {
+      const started = await webSocketHandler.run();
+      if (!started) {
+        setFocusStatus("Unable to send the focus command.");
+        console.error(" Can't launch Web Socket Run Action!");
+      }
     }
   }
 
@@ -842,7 +914,7 @@ export default function ImagingMenu(props: PropType) {
     return strAstroText;
   }
 
-  return (
+  const toolbar = (
     <ul
       className="nav nav-pills dw-imaging-toolbar"
       aria-label="Imaging controls"
@@ -876,7 +948,7 @@ export default function ImagingMenu(props: PropType) {
                 }}
                 aria-label="Close camera controls"
               >
-                Photo
+                Close
               </button>
             )}
         </li>
@@ -887,26 +959,9 @@ export default function ImagingMenu(props: PropType) {
           className={styles.toolbarButton}
           title="Astrophotography settings"
           aria-label="Open astrophotography settings"
+          onClick={() => setShowSettingsMenu(true)}
         >
-          <OverlayTrigger
-            trigger="click"
-            placement={popoverPlacement}
-            show={showSettingsMenu}
-            onToggle={() => setShowSettingsMenu((p) => !p)}
-            overlay={
-              <Popover id="popover-positioned" className="custom-popover">
-                <Popover.Body>
-                  <ImagingAstroSettings
-                    setValidSettings={setValidSettings}
-                    validSettings={validSettings}
-                    setShowSettingsMenu={setShowSettingsMenu}
-                  />
-                </Popover.Body>
-              </Popover>
-            }
-          >
-            <i className="bi bi-sliders" style={{ fontSize: "1.75rem" }}></i>
-          </OverlayTrigger>
+          <i className="bi bi-sliders" style={{ fontSize: "1.75rem" }}></i>
         </button>
       </li>
       <li className={`nav-item ${styles.box}`}>
@@ -1139,10 +1194,7 @@ export default function ImagingMenu(props: PropType) {
                   type="button"
                   className={styles.toolbarButton}
                   aria-label={`Open ${getAstroText()} capture controls`}
-                  onClick={() => {
-                    setShowModal(true);
-                    setShowOnlyActions(true);
-                  }}
+                  onClick={() => setShowModal(true)}
                 >
                   {getAstroText()}
                 </button>
@@ -1156,57 +1208,50 @@ export default function ImagingMenu(props: PropType) {
                   aria-label="Close capture controls"
                   onClick={() => {
                     setShowModal(false);
-                    setShowOnlyActions(false);
                     anim_close();
                   }}
                 >
-                  Photo
-                </button>
-              )}
-          </li>
-          <hr />
-          <li className={`nav-item ${styles.box}`}>
-            {checkPhotoMode()}
-            {!showModal &&
-              !connectionCtx.imagingSession.isRecording &&
-              !connectionCtx.imagingSession.endRecording && (
-                <button
-                  type="button"
-                  className={styles.toolbarButton}
-                  aria-label="Open telescope movement controls"
-                  onClick={() => {
-                    setShowModal(true);
-                    setShowOnlyControls(true);
-                  }}
-                >
-                  Show Controls
-                </button>
-              )}
-            {showModal &&
-              !connectionCtx.imagingSession.isRecording &&
-              !connectionCtx.imagingSession.endRecording && (
-                <button
-                  type="button"
-                  className={styles.toolbarButton}
-                  aria-label="Close telescope movement controls"
-                  onClick={() => {
-                    setShowModal(false);
-                    setShowOnlyControls(false);
-                    anim_close();
-                  }}
-                >
-                  Hide Controls
+                  Close
                 </button>
               )}
           </li>
         </>
       )}
-      <CameraAddOn
-        showModal={showModal}
-        setShowModal={setShowModal}
-        showOnlyActions={showOnlyActions}
-        showOnlyControls={showOnlyControls}
-      />
+      {focusStatus && (
+        <li className={styles.focusFeedback} aria-live="polite">
+          {focusStatus}
+        </li>
+      )}
+      <CameraAddOn showModal={showModal} setShowModal={setShowModal} />
     </ul>
+  );
+
+  return (
+    <>
+      {toolbar}
+      <Modal
+        show={showSettingsMenu}
+        onHide={() => setShowSettingsMenu(false)}
+        className={styles.settingsModalRoot}
+        centered
+        scrollable
+        fullscreen="sm-down"
+        dialogClassName={styles.settingsDialog}
+        aria-labelledby="astro-settings-title"
+      >
+        <Modal.Header closeButton className={styles.settingsModalHeader}>
+          <Modal.Title id="astro-settings-title">
+            Astrophotography settings
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className={styles.settingsModalBody}>
+          <ImagingAstroSettings
+            setValidSettings={setValidSettings}
+            validSettings={validSettings}
+            setShowSettingsMenu={setShowSettingsMenu}
+          />
+        </Modal.Body>
+      </Modal>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useContext, useRef, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import SlidingPane from "react-sliding-pane";
 import JoystickController from "joystick-controller";
+import Modal from "react-bootstrap/Modal";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Popover from "react-bootstrap/Popover";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,7 @@ import CameraWideSettings from "@/components/imaging/CameraWideSettings";
 import CameraTeleSettings from "@/components/imaging/CameraTeleSettings";
 import { getWideAllParamsFn, getTeleAllParamsFn } from "@/lib/dwarf_utils";
 import { modeManual, modeAuto } from "@/services/dwarf";
+import styles from "@/components/imaging/CameraAddOn.module.css";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
@@ -36,8 +37,6 @@ import {
 type PropTypes = {
   showModal: boolean;
   setShowModal: Dispatch<SetStateAction<boolean>>;
-  showOnlyControls: boolean;
-  showOnlyActions: boolean;
 };
 // Define a generic event handler type that can handle events from both HTMLButtonElement and HTMLImageElement
 type GenericMouseEventHandler<T extends HTMLElement> =
@@ -47,7 +46,6 @@ export default function CameraAddOn(props: PropTypes) {
   let connectionCtx = useContext(ConnectionContext);
 
   const { showModal, setShowModal } = props;
-  const { showOnlyControls, showOnlyActions } = props;
   const [imgSrc] = useState<string>("/images/photo-camera-white.png");
   const [errorTxt, setErrorTxt] = useState("");
   const [oldErrorTxt, setOldErrorTxt] = useState<string>("");
@@ -74,9 +72,8 @@ export default function CameraAddOn(props: PropTypes) {
     useState(false);
   const [showSettingsWideMenu, setShowSettingsWideMenu] = useState(false);
   const [showSettingsTeleMenu, setShowSettingsTeleMenu] = useState(false);
-  // State to show active column action on small screen
-  const [activeFullView, setActiveFullView] = useState<boolean>(true);
   const [activeActionView, setActiveActionView] = useState<string>("Photo");
+  const activeFullView = false;
 
   const [rowValue, setRowValue] = useState<number>(3);
   const [colValue, setColValue] = useState<number>(3);
@@ -165,18 +162,11 @@ export default function CameraAddOn(props: PropTypes) {
     }
   }, [errorTxt]);
 
-  // Size > 1500
-  let closePane = useRef(true);
-  let ChangeWindowSize = useRef(window.innerWidth);
   let maxRange = useRef(70);
   let radius = useRef(75);
   let joystickRadius = useRef(45);
-  let xValue = useRef("80%");
-  let yValue = useRef("11%");
-  let rightContainer = useRef("10px");
-  let leftContainer = useRef("10px");
-  let bottomContainer = useRef("75px");
-  let WidthSlidePane = useRef("1500px");
+  let xValue = useRef("50%");
+  let yValue = useRef("50%");
   let intervalTimer = useRef<ReturnType<typeof setInterval> | undefined>(
     undefined,
   );
@@ -545,69 +535,17 @@ export default function CameraAddOn(props: PropTypes) {
   };
 
   function update_control() {
-    if (window.innerWidth > 1200) {
-      setActiveFullView(true);
-      console.log("setActiveFullView: true");
-    }
-    if (window.innerWidth > 1500) {
+    if (window.innerWidth > 1024) {
       maxRange.current = 70;
       radius.current = 75;
       joystickRadius.current = 45;
-      xValue.current = "80%";
-      yValue.current = "11%";
-      rightContainer.current = "10px";
-      leftContainer.current = "10px";
-      bottomContainer.current = "75px";
-      WidthSlidePane.current = "1500px";
-      if (ChangeWindowSize.current < 1500) {
-        setShowModal(false);
-      }
-      ChangeWindowSize.current = window.innerWidth;
-    } else if (window.innerWidth > 1300 && window.innerWidth <= 1500) {
-      maxRange.current = 60;
-      radius.current = 55;
-      joystickRadius.current = 30;
-      xValue.current = "60%";
-      yValue.current = "10%";
-      rightContainer.current = "7px";
-      leftContainer.current = "7px";
-      bottomContainer.current = "57px";
-      WidthSlidePane.current = "1250px";
-      if (ChangeWindowSize.current <= 1300 || ChangeWindowSize.current > 1500) {
-        setShowModal(false);
-      }
-      ChangeWindowSize.current = window.innerWidth;
-    } else if (window.innerWidth > 1200 && window.innerWidth <= 1300) {
-      maxRange.current = 60;
-      radius.current = 55;
-      joystickRadius.current = 30;
-      xValue.current = "60%";
-      yValue.current = "5%";
-      rightContainer.current = "7px";
-      leftContainer.current = "7px";
-      bottomContainer.current = "57px";
-      WidthSlidePane.current = "1100px";
-      if (ChangeWindowSize.current <= 1200 || ChangeWindowSize.current > 1300) {
-        setShowModal(false);
-      }
-      ChangeWindowSize.current = window.innerWidth;
     } else {
       maxRange.current = 55;
       radius.current = 50;
       joystickRadius.current = 25;
-      xValue.current = "50%";
-      yValue.current = "1%";
-      rightContainer.current = "5px";
-      leftContainer.current = "5px";
-      bottomContainer.current = "50px";
-      WidthSlidePane.current = "100%";
-      if (ChangeWindowSize.current > 1200) {
-        setShowModal(false);
-      }
-      setActiveFullView(false);
-      console.log("setActiveFullView: false");
-      ChangeWindowSize.current = window.innerWidth;
     }
+    xValue.current = "50%";
+    yValue.current = "50%";
   }
 
   function stop_motor() {
@@ -692,28 +630,19 @@ export default function CameraAddOn(props: PropTypes) {
 
       // Check if the elements exist
       if (containerElement) {
-        // Modify CSS properties of the elements
-        containerElement.style.position = "relative"; // fixed
-        containerElement.style.right = rightContainer.current; // 80%
-        containerElement.style.left = leftContainer.current; // 80%
-        containerElement.style.bottom = bottomContainer.current; //  11% 75%
-        containerElement.style.transform = "translate(0%,50%)"; //translate(50%,-50%)
+        containerElement.style.position = "relative";
+        containerElement.style.inset = "auto";
+        containerElement.style.transform = "none";
       }
 
       let joystickContainer = staticJoystick.container;
-      let newParent = document.getElementById("main_SlidingPane");
+      let newParent = document.getElementById("camera-joystick-slot");
 
       if (joystickContainer && newParent) {
         // Remove joystickContainer from its current parent
         joystickContainer.parentNode.removeChild(joystickContainer);
 
-        // Insert joystickContainer as the first child of the new parent
-        if (newParent.firstChild) {
-          newParent.insertBefore(joystickContainer, newParent.firstChild);
-        } else {
-          console.debug("no firstChild");
-          newParent.appendChild(joystickContainer);
-        }
+        newParent.appendChild(joystickContainer);
         staticJoystick.recenterJoystick();
 
         // Create buttons div element
@@ -842,623 +771,796 @@ export default function CameraAddOn(props: PropTypes) {
   }, []);
 
   return (
-    <div>
-      {isVisible && errorTxt && showModal && closePane.current && (
+    <>
+      {isVisible && errorTxt && showModal && (
         <div className="camera-action-status" role="status" aria-live="polite">
           {errorTxt}
         </div>
       )}
-      <SlidingPane
-        className="some-custom-class"
-        overlayClassName="slide-pane__overlay_hide"
-        isOpen={showModal && closePane.current}
-        title="Camera controls"
-        hideHeader={false}
-        from="bottom"
-        width={WidthSlidePane.current}
-        onAfterOpen={() => {
-          if (showOnlyControls || !showOnlyActions)
-            setTimeout(init_joystick, 500);
-        }}
-        onAfterClose={() => {
-          if (showOnlyControls || !showOnlyActions) close_joystick(joystickId);
-        }}
-        onRequestClose={closeCameraPanel}
+      <Modal
+        show={showModal}
+        onHide={closeCameraPanel}
+        onEntered={() => setTimeout(init_joystick, 100)}
+        onExited={() => close_joystick(joystickId)}
+        className={styles.cameraModalRoot}
+        dialogClassName={styles.cameraDialog}
+        scrollable
+        fullscreen="lg-down"
+        size="xl"
+        aria-labelledby="camera-controls-title"
       >
-        <div id="main_SlidingPane" className="box-element">
-          {(showOnlyControls || !showOnlyActions) && (
-            <div className="speed-meter">
-              <label className="speed-control" htmlFor="camera-motor-speed">
-                <span className="speed-control__label">Motor speed</span>
-                <strong className="speed-control__value">
-                  {joystickSpeedValue.toFixed(1)}×
-                </strong>
-                <input
-                  id="camera-motor-speed"
-                  className="speed-control__range"
-                  type="range"
-                  min="1.1"
-                  max="5"
-                  step="0.1"
-                  value={joystickSpeedValue}
-                  onChange={(event) =>
-                    updateNewSpeed(Number(event.currentTarget.value))
-                  }
-                />
-                <span className="speed-control__limits" aria-hidden="true">
-                  <span>Fine</span>
-                  <span>Fast</span>
-                </span>
-              </label>
-            </div>
-          )}
-          {(showOnlyActions || !showOnlyControls) && (
-            <div className="containerCamera">
-              <div className="pane">
-                {!activeFullView && (
-                  <div className="columnAction">
-                    <div className="header-camera">
-                      <div className="title">{t("cActiveActionView")}</div>
-                    </div>
-                    <div className="separator"></div>
-                    <div className="button-container-view">
-                      {PhotosModeActions.slice(0, 5).map((action) => (
-                        <button
-                          key={action}
-                          className={`button ${
-                            activeActionView === action ? "active" : ""
-                          }`}
-                          onClick={() => handleBtnViewClick(action.toString())}
-                        >
-                          {t(`cCameraAddOn${action.replace(" ", "")}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {(activeFullView ||
-                  (!activeFullView &&
-                    activeActionView == PhotosModeActions[0].toString())) && (
-                  <div className="column">
-                    <div className="header-camera">
-                      <div className="title">{t("cCameraAddOnPhoto")}</div>
-                    </div>
-                    <div className="separator"></div>
-                    <img
-                      id="TakePhoto"
-                      src={imgSrc}
-                      className="cameraAddon-image"
-                      alt="Take Photos"
-                      onClick={
-                        activeAction === undefined
-                          ? handleClickActionPhoto
-                          : undefined
-                      }
-                      style={{ cursor: "pointer" }}
-                    />
-                    <div className="button-container">
-                      <button
-                        className={`button ${
-                          activeBtnPhoto === "tele" ? "active" : ""
-                        }`}
-                        onClick={() => handleBtnPhotoClick("tele")}
-                      >
-                        Tele
-                      </button>
-                      <button
-                        className={`button ${
-                          activeBtnPhoto === "wide" ? "active" : ""
-                        }`}
-                        onClick={() => handleBtnPhotoClick("wide")}
-                      >
-                        Wide
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {(activeFullView ||
-                  (!activeFullView &&
-                    activeActionView == PhotosModeActions[1].toString())) && (
-                  <div className="column">
-                    <div className="header-camera">
-                      <div className="title">{t("cCameraAddOnVideo")}</div>
-                    </div>
-                    <div className="separator"></div>
-                    <img
-                      id="TakeVideo"
-                      src={imgSrc}
-                      className="cameraAddon-image"
-                      alt="Take Videos"
-                      onClick={
-                        activeAction === undefined
-                          ? handleClickActionStartVideo
-                          : activeAction === PhotosModeActions[1].toString()
-                            ? handleClickActionStopVideo
-                            : undefined
-                      }
-                      style={{ cursor: "pointer" }}
-                    />
-                    {isDwarfII && (
-                      <div className="button-container">
-                        <button
-                          className={`button-cent ${
-                            activeBtnVideo === "tele" ? "active" : ""
-                          }`}
-                          onClick={() => handleBtnVideoClick("tele")}
-                        >
-                          Tele
-                        </button>
-                      </div>
-                    )}
-                    {!isDwarfII && (
-                      <div className="button-container">
-                        <button
-                          className={`button ${
-                            activeBtnVideo === "tele" ? "active" : ""
-                          }`}
-                          onClick={() => handleBtnVideoClick("tele")}
-                        >
-                          Tele
-                        </button>
-                        <button
-                          className={`button ${
-                            activeBtnVideo === "wide" ? "active" : ""
-                          }`}
-                          onClick={() => handleBtnVideoClick("wide")}
-                        >
-                          Wide
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {(activeFullView ||
-                  (!activeFullView &&
-                    activeActionView == PhotosModeActions[2].toString())) && (
-                  <div className="column">
-                    <div className="header-camera">
-                      <div className="title">{t("cCameraAddOnPanorama")}</div>
-                      <button
-                        type="button"
-                        className="cameraAddon-settings-button"
-                        title="Panorama settings"
-                        aria-label="Open panorama settings"
-                      >
-                        <OverlayTrigger
-                          trigger="click"
-                          placement={"left"}
-                          show={showSettingsPanoMenu}
-                          onToggle={() => setShowSettingsPanoMenu((p) => !p)}
-                          overlay={
-                            <Popover id="popover-positioned-left">
-                              <Popover.Body>
-                                <CameraPanoSettings
-                                  colValue={colValue}
-                                  setColValue={setColValue}
-                                  rowValue={rowValue}
-                                  setRowValue={setRowValue}
-                                  setShowSettingsMenu={setShowSettingsPanoMenu}
-                                />
-                              </Popover.Body>
-                            </Popover>
-                          }
-                        >
-                          <i
-                            className="bi bi-sliders"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.75rem",
-                            }}
-                          ></i>
-                        </OverlayTrigger>
-                      </button>
-                    </div>
-                    <div className="separator"></div>
-                    <img
-                      id="TakePano"
-                      src={imgSrc}
-                      className="cameraAddon-image"
-                      alt="Take Panoramas"
-                      onClick={
-                        activeAction === undefined
-                          ? handleClickActionStartPano
-                          : activeAction === PhotosModeActions[2].toString()
-                            ? handleClickActionStopPano
-                            : undefined
-                      }
-                      style={{ cursor: "pointer" }}
-                    />
-                    {isDwarfII && (
-                      <div className="button-container">
-                        <button
-                          className={`button-cent ${
-                            activeBtnPano === "tele" ? "active" : ""
-                          }`}
-                          onClick={() => handleBtnPanoClick("tele")}
-                        >
-                          Tele
-                        </button>
-                      </div>
-                    )}
-                    {!isDwarfII && (
-                      <div className="button-container">
-                        <button
-                          className={`button ${
-                            activeBtnPano === "tele" ? "active" : ""
-                          }`}
-                          onClick={() => handleBtnPanoClick("tele")}
-                        >
-                          Tele
-                        </button>
-                        <button
-                          className={`button ${
-                            activeBtnPano === "wide" ? "active" : ""
-                          }`}
-                          disabled
-                          title="Panorama capture is only available on the telephoto camera"
-                        >
-                          Wide
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {(activeFullView ||
-                  (!activeFullView &&
-                    activeActionView == PhotosModeActions[3].toString())) && (
-                  <div className="column">
-                    <div className="header-camera">
-                      <div className="title">{t("cCameraAddOnBurst")}</div>
-                      <button
-                        type="button"
-                        className="cameraAddon-settings-button"
-                        title="Burst settings"
-                        aria-label="Open burst settings"
-                      >
-                        <OverlayTrigger
-                          trigger="click"
-                          placement={"left"}
-                          show={showSettingsBurstMenu}
-                          onToggle={() => setShowSettingsBurstMenu((p) => !p)}
-                          overlay={
-                            <Popover id="popover-positioned-left">
-                              <Popover.Body>
-                                <CameraBurstSettings
-                                  countValue={countValue}
-                                  setCountValue={setCountValue}
-                                  intervalValue={intervalBurstValue}
-                                  setIntervalValue={setIntervalBurstValue}
-                                  setShowSettingsMenu={setShowSettingsBurstMenu}
-                                />
-                              </Popover.Body>
-                            </Popover>
-                          }
-                        >
-                          <i
-                            className="bi bi-sliders"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.75rem",
-                            }}
-                          ></i>
-                        </OverlayTrigger>
-                      </button>
-                    </div>
-                    <div className="separator"></div>
-                    <img
-                      id="TakeBurstPhoto"
-                      src={imgSrc}
-                      className="cameraAddon-image"
-                      alt="Take Burst Photos"
-                      onClick={
-                        activeAction === undefined
-                          ? handleClickActionStartBurst
-                          : activeAction === PhotosModeActions[3].toString()
-                            ? handleClickActionStopBurst
-                            : undefined
-                      }
-                      style={{ cursor: "pointer" }}
-                    />
-                    <div className="button-container">
-                      <button
-                        className={`button ${
-                          activeBtnBurst === "tele" ? "active" : ""
-                        }`}
-                        onClick={() => handleBtnBurstClick("tele")}
-                      >
-                        Tele
-                      </button>
-                      <button
-                        className={`button ${
-                          activeBtnBurst === "wide" ? "active" : ""
-                        }`}
-                        onClick={() => handleBtnBurstClick("wide")}
-                      >
-                        Wide
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {(activeFullView ||
-                  (!activeFullView &&
-                    activeActionView == PhotosModeActions[4].toString())) && (
-                  <div className="column">
-                    <div className="header-camera">
-                      <div className="title">{t("cCameraAddOnTimeLapse")}</div>
-                      <button
-                        type="button"
-                        className="cameraAddon-settings-button"
-                        title="Time-lapse settings"
-                        aria-label="Open time-lapse settings"
-                      >
-                        <OverlayTrigger
-                          trigger="click"
-                          placement={"left"}
-                          show={showSettingsTimeLapseMenu}
-                          onToggle={() =>
-                            setShowSettingsTimeLapseMenu((p) => !p)
-                          }
-                          overlay={
-                            <Popover id="popover-positioned-left">
-                              <Popover.Body>
-                                <CameraTimeLapseSettings
-                                  intervalIndexValue={intervalIndexValue}
-                                  setIntervalIndexValue={setIntervalIndexValue}
-                                  totalTimeIndexValue={totalTimeIndexValue}
-                                  setTotalTimeIndexValue={
-                                    setTotalTimeIndexValue
-                                  }
-                                  setShowSettingsMenu={
-                                    setShowSettingsTimeLapseMenu
-                                  }
-                                />
-                              </Popover.Body>
-                            </Popover>
-                          }
-                        >
-                          <i
-                            className="bi bi-sliders"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.75rem",
-                            }}
-                          ></i>
-                        </OverlayTrigger>
-                      </button>
-                    </div>
-                    <div className="separator"></div>
-                    <img
-                      id="TakeTimeLapse"
-                      src={imgSrc}
-                      className="cameraAddon-image"
-                      alt="Take Time Lapse"
-                      onClick={
-                        activeAction === undefined
-                          ? handleClickActionStartTimeLapse
-                          : activeAction === PhotosModeActions[4].toString()
-                            ? handleClickActionStopTimeLapse
-                            : undefined
-                      }
-                      style={{ cursor: "pointer" }}
-                    />
-                    <div className="button-container">
-                      <button
-                        className={`button ${
-                          activeBtnTimeLapse === "tele" ? "active" : ""
-                        }`}
-                        onClick={() => handleBtnTimeLapseClick("tele")}
-                      >
-                        Tele
-                      </button>
-                      <button
-                        className={`button ${
-                          activeBtnTimeLapse === "wide" ? "active" : ""
-                        }`}
-                        onClick={() => handleBtnTimeLapseClick("wide")}
-                      >
-                        Wide
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <div className="column">
-                  {activeBtnSettings === "wide" && (
-                    <div className="header-camera">
-                      <div className="title">Settings</div>
-                      <button
-                        type="button"
-                        className="cameraAddon-settings-button"
-                        title="Wide-angle camera settings"
-                        aria-label="Open wide-angle camera settings"
-                      >
-                        <OverlayTrigger
-                          trigger="click"
-                          placement={"left"}
-                          show={showSettingsWideMenu}
-                          onToggle={() => setShowSettingsWideMenu((p) => !p)}
-                          overlay={
-                            <Popover id="popover-positioned-left">
-                              <Popover.Body>
-                                <CameraWideSettings
-                                  wideExposureAuto={wideExposureAuto}
-                                  setWideExposureAuto={setWideExposureAuto}
-                                  wideExposureIndexValue={
-                                    wideExposureIndexValue
-                                  }
-                                  setWideExposureIndexValue={
-                                    setWideExposureIndexValue
-                                  }
-                                  wideGainIndexValue={wideGainIndexValue}
-                                  setWideGainIndexValue={setWideGainIndexValue}
-                                  wideWBAuto={wideWBAuto}
-                                  setWideWBAuto={setWideWBAuto}
-                                  //wideWBMode={wideWBMode}
-                                  //setWideWBMode={setWideWBMode}
-                                  wideWBColorTempIndexValue={
-                                    wideWBColorTempIndexValue
-                                  }
-                                  setWideWBColorTempIndexValue={
-                                    setWideWBColorTempIndexValue
-                                  }
-                                  //wideWBSceneValue={wideWBSceneValue}
-                                  //setWideWBSceneValue={setWideWBSceneValue}
-                                  wideBrightnessValue={wideBrightnessValue}
-                                  setWideBrightnessValue={
-                                    setWideBrightnessValue
-                                  }
-                                  wideContrastValue={wideContrastValue}
-                                  setWideContrastValue={setWideContrastValue}
-                                  wideHueValue={wideHueValue}
-                                  setWideHueValue={setWideHueValue}
-                                  wideSaturationValue={wideSaturationValue}
-                                  setWideSaturationValue={
-                                    setWideSaturationValue
-                                  }
-                                  wideSharpnessValue={wideSharpnessValue}
-                                  setWideSharpnessValue={setWideSharpnessValue}
-                                  setShowSettingsWideMenu={
-                                    setShowSettingsWideMenu
-                                  }
-                                />
-                              </Popover.Body>
-                            </Popover>
-                          }
-                        >
-                          <i
-                            className="bi bi-sliders"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.75rem",
-                            }}
-                          ></i>
-                        </OverlayTrigger>
-                      </button>
-                    </div>
-                  )}
-                  {activeBtnSettings === "tele" && (
-                    <div className="header-camera">
-                      <div className="title">Settings</div>
-                      <button
-                        type="button"
-                        className="cameraAddon-settings-button"
-                        title="Telephoto camera settings"
-                        aria-label="Open telephoto camera settings"
-                      >
-                        <OverlayTrigger
-                          trigger="click"
-                          placement={"left"}
-                          show={showSettingsTeleMenu}
-                          onToggle={() => setShowSettingsTeleMenu((p) => !p)}
-                          overlay={
-                            <Popover id="popover-positioned-left">
-                              <Popover.Body>
-                                <CameraTeleSettings
-                                  teleWBAuto={teleWBAuto}
-                                  setTeleWBAuto={setTeleWBAuto}
-                                  teleWBMode={teleWBMode}
-                                  setTeleWBMode={setTeleWBMode}
-                                  teleWBColorTempIndexValue={
-                                    teleWBColorTempIndexValue
-                                  }
-                                  setTeleWBColorTempIndexValue={
-                                    setTeleWBColorTempIndexValue
-                                  }
-                                  teleWBSceneValue={teleWBSceneValue}
-                                  setTeleWBSceneValue={setTeleWBSceneValue}
-                                  teleBrightnessValue={teleBrightnessValue}
-                                  setTeleBrightnessValue={
-                                    setTeleBrightnessValue
-                                  }
-                                  teleContrastValue={teleContrastValue}
-                                  setTeleContrastValue={setTeleContrastValue}
-                                  teleHueValue={teleHueValue}
-                                  setTeleHueValue={setTeleHueValue}
-                                  teleSaturationValue={teleSaturationValue}
-                                  setTeleSaturationValue={
-                                    setTeleSaturationValue
-                                  }
-                                  teleSharpnessValue={teleSharpnessValue}
-                                  setTeleSharpnessValue={setTeleSharpnessValue}
-                                  setShowSettingsTeleMenu={
-                                    setShowSettingsTeleMenu
-                                  }
-                                />
-                              </Popover.Body>
-                            </Popover>
-                          }
-                        >
-                          <i
-                            className="bi bi-sliders"
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.75rem",
-                            }}
-                          ></i>
-                        </OverlayTrigger>
-                      </button>
-                    </div>
-                  )}
-                  <div className="separator"></div>
-                  <img
-                    src="/images/settings-white.png"
-                    className="cameraAddon-image"
-                    alt="Settings"
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Open ${activeBtnSettings === "wide" ? "wide-angle" : "telephoto"} camera settings`}
-                    onClick={openSelectedCameraSettings}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openSelectedCameraSettings();
-                      }
-                    }}
-                    style={{ cursor: "pointer" }}
+        <Modal.Header closeButton className={styles.cameraModalHeader}>
+          <div>
+            <span className={styles.eyebrow}>Imaging workspace</span>
+            <Modal.Title id="camera-controls-title">
+              Camera &amp; mount controls
+            </Modal.Title>
+            <p>
+              Select a capture tool or adjust the telescope without leaving the
+              live view.
+            </p>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.cameraModalBody}>
+          <div
+            id="main_SlidingPane"
+            className={`${styles.controlLayout} box-element`}
+          >
+            <section
+              className={styles.mountControls}
+              aria-label="Mount controls"
+            >
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span>Mount</span>
+                  <h3>Movement</h3>
+                </div>
+                <strong>{joystickSpeedValue.toFixed(1)}&times;</strong>
+              </div>
+              <div className="speed-meter">
+                <label className="speed-control" htmlFor="camera-motor-speed">
+                  <span className="speed-control__label">Motor speed</span>
+                  <input
+                    id="camera-motor-speed"
+                    className="speed-control__range"
+                    type="range"
+                    min="1.1"
+                    max="5"
+                    step="0.1"
+                    value={joystickSpeedValue}
+                    aria-label={`Motor speed ${joystickSpeedValue.toFixed(1)} times`}
+                    onChange={(event) =>
+                      updateNewSpeed(Number(event.currentTarget.value))
+                    }
                   />
-                  <div className="button-container">
-                    <button
-                      className={`button ${
-                        activeBtnSettings === "tele" ? "active" : ""
-                      }`}
-                      onClick={() => {
-                        updateTeleData();
-                        handleBtnSettingsClick("tele");
-                      }}
-                    >
-                      Tele
-                    </button>
-                    <button
-                      className={`button ${
-                        activeBtnSettings === "wide" ? "active" : ""
-                      }`}
-                      onClick={() => {
-                        updateWideData();
-                        handleBtnSettingsClick("wide");
-                      }}
-                    >
-                      Wide
-                    </button>
-                  </div>
+                  <span className="speed-control__limits" aria-hidden="true">
+                    <span>Fine</span>
+                    <span>Fast</span>
+                  </span>
+                </label>
+              </div>
+              <div id="camera-joystick-slot" className={styles.joystickSlot} />
+            </section>
+            <section
+              className={styles.captureControls}
+              aria-label="Capture controls"
+            >
+              <div className={styles.sectionHeading}>
+                <div>
+                  <span>Camera</span>
+                  <h3>Capture tools</h3>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </SlidingPane>
-    </div>
+              <div className="containerCamera">
+                <div className="pane">
+                  {!activeFullView && (
+                    <div className="columnAction">
+                      <div className="header-camera">
+                        <div className="title">{t("cActiveActionView")}</div>
+                      </div>
+                      <div className="separator"></div>
+                      <div className="button-container-view">
+                        {PhotosModeActions.map((action) => (
+                          <button
+                            type="button"
+                            key={action}
+                            role="tab"
+                            aria-selected={activeActionView === action}
+                            className={`button ${
+                              activeActionView === action ? "active" : ""
+                            }`}
+                            onClick={() =>
+                              handleBtnViewClick(action.toString())
+                            }
+                          >
+                            {action === "Settings"
+                              ? "Settings"
+                              : t(`cCameraAddOn${action.replace(" ", "")}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(activeFullView ||
+                    (!activeFullView &&
+                      activeActionView == PhotosModeActions[0].toString())) && (
+                    <div className="column">
+                      <div className="header-camera">
+                        <div className="title">{t("cCameraAddOnPhoto")}</div>
+                      </div>
+                      <div className="separator"></div>
+                      <img
+                        id="TakePhoto"
+                        src={imgSrc}
+                        className="cameraAddon-image"
+                        alt="Take Photos"
+                        onClick={
+                          activeAction === undefined
+                            ? handleClickActionPhoto
+                            : undefined
+                        }
+                        style={{ cursor: "pointer" }}
+                      />
+                      <div className="button-container">
+                        <button
+                          className={`button ${
+                            activeBtnPhoto === "tele" ? "active" : ""
+                          }`}
+                          onClick={() => handleBtnPhotoClick("tele")}
+                        >
+                          Tele
+                        </button>
+                        <button
+                          className={`button ${
+                            activeBtnPhoto === "wide" ? "active" : ""
+                          }`}
+                          onClick={() => handleBtnPhotoClick("wide")}
+                        >
+                          Wide
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(activeFullView ||
+                    (!activeFullView &&
+                      activeActionView == PhotosModeActions[1].toString())) && (
+                    <div className="column">
+                      <div className="header-camera">
+                        <div className="title">{t("cCameraAddOnVideo")}</div>
+                      </div>
+                      <div className="separator"></div>
+                      <img
+                        id="TakeVideo"
+                        src={imgSrc}
+                        className="cameraAddon-image"
+                        alt="Take Videos"
+                        onClick={
+                          activeAction === undefined
+                            ? handleClickActionStartVideo
+                            : activeAction === PhotosModeActions[1].toString()
+                              ? handleClickActionStopVideo
+                              : undefined
+                        }
+                        style={{ cursor: "pointer" }}
+                      />
+                      {isDwarfII && (
+                        <div className="button-container">
+                          <button
+                            className={`button-cent ${
+                              activeBtnVideo === "tele" ? "active" : ""
+                            }`}
+                            onClick={() => handleBtnVideoClick("tele")}
+                          >
+                            Tele
+                          </button>
+                        </div>
+                      )}
+                      {!isDwarfII && (
+                        <div className="button-container">
+                          <button
+                            className={`button ${
+                              activeBtnVideo === "tele" ? "active" : ""
+                            }`}
+                            onClick={() => handleBtnVideoClick("tele")}
+                          >
+                            Tele
+                          </button>
+                          <button
+                            className={`button ${
+                              activeBtnVideo === "wide" ? "active" : ""
+                            }`}
+                            onClick={() => handleBtnVideoClick("wide")}
+                          >
+                            Wide
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(activeFullView ||
+                    (!activeFullView &&
+                      activeActionView == PhotosModeActions[2].toString())) && (
+                    <div className="column">
+                      <div className="header-camera">
+                        <div className="title">{t("cCameraAddOnPanorama")}</div>
+                        <button
+                          type="button"
+                          className="cameraAddon-settings-button"
+                          title="Panorama settings"
+                          aria-label="Open panorama settings"
+                        >
+                          <OverlayTrigger
+                            trigger="click"
+                            placement="top"
+                            show={showSettingsPanoMenu}
+                            onToggle={() => setShowSettingsPanoMenu((p) => !p)}
+                            overlay={
+                              <Popover
+                                id="popover-panorama-settings"
+                                className={styles.settingsPopover}
+                                role="dialog"
+                                aria-label="Panorama settings"
+                              >
+                                <Popover.Header as="h3">
+                                  <span>Panorama settings</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowSettingsPanoMenu(false)
+                                    }
+                                    aria-label="Close panorama settings"
+                                  >
+                                    <i
+                                      className="bi bi-x-lg"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </Popover.Header>
+                                <Popover.Body>
+                                  <CameraPanoSettings
+                                    colValue={colValue}
+                                    setColValue={setColValue}
+                                    rowValue={rowValue}
+                                    setRowValue={setRowValue}
+                                    setShowSettingsMenu={
+                                      setShowSettingsPanoMenu
+                                    }
+                                  />
+                                </Popover.Body>
+                              </Popover>
+                            }
+                          >
+                            <i
+                              className="bi bi-sliders"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "1.75rem",
+                              }}
+                            ></i>
+                          </OverlayTrigger>
+                        </button>
+                      </div>
+                      <div className="separator"></div>
+                      <img
+                        id="TakePano"
+                        src={imgSrc}
+                        className="cameraAddon-image"
+                        alt="Take Panoramas"
+                        onClick={
+                          activeAction === undefined
+                            ? handleClickActionStartPano
+                            : activeAction === PhotosModeActions[2].toString()
+                              ? handleClickActionStopPano
+                              : undefined
+                        }
+                        style={{ cursor: "pointer" }}
+                      />
+                      {isDwarfII && (
+                        <div className="button-container">
+                          <button
+                            className={`button-cent ${
+                              activeBtnPano === "tele" ? "active" : ""
+                            }`}
+                            onClick={() => handleBtnPanoClick("tele")}
+                          >
+                            Tele
+                          </button>
+                        </div>
+                      )}
+                      {!isDwarfII && (
+                        <div className="button-container">
+                          <button
+                            className={`button ${
+                              activeBtnPano === "tele" ? "active" : ""
+                            }`}
+                            onClick={() => handleBtnPanoClick("tele")}
+                          >
+                            Tele
+                          </button>
+                          <button
+                            className={`button ${
+                              activeBtnPano === "wide" ? "active" : ""
+                            }`}
+                            disabled
+                            title="Panorama capture is only available on the telephoto camera"
+                          >
+                            Wide
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {(activeFullView ||
+                    (!activeFullView &&
+                      activeActionView == PhotosModeActions[3].toString())) && (
+                    <div className="column">
+                      <div className="header-camera">
+                        <div className="title">{t("cCameraAddOnBurst")}</div>
+                        <button
+                          type="button"
+                          className="cameraAddon-settings-button"
+                          title="Burst settings"
+                          aria-label="Open burst settings"
+                        >
+                          <OverlayTrigger
+                            trigger="click"
+                            placement="top"
+                            show={showSettingsBurstMenu}
+                            onToggle={() => setShowSettingsBurstMenu((p) => !p)}
+                            overlay={
+                              <Popover
+                                id="popover-burst-settings"
+                                className={styles.settingsPopover}
+                                role="dialog"
+                                aria-label="Burst settings"
+                              >
+                                <Popover.Header as="h3">
+                                  <span>Burst settings</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowSettingsBurstMenu(false)
+                                    }
+                                    aria-label="Close burst settings"
+                                  >
+                                    <i
+                                      className="bi bi-x-lg"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </Popover.Header>
+                                <Popover.Body>
+                                  <CameraBurstSettings
+                                    countValue={countValue}
+                                    setCountValue={setCountValue}
+                                    intervalValue={intervalBurstValue}
+                                    setIntervalValue={setIntervalBurstValue}
+                                    setShowSettingsMenu={
+                                      setShowSettingsBurstMenu
+                                    }
+                                  />
+                                </Popover.Body>
+                              </Popover>
+                            }
+                          >
+                            <i
+                              className="bi bi-sliders"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "1.75rem",
+                              }}
+                            ></i>
+                          </OverlayTrigger>
+                        </button>
+                      </div>
+                      <div className="separator"></div>
+                      <img
+                        id="TakeBurstPhoto"
+                        src={imgSrc}
+                        className="cameraAddon-image"
+                        alt="Take Burst Photos"
+                        onClick={
+                          activeAction === undefined
+                            ? handleClickActionStartBurst
+                            : activeAction === PhotosModeActions[3].toString()
+                              ? handleClickActionStopBurst
+                              : undefined
+                        }
+                        style={{ cursor: "pointer" }}
+                      />
+                      <div className="button-container">
+                        <button
+                          className={`button ${
+                            activeBtnBurst === "tele" ? "active" : ""
+                          }`}
+                          onClick={() => handleBtnBurstClick("tele")}
+                        >
+                          Tele
+                        </button>
+                        <button
+                          className={`button ${
+                            activeBtnBurst === "wide" ? "active" : ""
+                          }`}
+                          onClick={() => handleBtnBurstClick("wide")}
+                        >
+                          Wide
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {(activeFullView ||
+                    (!activeFullView &&
+                      activeActionView == PhotosModeActions[4].toString())) && (
+                    <div className="column">
+                      <div className="header-camera">
+                        <div className="title">
+                          {t("cCameraAddOnTimeLapse")}
+                        </div>
+                        <button
+                          type="button"
+                          className="cameraAddon-settings-button"
+                          title="Time-lapse settings"
+                          aria-label="Open time-lapse settings"
+                        >
+                          <OverlayTrigger
+                            trigger="click"
+                            placement="top"
+                            show={showSettingsTimeLapseMenu}
+                            onToggle={() =>
+                              setShowSettingsTimeLapseMenu((p) => !p)
+                            }
+                            overlay={
+                              <Popover
+                                id="popover-timelapse-settings"
+                                className={styles.settingsPopover}
+                                role="dialog"
+                                aria-label="Time-lapse settings"
+                              >
+                                <Popover.Header as="h3">
+                                  <span>Time-lapse settings</span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowSettingsTimeLapseMenu(false)
+                                    }
+                                    aria-label="Close time-lapse settings"
+                                  >
+                                    <i
+                                      className="bi bi-x-lg"
+                                      aria-hidden="true"
+                                    />
+                                  </button>
+                                </Popover.Header>
+                                <Popover.Body>
+                                  <CameraTimeLapseSettings
+                                    intervalIndexValue={intervalIndexValue}
+                                    setIntervalIndexValue={
+                                      setIntervalIndexValue
+                                    }
+                                    totalTimeIndexValue={totalTimeIndexValue}
+                                    setTotalTimeIndexValue={
+                                      setTotalTimeIndexValue
+                                    }
+                                    setShowSettingsMenu={
+                                      setShowSettingsTimeLapseMenu
+                                    }
+                                  />
+                                </Popover.Body>
+                              </Popover>
+                            }
+                          >
+                            <i
+                              className="bi bi-sliders"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "1.75rem",
+                              }}
+                            ></i>
+                          </OverlayTrigger>
+                        </button>
+                      </div>
+                      <div className="separator"></div>
+                      <img
+                        id="TakeTimeLapse"
+                        src={imgSrc}
+                        className="cameraAddon-image"
+                        alt="Take Time Lapse"
+                        onClick={
+                          activeAction === undefined
+                            ? handleClickActionStartTimeLapse
+                            : activeAction === PhotosModeActions[4].toString()
+                              ? handleClickActionStopTimeLapse
+                              : undefined
+                        }
+                        style={{ cursor: "pointer" }}
+                      />
+                      <div className="button-container">
+                        <button
+                          className={`button ${
+                            activeBtnTimeLapse === "tele" ? "active" : ""
+                          }`}
+                          onClick={() => handleBtnTimeLapseClick("tele")}
+                        >
+                          Tele
+                        </button>
+                        <button
+                          className={`button ${
+                            activeBtnTimeLapse === "wide" ? "active" : ""
+                          }`}
+                          onClick={() => handleBtnTimeLapseClick("wide")}
+                        >
+                          Wide
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {activeActionView == PhotosModeActions[5].toString() && (
+                    <div className="column">
+                      {activeBtnSettings === "wide" && (
+                        <div className="header-camera">
+                          <div className="title">Settings</div>
+                          <button
+                            type="button"
+                            className="cameraAddon-settings-button"
+                            title="Wide-angle camera settings"
+                            aria-label="Open wide-angle camera settings"
+                          >
+                            <OverlayTrigger
+                              trigger="click"
+                              placement="top"
+                              show={showSettingsWideMenu}
+                              onToggle={() =>
+                                setShowSettingsWideMenu((p) => !p)
+                              }
+                              overlay={
+                                <Popover
+                                  id="popover-wide-settings"
+                                  className={styles.settingsPopover}
+                                  role="dialog"
+                                  aria-label="Wide-angle settings"
+                                >
+                                  <Popover.Header as="h3">
+                                    <span>Wide-angle settings</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setShowSettingsWideMenu(false)
+                                      }
+                                      aria-label="Close wide-angle settings"
+                                    >
+                                      <i
+                                        className="bi bi-x-lg"
+                                        aria-hidden="true"
+                                      />
+                                    </button>
+                                  </Popover.Header>
+                                  <Popover.Body>
+                                    <CameraWideSettings
+                                      wideExposureAuto={wideExposureAuto}
+                                      setWideExposureAuto={setWideExposureAuto}
+                                      wideExposureIndexValue={
+                                        wideExposureIndexValue
+                                      }
+                                      setWideExposureIndexValue={
+                                        setWideExposureIndexValue
+                                      }
+                                      wideGainIndexValue={wideGainIndexValue}
+                                      setWideGainIndexValue={
+                                        setWideGainIndexValue
+                                      }
+                                      wideWBAuto={wideWBAuto}
+                                      setWideWBAuto={setWideWBAuto}
+                                      //wideWBMode={wideWBMode}
+                                      //setWideWBMode={setWideWBMode}
+                                      wideWBColorTempIndexValue={
+                                        wideWBColorTempIndexValue
+                                      }
+                                      setWideWBColorTempIndexValue={
+                                        setWideWBColorTempIndexValue
+                                      }
+                                      //wideWBSceneValue={wideWBSceneValue}
+                                      //setWideWBSceneValue={setWideWBSceneValue}
+                                      wideBrightnessValue={wideBrightnessValue}
+                                      setWideBrightnessValue={
+                                        setWideBrightnessValue
+                                      }
+                                      wideContrastValue={wideContrastValue}
+                                      setWideContrastValue={
+                                        setWideContrastValue
+                                      }
+                                      wideHueValue={wideHueValue}
+                                      setWideHueValue={setWideHueValue}
+                                      wideSaturationValue={wideSaturationValue}
+                                      setWideSaturationValue={
+                                        setWideSaturationValue
+                                      }
+                                      wideSharpnessValue={wideSharpnessValue}
+                                      setWideSharpnessValue={
+                                        setWideSharpnessValue
+                                      }
+                                      setShowSettingsWideMenu={
+                                        setShowSettingsWideMenu
+                                      }
+                                    />
+                                  </Popover.Body>
+                                </Popover>
+                              }
+                            >
+                              <i
+                                className="bi bi-sliders"
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "1.75rem",
+                                }}
+                              ></i>
+                            </OverlayTrigger>
+                          </button>
+                        </div>
+                      )}
+                      {activeBtnSettings === "tele" && (
+                        <div className="header-camera">
+                          <div className="title">Settings</div>
+                          <button
+                            type="button"
+                            className="cameraAddon-settings-button"
+                            title="Telephoto camera settings"
+                            aria-label="Open telephoto camera settings"
+                          >
+                            <OverlayTrigger
+                              trigger="click"
+                              placement="top"
+                              show={showSettingsTeleMenu}
+                              onToggle={() =>
+                                setShowSettingsTeleMenu((p) => !p)
+                              }
+                              overlay={
+                                <Popover
+                                  id="popover-tele-settings"
+                                  className={styles.settingsPopover}
+                                  role="dialog"
+                                  aria-label="Telephoto settings"
+                                >
+                                  <Popover.Header as="h3">
+                                    <span>Telephoto settings</span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setShowSettingsTeleMenu(false)
+                                      }
+                                      aria-label="Close telephoto settings"
+                                    >
+                                      <i
+                                        className="bi bi-x-lg"
+                                        aria-hidden="true"
+                                      />
+                                    </button>
+                                  </Popover.Header>
+                                  <Popover.Body>
+                                    <CameraTeleSettings
+                                      teleWBAuto={teleWBAuto}
+                                      setTeleWBAuto={setTeleWBAuto}
+                                      teleWBMode={teleWBMode}
+                                      setTeleWBMode={setTeleWBMode}
+                                      teleWBColorTempIndexValue={
+                                        teleWBColorTempIndexValue
+                                      }
+                                      setTeleWBColorTempIndexValue={
+                                        setTeleWBColorTempIndexValue
+                                      }
+                                      teleWBSceneValue={teleWBSceneValue}
+                                      setTeleWBSceneValue={setTeleWBSceneValue}
+                                      teleBrightnessValue={teleBrightnessValue}
+                                      setTeleBrightnessValue={
+                                        setTeleBrightnessValue
+                                      }
+                                      teleContrastValue={teleContrastValue}
+                                      setTeleContrastValue={
+                                        setTeleContrastValue
+                                      }
+                                      teleHueValue={teleHueValue}
+                                      setTeleHueValue={setTeleHueValue}
+                                      teleSaturationValue={teleSaturationValue}
+                                      setTeleSaturationValue={
+                                        setTeleSaturationValue
+                                      }
+                                      teleSharpnessValue={teleSharpnessValue}
+                                      setTeleSharpnessValue={
+                                        setTeleSharpnessValue
+                                      }
+                                      setShowSettingsTeleMenu={
+                                        setShowSettingsTeleMenu
+                                      }
+                                    />
+                                  </Popover.Body>
+                                </Popover>
+                              }
+                            >
+                              <i
+                                className="bi bi-sliders"
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "1.75rem",
+                                }}
+                              ></i>
+                            </OverlayTrigger>
+                          </button>
+                        </div>
+                      )}
+                      <div className="separator"></div>
+                      <img
+                        src="/images/settings-white.png"
+                        className="cameraAddon-image"
+                        alt="Settings"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Open ${activeBtnSettings === "wide" ? "wide-angle" : "telephoto"} camera settings`}
+                        onClick={openSelectedCameraSettings}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openSelectedCameraSettings();
+                          }
+                        }}
+                        style={{ cursor: "pointer" }}
+                      />
+                      <div className="button-container">
+                        <button
+                          className={`button ${
+                            activeBtnSettings === "tele" ? "active" : ""
+                          }`}
+                          onClick={() => {
+                            updateTeleData();
+                            handleBtnSettingsClick("tele");
+                          }}
+                        >
+                          Tele
+                        </button>
+                        <button
+                          className={`button ${
+                            activeBtnSettings === "wide" ? "active" : ""
+                          }`}
+                          onClick={() => {
+                            updateWideData();
+                            handleBtnSettingsClick("wide");
+                          }}
+                        >
+                          Wide
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className={styles.cameraModalFooter}>
+          <span>
+            Opening these controls does not change the current imaging mode.
+          </span>
+          <button
+            type="button"
+            className="dw-button is-secondary"
+            onClick={closeCameraPanel}
+          >
+            Close controls
+          </button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 }

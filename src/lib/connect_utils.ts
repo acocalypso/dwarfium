@@ -49,6 +49,76 @@ function updateAstroCamera(connectionCtx: ConnectionContextType, cmd) {
   }
 }
 
+/**
+ * Apply model-independent telemetry emitted by both the legacy notification
+ * commands and the current V3 protocol. V3's initial device-state response
+ * also carries the current CMOS temperature, so the header does not have to
+ * wait for the next periodic notification after connecting.
+ */
+export function applyDeviceTelemetry(
+  connectionCtx: ConnectionContextType,
+  resultData: { cmd?: number; data?: any },
+): boolean {
+  const { cmd, data } = resultData;
+  if (!data) return false;
+
+  if (cmd === Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ELE) {
+    const battery = Number(data.value);
+    if (
+      Number.isFinite(battery) &&
+      (data.code === undefined || data.code === Dwarfii_Api.DwarfErrorCode.OK)
+    ) {
+      connectionCtx.setBatteryLevelDwarf(
+        Math.max(0, Math.min(100, Math.round(battery))),
+      );
+    }
+    return true;
+  }
+
+  if (cmd === Dwarfii_Api.DwarfCMD.CMD_NOTIFY_CHARGE) {
+    const chargeState = Number(data.value);
+    if (
+      Number.isFinite(chargeState) &&
+      (data.code === undefined || data.code === Dwarfii_Api.DwarfErrorCode.OK)
+    ) {
+      connectionCtx.setBatteryStatusDwarf(chargeState);
+    }
+    return true;
+  }
+
+  if (cmd === Dwarfii_Api.DwarfCMD.CMD_NOTIFY_SDCARD_INFO) {
+    const availableSize = Number(data.availableSize);
+    const totalSize = Number(data.totalSize);
+    if (Number.isFinite(availableSize) && Number.isFinite(totalSize)) {
+      connectionCtx.setAvailableSizeDwarf(availableSize);
+      connectionCtx.setTotalSizeDwarf(totalSize);
+    }
+    return true;
+  }
+
+  if (
+    cmd === Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TEMPERATURE ||
+    cmd === Dwarfii_Api.DwarfCMD.CMD_V3_NOTIFY_TEMPERATURE2
+  ) {
+    const temperature = Number(data.temperature);
+    if (Number.isFinite(temperature)) {
+      connectionCtx.setStatusTemperatureDwarf(temperature);
+    }
+    return true;
+  }
+
+  if (cmd === V3_SESSION_READY_COMMAND) {
+    const temperature = Number(
+      data.teleCameraStateInfo?.cmosTemperature?.temperature,
+    );
+    if (Number.isFinite(temperature)) {
+      connectionCtx.setStatusTemperatureDwarf(temperature);
+    }
+  }
+
+  return false;
+}
+
 export async function connectionHandler(
   connectionCtx: ConnectionContextType,
   IPDwarf: string | undefined,
@@ -122,10 +192,9 @@ export async function connectionHandler(
   }
 
   const customMessageHandler = async (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_SDCARD_INFO) {
-      connectionCtx.setAvailableSizeDwarf(result_data.data.availableSize);
-      connectionCtx.setTotalSizeDwarf(result_data.data.totalSize);
-    } else if (result_data.cmd == V3_SESSION_READY_COMMAND) {
+    const handledTelemetry = applyDeviceTelemetry(connectionCtx, result_data);
+
+    if (result_data.cmd == V3_SESSION_READY_COMMAND) {
       if (
         result_data.data.code === undefined ||
         result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK
@@ -296,14 +365,6 @@ export async function connectionHandler(
           result_data.data.stackedCount.toString(),
         );
       }
-    } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ELE) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        connectionCtx.setBatteryLevelDwarf(result_data.data.value);
-      }
-    } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_CHARGE) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        connectionCtx.setBatteryStatusDwarf(result_data.data.value);
-      }
     } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STREAM_TYPE) {
       if (result_data.data.camId == 0) {
         connectionCtx.setStreamTypeTeleDwarf(result_data.data.streamType);
@@ -312,8 +373,6 @@ export async function connectionHandler(
         connectionCtx.setStreamTypeWideDwarf(result_data.data.streamType);
         console.log("C setStreamTypeWideDwarf: ", result_data.data.streamType);
       }
-    } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TEMPERATURE) {
-      connectionCtx.setStatusTemperatureDwarf(result_data.data.temperature);
     } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_FOCUS) {
       connectionCtx.setValueFocusDwarf(result_data.data.focus);
     } else if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_RGB_STATE) {
@@ -330,7 +389,7 @@ export async function connectionHandler(
       saveConnectionStatusDB(false);
       // force stop webSocketHandler
       webSocketHandler.cleanup(true);
-    } else {
+    } else if (!handledTelemetry) {
       logger("", result_data, connectionCtx);
     }
     logger(txt_info, result_data, connectionCtx);
@@ -430,6 +489,7 @@ export async function connectionHandler(
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_WIDE_CAPTURE_RAW_LIVE_STACKING,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_PROGRASS_WIDE_CAPTURE_RAW_LIVE_STACKING,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TEMPERATURE,
+        Dwarfii_Api.DwarfCMD.CMD_V3_NOTIFY_TEMPERATURE2,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STREAM_TYPE,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_FOCUS,
       ],

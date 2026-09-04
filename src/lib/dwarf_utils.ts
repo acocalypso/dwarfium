@@ -143,7 +143,6 @@ export async function turnOnTeleCameraFn(
       [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA],
       customMessageHandler,
     );
-
   }
 
   if (!webSocketHandler.isConnected()) {

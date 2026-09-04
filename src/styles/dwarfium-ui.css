@@ -2974,9 +2974,6 @@ body.light-theme .dw-statusbar {
   .dw-setup-intro {
     grid-template-columns: 1fr;
   }
-  .dw-status-metric:nth-of-type(3) {
-    display: none;
-  }
   .dw-panel.is-device,
   .dw-panel.is-session,
   .dw-panel.is-actions,
@@ -3074,13 +3071,47 @@ body.light-theme .dw-statusbar {
   }
   .dw-statusbar {
     top: 0;
+    flex-wrap: wrap;
     padding: 8px 14px;
   }
   .dw-status-metrics {
+    order: 3;
+    flex: 0 0 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: flex-start;
+    overflow: visible;
   }
-  .dw-status-metric:nth-of-type(n + 3) {
+  .dw-status-metric:nth-of-type(4) {
     display: none;
+  }
+  .dw-status-metric {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 7px;
+    row-gap: 1px;
+  }
+  .dw-status-metric i {
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+  .dw-status-metric-label {
+    display: block;
+    overflow: hidden;
+    color: var(--dw-text-dim);
+    font-size: 0.6rem;
+    font-weight: 650;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+  }
+  .dw-status-metric strong {
+    min-width: 0;
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+  .dw-capture-indicator {
+    grid-column: 1 / -1;
   }
   .dw-main {
     padding: 22px 16px 44px;
@@ -3142,7 +3173,7 @@ body.light-theme .dw-statusbar {
 
 @media (max-width: 560px) {
   .dw-statusbar {
-    min-height: 58px;
+    min-height: 104px;
     gap: 8px;
   }
   .dw-connection-state {
@@ -3153,10 +3184,6 @@ body.light-theme .dw-statusbar {
   }
   .dw-status-metric {
     padding: 6px 8px;
-  }
-  .dw-status-metric:nth-of-type(n + 2),
-  .dw-status-settings {
-    display: none;
   }
   .dw-metric-grid,
   .dw-quick-actions {

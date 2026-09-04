@@ -26,9 +26,17 @@ const getWideExposuresDwarf3 = () => {
   return value ? value : false;
 };
 
+const getWideExposuresDwarfMini = () => ({
+  defaultValueIndex: 156,
+  values: getWideExposuresDwarf3().values.filter(
+    ({ index }) => index >= 120 && index <= 159,
+  ),
+});
+
 export const allowedWideExposures = {
   1: getWideExposuresDwarf2(),
   2: getWideExposuresDwarf3(),
+  4: getWideExposuresDwarfMini(),
 };
 
 export const getWideExposureIndexDefault = (DwarfModelId = 1) => {
@@ -100,9 +108,17 @@ const getWideGainsDwarf3 = () => {
   return value ? value : false;
 };
 
+const getWideGainsDwarfMini = () => ({
+  defaultValueIndex: 18,
+  values: getWideGainsDwarf3().values.filter(
+    ({ index }) => index >= 12 && index <= 30,
+  ),
+});
+
 export const allowedWideGains = {
   1: getWideGainsDwarf2(),
   2: getWideGainsDwarf3(),
+  4: getWideGainsDwarfMini(),
 };
 
 export const getWideGainNameByIndex = (index, DwarfModelId = 1) => {
@@ -156,6 +172,7 @@ const getWideWBColorTempDwarf3 = () => {
 export const allowedWideWBColorTemp = {
   1: getWideWBColorTempDwarf2(),
   2: getWideWBColorTempDwarf3(),
+  4: getWideWBColorTempDwarf3(),
 };
 
 export const getWideWBColorTempValueByIndex = (index, DwarfModelId = 1) => {

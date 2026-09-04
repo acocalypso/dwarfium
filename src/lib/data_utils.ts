@@ -26,9 +26,21 @@ const getExposuresDwarf3 = () => {
   return value ? value : false;
 };
 
+// Camera ranges extracted from the DWARFLAB 3.4.1 parameter catalog. The
+// Mini deliberately has a narrower gain range, a longer tele exposure range,
+// and its own two-position filter selector.
+const getExposuresDwarfMini = () => ({
+  defaultValueIndex: 156,
+  values: [
+    ...getExposuresDwarf3().values.filter(({ index }) => index >= 120),
+    { index: 168, name: "180" },
+  ],
+});
+
 export const allowedExposures = {
   1: getExposuresDwarf2(),
   2: getExposuresDwarf3(),
+  4: getExposuresDwarfMini(),
 };
 
 export const getExposureIndexDefault = (DwarfModelId = 1) => {
@@ -100,9 +112,17 @@ const getGainsDwarf3 = () => {
   return value ? value : false;
 };
 
+const getGainsDwarfMini = () => ({
+  defaultValueIndex: 18,
+  values: getGainsDwarf3().values.filter(
+    ({ index }) => index >= 12 && index <= 30,
+  ),
+});
+
 export const allowedGains = {
   1: getGainsDwarf2(),
   2: getGainsDwarf3(),
+  4: getGainsDwarfMini(),
 };
 
 export const getGainNameByIndex = (index, DwarfModelId = 1) => {
@@ -153,6 +173,7 @@ const getWBColorTempDwarf3 = () => {
 export const allowedWBColorTemp = {
   1: getWBColorTempDwarf2(),
   2: getWBColorTempDwarf3(),
+  4: getWBColorTempDwarf3(),
 };
 
 export const getWBColorTempValueByIndex = (index, DwarfModelId = 1) => {
@@ -197,6 +218,7 @@ const getCountBurstDwarf3 = () => {
 export const allowedCountBurst = {
   1: getCountBurstDwarf2(),
   2: getCountBurstDwarf3(),
+  4: getCountBurstDwarf3(),
 };
 
 export const getCountBurstValueByIndex = (index, DwarfModelId = 1) => {
@@ -241,6 +263,7 @@ const getCountIntervalDwarf3 = () => {
 export const allowedIntervalBurst = {
   1: getCountIntervalDwarf2(),
   2: getCountIntervalDwarf3(),
+  4: getCountIntervalDwarf3(),
 };
 
 export const getIntervalBurstValueByIndex = (index, DwarfModelId = 1) => {
@@ -285,6 +308,7 @@ const getIntervalTimeLapseDwarf3 = () => {
 export const allowedIntervalTimeLapse = {
   1: getIntervalTimeLapseDwarf2(),
   2: getIntervalTimeLapseDwarf3(),
+  4: getIntervalTimeLapseDwarf3(),
 };
 
 export const getIntervalTimeLapseValueByIndex = (index, DwarfModelId = 1) => {
@@ -330,6 +354,7 @@ const getTotalTimeTimeLapseDwarf3 = () => {
 export const allowedTotalTimeTimeLapse = {
   1: getTotalTimeTimeLapseDwarf2(),
   2: getTotalTimeTimeLapseDwarf3(),
+  4: getTotalTimeTimeLapseDwarf3(),
 };
 
 export const getTotalTimeTimeLapseValueByIndex = (index, DwarfModelId = 1) => {
@@ -378,9 +403,18 @@ const getIRDwarf3 = () => {
   return value ? value : false;
 };
 
+const getIRDwarfMini = () => ({
+  defaultValueIndex: 0,
+  values: [
+    { index: 0, name: "Astro Filter" },
+    { index: 1, name: "Duo-Band Filter" },
+  ],
+});
+
 export const allowedIRs = {
   1: getIRDwarf2(),
   2: getIRDwarf3(),
+  4: getIRDwarfMini(),
 };
 
 export const getIRNameByIndex = (index, DwarfModelId = 1) => {

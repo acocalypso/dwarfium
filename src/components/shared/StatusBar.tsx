@@ -29,6 +29,7 @@ export default function StatusBar() {
   useSetupConnection();
   const connection = useContext(ConnectionContext);
   const connected = connection.connectionStatus === true;
+  const telemetryPending = connected ? "Waiting" : "—";
   const connectionLabel = connected
     ? connection.connectionStatusSlave
       ? "Connected · observer"
@@ -69,7 +70,7 @@ export default function StatusBar() {
           value={
             connected && connection.BatteryLevelDwarf !== undefined
               ? `${connection.BatteryLevelDwarf}%`
-              : "—"
+              : telemetryPending
           }
         />
         <Metric
@@ -78,13 +79,13 @@ export default function StatusBar() {
           value={
             connected && connection.statusTemperatureDwarf !== undefined
               ? `${connection.statusTemperatureDwarf}°C`
-              : "—"
+              : telemetryPending
           }
         />
         <Metric
           icon="bi-sd-card"
           label="Storage"
-          value={connected ? storage : "—"}
+          value={connected && storage !== "—" ? storage : telemetryPending}
         />
         <Metric icon="bi-crosshair" label="Target" value={target} />
         {isCapturing && (
