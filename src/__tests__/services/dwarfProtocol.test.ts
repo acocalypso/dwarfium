@@ -14,6 +14,12 @@ jest.mock("dwarfii_api", () => ({
     deviceId: 4,
     clientId: "0000DAF4-0000-1000-8000-00805F9B34FB",
   })),
+  messageV3DeviceConfigModeSwitch: jest.fn(() => ({
+    cmd: 16404,
+    minorVersion: 20,
+    deviceId: 4,
+    clientId: "0000DAF4-0000-1000-8000-00805F9B34FB",
+  })),
   messageV3CameraTeleOpenCamera: jest.fn(() => ({
     cmd: 10050,
     minorVersion: 20,
@@ -62,7 +68,9 @@ describe("DWARF V3 protocol boundary", () => {
     );
     expect(socket.setDeviceIdDwarf).toHaveBeenCalledWith(4);
     expect(socket.setMinorVersionDwarf).toHaveBeenCalledWith(20);
-    expect(packets.map((packet) => packet.cmd)).toEqual([16405, 10050, 12036]);
+    expect(packets.map((packet) => packet.cmd)).toEqual([
+      16405, 16404, 10050, 12036,
+    ]);
     expect(
       packets.every(
         (packet) =>

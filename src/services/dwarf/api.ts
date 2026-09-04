@@ -8,6 +8,7 @@ export * from "dwarfii_api";
 import {
   messageV3CameraTeleOpenCamera,
   messageV3CameraWideOpenCamera,
+  messageV3DeviceConfigModeSwitch,
   messageV3GetDeviceStateInfo,
   setDwarfClientID,
   setDwarfDeviceID,
@@ -51,6 +52,7 @@ export function configureDwarfProtocol(
 export function createV3SessionPackets(): Uint8Array[] {
   return [
     messageV3GetDeviceStateInfo(),
+    messageV3DeviceConfigModeSwitch(),
     messageV3CameraTeleOpenCamera(),
     messageV3CameraWideOpenCamera(),
   ];

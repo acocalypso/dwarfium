@@ -25,6 +25,7 @@
     "build:server": "npx tsx ./server/build-server.ts  && npx tsx ./server/build-SSLcert.ts",
     "package:server": "node ./scripts/package-server.js",
     "copy:tools": "node ./scripts/copy-tools.js",
+    "build:mediamtx": "node ./scripts/build-mediamtx.js",
     "postbuild": "npm run build:server && npm run package:server && npm run copy:tools",
     "tauri": "node scripts/set-version.js && tauri",
     "zipsite": "npm run build && npm run prepare:dist && tar -czvf Dwarfium.tar.gz Dwarfium && rm -rf Dwarfium",

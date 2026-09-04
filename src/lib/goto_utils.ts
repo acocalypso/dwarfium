@@ -786,8 +786,8 @@ export async function shutDownHandler(
     if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_RGB_POWER_POWER_DOWN ||
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_RGB_POWER_REBOOT ||
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_CLOSE_CAMERA ||
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_CLOSE_CAMERA ||
+      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA ||
+      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA ||
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_POWER_OFF
     ) {
       if (callback) {
@@ -825,8 +825,8 @@ export async function shutDownHandler(
       [
         Dwarfii_Api.DwarfCMD.CMD_RGB_POWER_REBOOT,
         Dwarfii_Api.DwarfCMD.CMD_RGB_POWER_POWER_DOWN,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_CLOSE_CAMERA,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_CLOSE_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_POWER_OFF,
       ],
       customMessageHandler,
@@ -837,8 +837,8 @@ export async function shutDownHandler(
       txtInfoCommand,
       [
         Dwarfii_Api.DwarfCMD.CMD_RGB_POWER_POWER_DOWN,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_CLOSE_CAMERA,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_CLOSE_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA,
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_POWER_OFF,
       ],
       customMessageHandler,

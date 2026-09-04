@@ -89,7 +89,9 @@ export async function turnOnTeleCameraFn(
     : binning2x2;
 
   const customMessageHandler = (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA) {
+    if (
+      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA
+    ) {
       if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
         logger(txt_info, result_data, connectionCtx);
         if (setTelephotoCameraStatus) {
@@ -122,7 +124,7 @@ export async function turnOnTeleCameraFn(
   webSocketHandler.prepare(
     WS_Packet,
     txtInfoCommand,
-    [Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA],
+    [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA],
     customMessageHandler,
   );
 
@@ -152,7 +154,9 @@ export async function turnOnWideCameraFn(
   }
 
   const customMessageHandler = (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA) {
+    if (
+      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA
+    ) {
       if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
         logger(txt_info, result_data, connectionCtx);
         if (setWideangleCameraStatus) {
@@ -184,7 +188,7 @@ export async function turnOnWideCameraFn(
   webSocketHandler.prepare(
     WS_Packet,
     txtInfoCommand,
-    [Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA],
+    [Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA],
     customMessageHandler,
   );
 

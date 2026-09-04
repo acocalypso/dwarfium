@@ -633,7 +633,7 @@ export default function DwarfCameras(props: PropType) {
           get_error("Error: ", result_data, setErrorTxt);
         }
       } else if (
-        result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA
+        result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA
       ) {
         if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
           logger(txt_info, result_data, connectionCtx);
@@ -647,7 +647,7 @@ export default function DwarfCameras(props: PropType) {
           return;
         }
       } else if (
-        result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA
+        result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA
       ) {
         if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
           logger(txt_info, result_data, connectionCtx);
@@ -709,8 +709,8 @@ export default function DwarfCameras(props: PropType) {
       [
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_GET_SYSTEM_WORKING_STATE,
         Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_GET_ALL_PARAMS,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_OPEN_CAMERA,
-        Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_OPEN_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_TELE_OPEN_CAMERA,
+        Dwarfii_Api.DwarfCMD.CMD_V3_CAMERA_WIDE_OPEN_CAMERA,
       ],
       customMessageHandlerTeleWide,
     );

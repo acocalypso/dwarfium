@@ -46,14 +46,17 @@ jobs:
         include:
           - name: Linux x64
             runner: ubuntu-22.04
+            mediamtx_target: linux-amd64
             artifact: standalone-linux-x64
             archive: Dwarfium.zip
           - name: Linux ARM64
             runner: ubuntu-22.04-arm
+            mediamtx_target: linux-arm64
             artifact: standalone-linux-arm64
             archive: Dwarfium-Arm64.zip
           - name: Windows x64
             runner: windows-latest
+            mediamtx_target: windows-amd64
             artifact: standalone-windows-x64
             archive: Dwarfium-Win.zip
     runs-on: ${{ matrix.runner }}
@@ -65,8 +68,15 @@ jobs:
           node-version: 24
           cache: npm
 
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.0"
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Build DWARF-compatible MediaMTX
+        run: node scripts/build-mediamtx.js --target=${{ matrix.mediamtx_target }}
 
       - name: Build standalone application
         run: |
@@ -129,18 +139,23 @@ jobs:
           - name: macOS Intel
             runner: macos-15-intel
             target: x86_64-apple-darwin
+            mediamtx_target: darwin-amd64
           - name: macOS Apple Silicon
             runner: macos-15
             target: aarch64-apple-darwin
+            mediamtx_target: darwin-arm64
           - name: Linux x64
             runner: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
+            mediamtx_target: linux-amd64
           - name: Linux ARM64
             runner: ubuntu-22.04-arm
             target: aarch64-unknown-linux-gnu
+            mediamtx_target: linux-arm64
           - name: Windows x64
             runner: windows-latest
             target: x86_64-pc-windows-msvc
+            mediamtx_target: windows-amd64
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: write
@@ -151,6 +166,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26.0"
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -182,6 +201,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Build DWARF-compatible MediaMTX
+        run: node scripts/build-mediamtx.js --target=${{ matrix.mediamtx_target }}
 
       - name: Configure updater signing
         id: updater
