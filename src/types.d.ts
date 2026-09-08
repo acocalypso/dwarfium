@@ -1,6 +1,8 @@
 import type { Dispatch, SetStateAction } from "react";
 
 export type ConnectionContextType = {
+  deviceError?: string;
+  setDeviceError?: Dispatch<SetStateAction<string | undefined>>;
   connectionStatus: boolean | undefined;
   setConnectionStatus: Dispatch<SetStateAction<boolean | undefined>>;
   connectionStatusSlave: boolean | undefined;

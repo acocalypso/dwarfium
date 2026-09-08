@@ -30,6 +30,11 @@ import { get_error } from "@/lib/dwarf_utils";
 import eventBus from "@/lib/event_bus";
 import { logger } from "@/lib/logger";
 import {
+  calibrationCoordinates,
+  mountOperationLabel,
+  oneClickGotoPhase,
+} from "@/services/dwarf/mountState";
+import {
   convertHMSToDecimalHours,
   convertHMSToDecimalDegrees,
   convertDMSToDecimalDegrees,
@@ -68,14 +73,17 @@ export async function calibrationHandler(
 
   if (connectionCtx.timezone) timezone = connectionCtx.timezone;
 
-  let lat = connectionCtx.latitude;
-  /////////////////////////////////////////
-  // Reverse the Longitude for the dwarf : positive for WEST
-  /////////////////////////////////////////
-  let lon = 0;
-  if (connectionCtx.longitude) lon = -connectionCtx.longitude;
-  if (lat === undefined) return;
-  if (lon === undefined) return;
+  if (
+    connectionCtx.latitude === undefined ||
+    connectionCtx.longitude === undefined ||
+    !Number.isFinite(connectionCtx.latitude) ||
+    !Number.isFinite(connectionCtx.longitude) ||
+    Math.abs(connectionCtx.latitude) > 90 ||
+    Math.abs(connectionCtx.longitude) > 180
+  ) {
+    setErrors("Set a valid observing location before calibration.");
+    return;
+  }
   let calibration_status = false;
 
   connectionCtx.setAstroSettings((prev) => ({
@@ -154,46 +162,21 @@ export async function calibrationHandler(
     } else if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_CALIBRATION
     ) {
-      if (
-        calibration_status == false &&
-        result_data.data.state == Dwarfii_Api.AstroState.ASTRO_STATE_IDLE
-      ) {
-        getAllTelescopeISPSetting(connectionCtx);
-        setErrors("");
-        setSuccess(txt_info + " Done");
-        if (callback) {
-          callback(txt_info + " Successfully");
-        }
-      } else if (
-        calibration_status == true &&
-        result_data.data.state == Dwarfii_Api.AstroState.ASTRO_STATE_IDLE
-      ) {
-        getAllTelescopeISPSetting(connectionCtx);
-        setErrors("");
-        setSuccess("");
-        setErrors(txt_info + " Failure");
-        if (callback) {
-          callback(txt_info + " Failure");
-        }
-      } else {
-        setErrors("");
-        setSuccess(
-          txt_info +
-            " Phase #" +
-            result_data.data.plateSolvingTimes +
-            " " +
-            result_data.data.statePlainTxt,
-        );
-        if (callback) {
-          callback(
-            txt_info +
-              " Phase #" +
-              result_data.data.plateSolvingTimes +
-              " " +
-              result_data.data.statePlainTxt,
-          );
-        }
-      }
+      const state = result_data.data.state ?? 0;
+      // Idle is not successful calibration; only solved coordinates prove it.
+      const message = `Calibration: ${mountOperationLabel(state)}. Waiting for solved coordinates.`;
+      if (!calibration_status) setSuccess(message);
+      callback?.(message);
+    } else if (
+      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_CALIBRATION_RESULT &&
+      result_data.type === 2
+    ) {
+      const coordinates = calibrationCoordinates(result_data.data);
+      if (!coordinates || calibration_status) return;
+      const message = `Calibration solved: azimuth ${coordinates.azimuth.toFixed(2)}°, altitude ${coordinates.altitude.toFixed(2)}°.`;
+      setErrors(undefined);
+      setSuccess(message);
+      callback?.(message);
     } else {
       logger("", result_data, connectionCtx);
       return;
@@ -289,15 +272,17 @@ export async function startGotoHandler(
     if (beginStr) targetName = beginStr.trim().replace(/ /g, "_");
     else targetName = objectName.trim().replace(/ /g, "_");
   }
-  let lat = 0;
-  if (connectionCtx.latitude) lat = connectionCtx.latitude;
-  /////////////////////////////////////////
-  // Reverse the Longitude for the dwarf : positive for WEST
-  /////////////////////////////////////////
-  let lon = 0;
-  if (connectionCtx.longitude) lon = -connectionCtx.longitude;
-  if (lat === undefined) return;
-  if (lon === undefined) return;
+  const lat = connectionCtx.latitude;
+  const lon = connectionCtx.longitude;
+  if (
+    typeof lat !== "number" ||
+    typeof lon !== "number" ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lon)
+  ) {
+    setGotoErrors("Set an observing location before starting GOTO.");
+    return;
+  }
   let goto_status = false;
 
   const customMessageHandler = (txt_info, result_data) => {
@@ -336,21 +321,19 @@ export async function startGotoHandler(
       result_data.cmd ==
         Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_ONE_CLICK_GOTO
     ) {
-      const phase =
-        result_data.data.trackingState ??
-        result_data.data.gotoState ??
-        result_data.data.phase_2;
+      const phase = oneClickGotoPhase(result_data.data);
+      if (!phase) return;
       setGotoSuccess(
-        phase?.targetName
-          ? `GOTO ${phase.targetName}: state ${phase.state}`
-          : `GOTO in progress: state ${result_data.data.state}`,
+        `${phase.phase}${phase.targetName ? ` ${phase.targetName}` : ""}: ${mountOperationLabel(phase.state)}`,
       );
       setGotoErrors(undefined);
     } else if (
       !goto_status &&
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_GOTO
     ) {
-      setGotoSuccess(result_data.data.statePlainTxt);
+      setGotoSuccess(
+        `GOTO: ${mountOperationLabel(result_data.data.state ?? 0)}`,
+      );
       setGotoErrors("");
       if (callback) {
         callback("Info GoTo");
@@ -667,21 +650,17 @@ export async function stopGotoHandler(
   eventBus.dispatch("clearErrors", { message: "clear errors" });
 
   const customMessageHandler = (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_GOTO) {
+    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_ASTRO_STOP_ONE_CLICK_GOTO) {
       if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setGotoSuccess("Stopping Goto");
+        setGotoSuccess("GOTO stop accepted. Waiting for telescope state.");
         setGotoErrors("");
-        connectionCtx.setAstroSettings((prev) => ({
-          ...prev, // Spread the previous state
-          target: undefined!, // Update the target property
-        }));
-        connectionCtx.setAstroSettings((prev) => ({
-          ...prev, // Spread the previous state
-          status: undefined, // Update the status property
-        }));
+        // A command ACK does not prove that motion or tracking has stopped.
+        // Preserve the last authoritative target/state until device telemetry.
         if (callback) {
-          callback("Stopping Goto");
+          callback("GOTO stop accepted");
         }
+      } else {
+        get_error("Unable to stop GOTO: ", result_data, setGotoErrors);
       }
     } else if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_STATE_ASTRO_GOTO
@@ -709,9 +688,8 @@ export async function stopGotoHandler(
     ? connectionCtx.socketIPDwarf
     : new WebSocketHandler(connectionCtx.IPDwarf);
 
-  // Send Command : messageAstroStopGoto
+  // Stop the one-click operation started by startGotoHandler (command 11015).
   let WS_Packet = messageV3AstroGotoDone();
-  //  let WS_Packet = messageCameraTeleGetAllFeatureParams();
   let txtInfoCommand = "Stop Goto";
 
   webSocketHandler.prepare(
@@ -1191,10 +1169,8 @@ export async function EQSolvingHandlerFn(
   }
 
   const lat = connectionCtx.latitude;
-  /////////////////////////////////////////
-  // Reverse the Longitude for the dwarf : positive for WEST
-  /////////////////////////////////////////
-  const lon = -connectionCtx.longitude;
+  // Current firmware uses east-positive longitude, matching saved locations.
+  const lon = connectionCtx.longitude;
 
   setErrors(undefined);
   setSuccess("Start EQ Solving Process");
@@ -1233,30 +1209,10 @@ export async function EQSolvingHandlerFn(
     } else if (
       result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_EQ_SOLVING_STATE
     ) {
-      console.log("Notification CMD_NOTIFY_EQ_SOLVING_STATE");
-      setSuccess("EQ Solving State");
-      setErrors("");
-      if (callback) {
-        callback("EQ Solving State");
-      }
-
-      setErrors("");
-      setSuccess(
-        txt_info +
-          " Phase #" +
-          result_data.data.step +
-          " " +
-          result_data.data.statePlainTxt,
-      );
-      if (callback) {
-        callback(
-          txt_info +
-            " Phase #" +
-            result_data.data.step +
-            " " +
-            result_data.data.statePlainTxt,
-        );
-      }
+      const message = `EQ calibration: ${mountOperationLabel(result_data.data.state ?? 0)}. Waiting for the adjustment result.`;
+      setSuccess(message);
+      setErrors(undefined);
+      callback?.(message);
     } else {
       logger("", result_data, connectionCtx);
       return;

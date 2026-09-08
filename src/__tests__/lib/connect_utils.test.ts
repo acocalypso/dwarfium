@@ -31,11 +31,11 @@ describe("applyDeviceTelemetry", () => {
 
     applyDeviceTelemetry(connection, {
       cmd: Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ELE,
-      data: { code: Dwarfii_Api.DwarfErrorCode.OK, value: 74 },
+      data: { percentage: 74 },
     });
     applyDeviceTelemetry(connection, {
       cmd: Dwarfii_Api.DwarfCMD.CMD_NOTIFY_SDCARD_INFO,
-      data: { availableSize: 42, totalSize: 64 },
+      data: { availableSize: 42, totalSize: 64, isValid: true },
     });
 
     expect(connection.setBatteryLevelDwarf).toHaveBeenCalledWith(74);

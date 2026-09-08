@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // The reviewed SDK is ESM; next/jest must transform it after a clean install.
+  transpilePackages: ["dwarfii_api"],
   outputFileTracingRoot: __dirname,
   // unoptimized - When true, the source image will be served as-is instead of changing quality,
   // size, or format. Defaults to false.

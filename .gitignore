@@ -234,3 +234,6 @@ Dwarfium.tar.gz
 install/extern/config.py
 /DwarfiumProxy
 /DwarfiumServer
+
+# Separate local SDK checkout; use its own repository for API changes.
+/dwarfii_api/

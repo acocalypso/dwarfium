@@ -1,4 +1,5 @@
 import { ConnectionContextType } from "@/types";
+import type { CurrentCommand } from "dwarfii_api";
 
 import {
   Dwarfii_Api,
@@ -30,363 +31,61 @@ function callback(message) {
   console.log(message);
 }
 
+/** Commands report acceptance only; operation state comes from the session. */
+async function submitMediaCommand(
+  camera: number,
+  context: ConnectionContextType,
+  setMessage: Function,
+  commands: readonly [CurrentCommand, CurrentCommand],
+): Promise<boolean> {
+  try {
+    if (camera !== 0 && camera !== 1)
+      throw new Error("Select a supported camera.");
+    if (!context.socketIPDwarf?.isConnected())
+      throw new Error("Connect to the DWARF before using the camera.");
+    setMessage("");
+    await context.socketIPDwarf.request(commands[camera], {});
+    setMessage("Request accepted. Waiting for camera state.");
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    setMessage(message);
+    context.setDeviceError?.(message);
+    return false;
+  }
+}
+
 export async function startPhoto(
   camera: number,
-  connectionCtx: ConnectionContextType,
-  setErrorTxt: Function,
+  context: ConnectionContextType,
+  setMessage: Function,
 ) {
-  if (connectionCtx.IPDwarf === undefined) {
-    return;
-  }
-
-  setErrorTxt("");
-
-  const customMessageHandler = (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_PHOTOGRAPH) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setErrorTxt("Take Photograph Tele Success");
-        if (callback) {
-          callback("Take Photograph Success");
-        }
-      } else get_error("", result_data, setErrorTxt);
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE
-    ) {
-      if (result_data.data.functionId == 2 && result_data.data.state == 1) {
-        setErrorTxt("Start Take Tele Photograph");
-        if (callback) {
-          callback("Start Take Tele Photograph");
-        }
-      } else if (
-        result_data.data.functionId == 2 &&
-        result_data.data.state == 0
-      ) {
-        setErrorTxt("Stop Taking Tele Photograph");
-        if (callback) {
-          callback("Stop Taking Tele Photograph");
-        }
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_PHOTOGRAPH
-    ) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setErrorTxt("Take Photograph Wide Success");
-        if (callback) {
-          callback("Take Photograph Wide Success");
-        }
-      } else get_error("", result_data, setErrorTxt);
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE
-    ) {
-      if (result_data.data.functionId == 2 && result_data.data.state == 1) {
-        setErrorTxt("Start Take Wide Photograph");
-        if (callback) {
-          callback("Start Take Wide Photograph");
-        }
-      } else if (
-        result_data.data.functionId == 2 &&
-        result_data.data.state == 0
-      ) {
-        setErrorTxt("Stop Taking Wide Photograph");
-        if (callback) {
-          callback("Stop Taking Wide Photograph");
-        }
-      }
-    } else {
-      logger("", result_data, connectionCtx);
-      return;
-    }
-    if (callback) {
-      callback(result_data);
-    }
-    logger(txt_info, result_data, connectionCtx);
-  };
-
-  console.log("socketIPDwarf: ", connectionCtx.socketIPDwarf); // Create WebSocketHandler if need
-  if (connectionCtx.socketIPDwarf) {
-    console.log("OK KEEP SOCKET");
-  } else {
-    console.log("NO NEW SOCKET");
-  }
-  const webSocketHandler = connectionCtx.socketIPDwarf
-    ? connectionCtx.socketIPDwarf
-    : new WebSocketHandler(connectionCtx.IPDwarf);
-
-  // Send Command : messageCameraTelePhotograph
-  let WS_Packet;
-  let txtInfoCommand = "";
-  if (camera === 0) {
-    WS_Packet = messageCameraTelePhotograph();
-    txtInfoCommand = "TELE_Photograph";
-  } else {
-    WS_Packet = messageCameraWidePhotograph();
-    txtInfoCommand = "WIDE_Photograph";
-  }
-
-  webSocketHandler.prepare(
-    WS_Packet,
-    txtInfoCommand,
-    [
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_PHOTOGRAPH,
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_PHOTOGRAPH,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ALBUM_UPDATE,
-    ],
-    customMessageHandler,
-  );
-  if (!webSocketHandler.run()) {
-    console.error(" Can't launch Web Socket Run Action!");
-  }
+  return submitMediaCommand(camera, context, setMessage, [
+    "takeTelePhoto",
+    "takeWidePhoto",
+  ]);
 }
 
 export async function startVideo(
   camera: number,
-  connectionCtx: ConnectionContextType,
-  setErrorTxt: Function,
+  context: ConnectionContextType,
+  setMessage: Function,
 ) {
-  if (connectionCtx.IPDwarf === undefined) {
-    return;
-  }
-
-  setErrorTxt("");
-
-  const customMessageHandler = (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_START_RECORD) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setErrorTxt("Start Video Success");
-        if (callback) {
-          callback("Start Video Success");
-        }
-      } else get_error("", result_data, setErrorTxt);
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_RECORD_TIME
-    ) {
-      const errorText = `Record Time: ${result_data.data.recordTime}`;
-      setErrorTxt(errorText);
-      if (callback) {
-        callback("Time Photograph");
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE
-    ) {
-      if (result_data.data.functionId == 4 && result_data.data.state == 1) {
-        setErrorTxt("Starting Video");
-        if (callback) {
-          callback("Starting Video");
-        }
-      } else if (
-        result_data.data.functionId == 4 &&
-        result_data.data.state == 0
-      ) {
-        setErrorTxt("Stopping Video");
-        if (callback) {
-          callback("Stopping Video");
-        }
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_START_RECORD
-    ) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setErrorTxt("Start Video Success");
-        if (callback) {
-          callback("Start Video Success");
-        }
-      } else get_error("", result_data, setErrorTxt);
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_RECORD_TIME
-    ) {
-      const errorText = `Record Time: ${result_data.data.recordTime}`;
-      setErrorTxt(errorText);
-      if (callback) {
-        callback("Time Photograph");
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE
-    ) {
-      if (result_data.data.functionId == 4 && result_data.data.state == 1) {
-        setErrorTxt("Starting Video");
-        if (callback) {
-          callback("Starting Video");
-        }
-      } else if (
-        result_data.data.functionId == 4 &&
-        result_data.data.state == 0
-      ) {
-        setErrorTxt("Stopping Video");
-        if (callback) {
-          callback("Stopping Video");
-        }
-      }
-    } else {
-      logger("", result_data, connectionCtx);
-      return;
-    }
-    if (callback) {
-      callback(result_data);
-    }
-    logger(txt_info, result_data, connectionCtx);
-  };
-
-  console.log("socketIPDwarf: ", connectionCtx.socketIPDwarf); // Create WebSocketHandler if need
-  if (connectionCtx.socketIPDwarf) {
-    console.log("OK KEEP SOCKET");
-  } else {
-    console.log("NO NEW SOCKET");
-  }
-  const webSocketHandler = connectionCtx.socketIPDwarf
-    ? connectionCtx.socketIPDwarf
-    : new WebSocketHandler(connectionCtx.IPDwarf);
-
-  // Send Command : messageCameraTeleStartRecord
-  let WS_Packet;
-  let txtInfoCommand = "";
-  if (camera === 0) {
-    WS_Packet = messageCameraTeleStartRecord();
-    txtInfoCommand = "TELE_start_Video";
-  } else {
-    WS_Packet = messageCameraWideStartRecord();
-    txtInfoCommand = "WIDE_start_Video";
-  }
-
-  webSocketHandler.prepare(
-    WS_Packet,
-    txtInfoCommand,
-    [
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_START_RECORD,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_RECORD_TIME,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_START_RECORD,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_RECORD_TIME,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE,
-    ],
-    customMessageHandler,
-  );
-  if (!webSocketHandler.run()) {
-    console.error(" Can't launch Web Socket Run Action!");
-  }
+  return submitMediaCommand(camera, context, setMessage, [
+    "startTeleRecord",
+    "startWideRecord",
+  ]);
 }
 
 export async function stopVideo(
   camera: number,
-  connectionCtx: ConnectionContextType,
-  setErrorTxt: Function,
+  context: ConnectionContextType,
+  setMessage: Function,
 ) {
-  if (connectionCtx.IPDwarf === undefined) {
-    return;
-  }
-
-  setErrorTxt("");
-
-  const customMessageHandler = (txt_info, result_data) => {
-    if (result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_STOP_RECORD) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setErrorTxt("Stop Recording Video Success");
-      } else get_error("", result_data, setErrorTxt);
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_RECORD_TIME
-    ) {
-      const errorText = `Record Time: ${result_data.data.recordTime}`;
-      setErrorTxt(errorText);
-      if (callback) {
-        callback("Stop Recording Video Success");
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE
-    ) {
-      if (result_data.data.functionId == 4 && result_data.data.state == 1) {
-        setErrorTxt("Starting Video");
-        if (callback) {
-          callback("Starting Video");
-        }
-      } else if (
-        result_data.data.functionId == 4 &&
-        result_data.data.state == 0
-      ) {
-        setErrorTxt("Stopping Video");
-        if (callback) {
-          callback("Stopping Video");
-        }
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_STOP_RECORD
-    ) {
-      if (result_data.data.code == Dwarfii_Api.DwarfErrorCode.OK) {
-        setErrorTxt("Stop Recording Video Success");
-      } else get_error("", result_data, setErrorTxt);
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_RECORD_TIME
-    ) {
-      const errorText = `Record Time: ${result_data.data.recordTime}`;
-      setErrorTxt(errorText);
-      if (callback) {
-        callback("Stop Recording Video Success");
-      }
-    } else if (
-      result_data.cmd == Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE
-    ) {
-      if (result_data.data.functionId == 4 && result_data.data.state == 1) {
-        setErrorTxt("Starting Video");
-        if (callback) {
-          callback("Starting Video");
-        }
-      } else if (
-        result_data.data.functionId == 4 &&
-        result_data.data.state == 0
-      ) {
-        setErrorTxt("Stopping Video");
-        if (callback) {
-          callback("Stopping Video");
-        }
-      }
-    } else {
-      logger("", result_data, connectionCtx);
-      return;
-    }
-    if (callback) {
-      callback(result_data);
-    }
-    logger(txt_info, result_data, connectionCtx);
-  };
-
-  console.log("socketIPDwarf: ", connectionCtx.socketIPDwarf); // Create WebSocketHandler if need
-  if (connectionCtx.socketIPDwarf) {
-    console.log("OK KEEP SOCKET");
-  } else {
-    console.log("NO NEW SOCKET");
-  }
-  const webSocketHandler = connectionCtx.socketIPDwarf
-    ? connectionCtx.socketIPDwarf
-    : new WebSocketHandler(connectionCtx.IPDwarf);
-
-  // Send Command : messageCameraTeleStopRecord
-  let WS_Packet;
-  let txtInfoCommand = "";
-  if (camera === 0) {
-    WS_Packet = messageCameraTeleStopRecord();
-    txtInfoCommand = "TELE_stop_Video";
-  } else {
-    WS_Packet = messageCameraWideStopRecord();
-    txtInfoCommand = "WIDE_stop_Video";
-  }
-
-  webSocketHandler.prepare(
-    WS_Packet,
-    txtInfoCommand,
-    [
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_STOP_RECORD,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_RECORD_TIME,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_TELE_FUNCTION_STATE,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_ALBUM_UPDATE,
-      Dwarfii_Api.DwarfCMD.CMD_CAMERA_WIDE_STOP_RECORD,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_RECORD_TIME,
-      Dwarfii_Api.DwarfCMD.CMD_NOTIFY_WIDE_FUNCTION_STATE,
-    ],
-    customMessageHandler,
-  );
-  if (!webSocketHandler.run()) {
-    console.error(" Can't launch Web Socket Run Action!");
-  }
+  return submitMediaCommand(camera, context, setMessage, [
+    "stopTeleRecord",
+    "stopWideRecord",
+  ]);
 }
 
 export async function startPano(
@@ -741,7 +440,7 @@ export async function startBurst(
     id = 3; // "Burst count"
     txtInfoCommand = "WIDE start Burst";
     continueValue = count;
-    WS_Packet = messageCameraTeleSetFeatureParams(
+    WS_Packet1 = messageCameraTeleSetFeatureParams(
       hasAuto,
       autoMode,
       id,
@@ -752,7 +451,7 @@ export async function startBurst(
   }
 
   webSocketHandler.prepare(
-    [WS_Packet1, WS_Packet2, WS_Packet3, WS_Packet],
+    [WS_Packet1, WS_Packet2, WS_Packet3, WS_Packet].filter(Boolean),
     txtInfoCommand,
     [
       Dwarfii_Api.DwarfCMD.CMD_CAMERA_TELE_SET_FEATURE_PARAM,
@@ -989,7 +688,7 @@ export async function startTimeLapse(
       continueValue,
     );
     id = 5; // "TimeLapse totalTime"
-    index = interval_index;
+    index = totalTime_index;
     WS_Packet2 = messageCameraTeleSetFeatureParams(
       hasAuto,
       autoMode,
@@ -1012,7 +711,7 @@ export async function startTimeLapse(
       continueValue,
     );
     id = 5; // "TimeLapse totalTime"
-    index = interval_index;
+    index = totalTime_index;
     WS_Packet2 = messageCameraTeleSetFeatureParams(
       hasAuto,
       autoMode,

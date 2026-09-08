@@ -1,263 +1,44 @@
 import { ConnectionContextType } from "@/types";
-
-import { getDefaultParamsConfig, deviceInfo } from "@/services/dwarf";
-import { proxyRequest } from "@/lib/proxyClient";
+import { deviceInfo, normalizeCurrentDeviceInfo } from "@/services/dwarf";
 import { getProxyUrl, getIpServerMTX } from "@/lib/get_proxy_url";
-// several function to get Dwarf DeviceId
-/////////////////////////////////////////
+
+/** Device identity must come from successful current deviceInfo discovery.
+ * Media folder existence and old parameter configurations cannot identify the
+ * connected hardware; unavailable discovery leaves the model unknown.
+ */
 export async function findDeviceInfo(
   IPDwarf: string | undefined,
   connectionCtx: ConnectionContextType,
 ): Promise<[number | undefined, string | undefined]> {
-  let [deviceId = undefined, deviceUid = undefined] =
-    (await getDeviceInfo(IPDwarf, connectionCtx)) || [];
-
-  if (!deviceId) deviceId = await getConfigData(IPDwarf, connectionCtx);
-
-  if (!deviceId) deviceId = await getDwarfType(IPDwarf, connectionCtx);
-
-  return [deviceId, deviceUid];
-}
-
-// eslint-disable-next-line no-unused-vars
-const getDeviceInfo = async (
-  IPDwarf: string | undefined,
-  connectionCtx: ConnectionContextType,
-) => {
+  if (!IPDwarf) return [undefined, undefined];
   try {
-    // Make the HTTP POST request to the specified URL
-    let requestAddr;
-    if (IPDwarf) {
-      requestAddr = deviceInfo(IPDwarf);
-    }
-
-    if (requestAddr) {
-      const proxyUrl = `${getProxyUrl(
-        connectionCtx,
-      )}?target=${encodeURIComponent(requestAddr)}`;
-      const response = await fetch(proxyUrl, {
+    const requestAddr = deviceInfo(IPDwarf);
+    const response = await fetch(
+      `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(requestAddr)}`,
+      {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json", // Use 'application/json' for JSON
-        },
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
         redirect: "follow",
-      });
-
-      // Check if the response has data
-      if (response.ok) {
-        console.log(`getDeviceInfo: status ${response.status}`);
-      }
-      if (response.ok && response.status === 200) {
-        const result = await response.json();
-
-        if (result && result.data) {
-          const id = result.data.deviceId ?? result.data.deviceID;
-          const uid = String(result.data.deviceName ?? "")
-            .replace(/^DWARF3_/, "")
-            .replace(/^DWARF_MINI_/, "")
-            .replace(/^DWARF_/, "");
-
-          if (id) {
-            return [id, uid];
-          } else {
-            console.error("getDeviceInfo : No data found in the response.");
-            return undefined;
-          }
-        } else {
-          console.error("getDeviceInfo : No data found in the response.");
-          return undefined;
-        }
-      } else {
-        console.error("getDeviceInfo : Error during the request.");
-        return undefined;
-      }
-    } else {
-      console.error("Invalid request for getDeviceInfo.");
-      return undefined;
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error getDeviceInfo:", error.message);
-    } else {
-      console.error("Error getDeviceInfo:", error);
-    }
-    return undefined;
-  }
-};
-
-// eslint-disable-next-line no-unused-vars
-const getDeviceInfoProxyRequest = async (IPDwarf: string | undefined) => {
-  try {
-    // Make the HTTP POST request to the specified URL
-    let requestAddr;
-    if (IPDwarf) {
-      requestAddr = deviceInfo(IPDwarf);
-    }
-
-    if (requestAddr) {
-      const response = await proxyRequest(requestAddr, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json", // Use 'application/json' for JSON
-        },
-        redirect: "follow",
-      });
-
-      console.debug("Response from proxy:", response);
-      const id = response.data.deviceId ?? response.data.deviceID;
-
-      if (id) {
-        return id;
-      } else {
-        console.error("getDeviceInfo : No data found in the response.");
-        return undefined;
-      }
-    } else {
-      console.error("Invalid request for getDeviceInfo.");
-      return undefined;
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error getDeviceInfo:", error.message);
-    } else {
-      console.error("Error getDeviceInfo:", error);
-    }
-    return undefined;
-  }
-};
-
-const getConfigData = async (
-  IPDwarf: string | undefined,
-  connectionCtx: ConnectionContextType,
-) => {
-  try {
-    // Make the HTTP GET request to the specified URL
-    let requestAddr;
-    if (IPDwarf) {
-      requestAddr = getDefaultParamsConfig(IPDwarf);
-    }
-
-    if (requestAddr) {
-      const proxyUrl = `${getProxyUrl(
-        connectionCtx,
-      )}?target=${encodeURIComponent(requestAddr)}`;
-      const response = await fetch(proxyUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        redirect: "follow",
-      });
-
-      // Check if the response has data
-      if (response.ok) {
-        console.log(`getConfigData: status ${response.status}`);
-      }
-      if (response.ok && response.status === 200) {
-        const result = await response.json();
-
-        if (result && result.data) {
-          const id =
-            result.data.id ?? result.data.deviceId ?? result.data.deviceID;
-
-          if (id) {
-            return id;
-          } else {
-            console.error("getConfigData : No data found in the response.");
-            return undefined;
-          }
-        } else {
-          console.error("getConfigData : No data found in the response.");
-          return undefined;
-        }
-      } else {
-        console.error("getConfigData : Error during the request.");
-        return undefined;
-      }
-    } else {
-      console.error("Invalid request for getConfigData.");
-      return undefined;
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error getConfigData:", error.message);
-    } else {
-      console.error("Error getConfigData:", error);
-    }
-    return undefined;
-  }
-};
-
-const getDwarfType = async (
-  IPDwarf: string | undefined,
-  connectionCtx: ConnectionContextType,
-) => {
-  let folderResponse;
-  const dwarfIIUrl = `http://${IPDwarf}/sdcard/DWARF_II/Astronomy/`;
-  const dwarf3Url = `http://${IPDwarf}/DWARF3/Astronomy/`;
-  const dwarfMiniUrl = `http://${IPDwarf}/DWARF_MINI/Astronomy/`;
-
-  try {
-    // First attempt to fetch Dwarf II
-    let proxyUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-      dwarfIIUrl,
-    )}`;
-    folderResponse = await fetch(proxyUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
       },
-      redirect: "follow",
-    });
-
-    if (folderResponse.ok) {
-      // Dwarf II found
-      console.log("Detected device type: Dwarf II");
-      return 1;
-    } else {
-      // If not OK, try Dwarf 3
-      proxyUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-        dwarf3Url,
-      )}`;
-      folderResponse = await fetch(proxyUrl, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        redirect: "follow",
-      });
-
-      if (folderResponse.ok) {
-        // Dwarf 3 found
-        console.log("Detected device type: Dwarf 3");
-        return 2;
-      } else {
-        proxyUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          dwarfMiniUrl,
-        )}`;
-        folderResponse = await fetch(proxyUrl, {
-          method: "GET",
-          redirect: "follow",
-        });
-        if (folderResponse.ok) {
-          console.log("Detected device type: DWARF mini");
-          return 4;
-        }
-        console.error(
-          "Error fetching a known DWARF media folder:",
-          folderResponse.statusText,
-        );
-      }
+    );
+    if (!response.ok) {
+      throw new Error(`DWARF device discovery failed (${response.status})`);
     }
+    const device = normalizeCurrentDeviceInfo(await response.text());
+    // Retain the optional discovery-name suffix for existing UI identifiers;
+    // it is never evidence of the model, firmware, or protocol identity.
+    const uid =
+      device.deviceName?.replace(/^DWARF(?:_?MINI|_?II|3)?_/i, "") || undefined;
+    return [device.hardwareId, uid];
   } catch (error) {
-    if (error instanceof Error) {
-      console.error("Error checking dwarf info:", error.message);
-    } else {
-      console.error("Error checking dwarf info:", error);
-    }
+    console.error(
+      "DWARF device discovery unavailable:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return [undefined, undefined];
   }
-  return undefined;
-};
+}
 
 export async function checkMediaMtxStreamWithUpdate(
   IPDwarf: string | undefined,

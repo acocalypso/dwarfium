@@ -13,6 +13,11 @@ import CameraWideSettings from "@/components/imaging/CameraWideSettings";
 import CameraTeleSettings from "@/components/imaging/CameraTeleSettings";
 import { getWideAllParamsFn, getTeleAllParamsFn } from "@/lib/dwarf_utils";
 import { modeManual, modeAuto } from "@/services/dwarf";
+import {
+  decodeMediaState,
+  snapshotMediaStates,
+  type MediaState,
+} from "@/services/dwarf/mediaState";
 import styles from "@/components/imaging/CameraAddOn.module.css";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
@@ -193,6 +198,40 @@ export default function CameraAddOn(props: PropTypes) {
     wide: 1,
   };
 
+  const mediaSession = connectionCtx.socketIPDwarf?.session;
+  useEffect(() => {
+    const apply = (media: MediaState) => {
+      const selected =
+        media.operation === "photo" ? activeBtnPhoto : activeBtnVideo;
+      if (media.cameraId !== (selected === "wide" ? 1 : 0)) return;
+      const action = media.operation === "photo" ? "Photo" : "Video";
+      const active = media.state === "running" || media.state === "stopping";
+      setActiveAction((current) =>
+        active ? action : current === action ? undefined : current,
+      );
+      setErrorTxt(`${action}: ${media.state}.`);
+      setMediaButtonState(
+        media.operation === "photo" ? "TakePhoto" : "TakeVideo",
+        active,
+      );
+    };
+    if (!mediaSession) return;
+    snapshotMediaStates(mediaSession.state).forEach(apply);
+    return mediaSession.subscribe((state, packet) => {
+      if (state.phase !== "ready") {
+        setActiveAction((current) =>
+          current === "Photo" || current === "Video" ? undefined : current,
+        );
+        setMediaButtonState("TakePhoto", false);
+        setMediaButtonState("TakeVideo", false);
+        return;
+      }
+      const media = decodeMediaState(packet);
+      if (media) apply(media);
+      else if (packet?.cmd === 16405) snapshotMediaStates(state).forEach(apply);
+    });
+  }, [mediaSession, activeBtnPhoto, activeBtnVideo]);
+
   useEffect(() => {
     setShowModal((prev) => prev && PhotoMode);
     const handleResize = () => {
@@ -311,66 +350,40 @@ export default function CameraAddOn(props: PropTypes) {
     }
   }
 
-  // action Click   Photo
+  function setMediaButtonState(id: string, active: boolean) {
+    const element = document.getElementById(id) as HTMLImageElement | null;
+    if (element)
+      element.src = active
+        ? "/images/photo-camera-red.png"
+        : "/images/photo-camera-white.png";
+  }
+
+  // Sending/accepting a request is not evidence that a camera is running.
+  const mediaRequestPending = useRef(false);
+  const requestMedia = async (action: "photo" | "startVideo" | "stopVideo") => {
+    if (!canSendCameraCommand() || mediaRequestPending.current) return;
+    mediaRequestPending.current = true;
+    try {
+      const camera =
+        CameraType[action === "photo" ? activeBtnPhoto : activeBtnVideo];
+      if (action === "photo")
+        await startPhoto(camera, connectionCtx, setErrorTxt);
+      else if (action === "startVideo")
+        await startVideo(camera, connectionCtx, setErrorTxt);
+      else await stopVideo(camera, connectionCtx, setErrorTxt);
+    } finally {
+      mediaRequestPending.current = false;
+    }
+  };
   const handleClickActionPhoto: GenericMouseEventHandler<
     HTMLImageElement
-  > = async () => {
-    if (!canSendCameraCommand()) return;
-    setErrorTxt(
-      `Taking a ${activeBtnPhoto === "wide" ? "wide-angle" : "telephoto"} photo…`,
-    );
-    // Update state to set the active button
-    setActiveAction(PhotosModeActions[0].toString());
-    // Wait for startPhoto() to finish before continuing
-    await startPhoto(CameraType[activeBtnPhoto], connectionCtx, setErrorTxt);
-    // Change the image source using the ID
-    const imgElement = document.getElementById("TakePhoto") as HTMLImageElement;
-    if (imgElement) {
-      imgElement.src = "/images/photo-camera-red.png";
-    }
-    // Reset the image source back to its original source after a delay
-    setTimeout(() => {
-      if (imgElement) {
-        imgElement.src = "/images/photo-camera-white.png";
-      }
-    }, 2000);
-    // Reset the active action after the photo is taken
-    setActiveAction(undefined);
-  };
-
-  // action Click   Start Video
+  > = async () => requestMedia("photo");
   const handleClickActionStartVideo: GenericMouseEventHandler<
     HTMLImageElement
-  > = async () => {
-    if (!canSendCameraCommand()) return;
-    setErrorTxt(
-      `Starting ${activeBtnVideo === "wide" ? "wide-angle" : "telephoto"} video…`,
-    );
-    // Update state to set the active button
-    setActiveAction(PhotosModeActions[1].toString());
-
-    // Wait for startVideo() to finish before continuing
-    await startVideo(CameraType[activeBtnVideo], connectionCtx, setErrorTxt);
-    // Change the image source using the ID
-    changeColorButton("TakeVideo", true);
-    intervalTimer.current = setInterval(changeColorButton, 2000, "TakeVideo");
-  };
-
-  // action Click   Stop Video
+  > = async () => requestMedia("startVideo");
   const handleClickActionStopVideo: GenericMouseEventHandler<
     HTMLImageElement
-  > = async () => {
-    if (!canSendCameraCommand()) return;
-    setErrorTxt("Stopping video…");
-    // Wait for stopVideo() to finish before continuing
-    await stopVideo(CameraType[activeBtnVideo], connectionCtx, setErrorTxt);
-    // Change the image source using the ID
-    clearInterval(intervalTimer.current);
-    changeColorButton("TakeVideo", true);
-    setTimeout(changeColorButton, 2000, "TakeVideo");
-    // Reset the active action after the photo is taken
-    setActiveAction(undefined);
-  };
+  > = async () => requestMedia("stopVideo");
 
   // action Click   Start Pano
   const handleClickActionStartPano: GenericMouseEventHandler<

@@ -1,10 +1,4 @@
-import {
-  DwarfClientIdDwarfMini,
-  DwarfDeviceIdDwarf3,
-  DwarfDeviceIdDwarfII,
-  DwarfDeviceIdDwarfMini,
-  WsMinorVersionV3,
-} from "dwarfii_api";
+import { getCurrentProfile } from "dwarfii_api";
 
 export type DwarfModel = "dwarf2" | "dwarf3" | "dwarfmini";
 
@@ -19,9 +13,12 @@ export type DwarfCapabilities = Readonly<{
 
 export type DwarfDeviceProfile = Readonly<{
   model: DwarfModel;
+  /** Hardware/catalog identity; this is NOT the WebSocket envelope device ID. */
   deviceId: number;
+  wireDeviceId: number;
   displayName: string;
   clientId: string;
+  protocolMajorVersion: number;
   protocolMinorVersion: number;
   teleFieldOfView: Readonly<{
     widthDegrees: number;
@@ -30,15 +27,16 @@ export type DwarfDeviceProfile = Readonly<{
   capabilities: DwarfCapabilities;
 }>;
 
-const DEFAULT_CLIENT_ID = "0000DAF2-0000-1000-8000-00805F9B34FB";
+type DisplayProfile = Pick<
+  DwarfDeviceProfile,
+  "displayName" | "teleFieldOfView" | "capabilities"
+>;
 
-const profiles: Record<number, DwarfDeviceProfile> = {
-  [DwarfDeviceIdDwarfII]: {
-    model: "dwarf2",
-    deviceId: DwarfDeviceIdDwarfII,
+// Display/FOV fallbacks are separate from the authoritative SDK wire profile.
+// Runtime camera catalogs/state can refine these advertised capabilities.
+const displayProfiles: Record<DwarfModel, DisplayProfile> = {
+  dwarf2: {
     displayName: "DWARF II",
-    clientId: DEFAULT_CLIENT_ID,
-    protocolMinorVersion: WsMinorVersionV3,
     teleFieldOfView: { widthDegrees: 3, heightDegrees: 1.69 },
     capabilities: {
       teleCamera: true,
@@ -49,12 +47,8 @@ const profiles: Record<number, DwarfDeviceProfile> = {
       darkFrameContinue: false,
     },
   },
-  [DwarfDeviceIdDwarf3]: {
-    model: "dwarf3",
-    deviceId: DwarfDeviceIdDwarf3,
+  dwarf3: {
     displayName: "DWARF 3",
-    clientId: DEFAULT_CLIENT_ID,
-    protocolMinorVersion: WsMinorVersionV3,
     teleFieldOfView: { widthDegrees: 2.93, heightDegrees: 1.65 },
     capabilities: {
       teleCamera: true,
@@ -65,12 +59,8 @@ const profiles: Record<number, DwarfDeviceProfile> = {
       darkFrameContinue: true,
     },
   },
-  [DwarfDeviceIdDwarfMini]: {
-    model: "dwarfmini",
-    deviceId: DwarfDeviceIdDwarfMini,
+  dwarfmini: {
     displayName: "DWARF mini",
-    clientId: DwarfClientIdDwarfMini,
-    protocolMinorVersion: WsMinorVersionV3,
     teleFieldOfView: { widthDegrees: 2.14, heightDegrees: 1.22 },
     capabilities: {
       teleCamera: true,
@@ -84,11 +74,16 @@ const profiles: Record<number, DwarfDeviceProfile> = {
 };
 
 export function getDwarfDeviceProfile(deviceId: number): DwarfDeviceProfile {
-  const profile = profiles[deviceId];
-  if (!profile) {
-    throw new Error(`Unsupported DWARF device ID: ${deviceId}`);
-  }
-  return profile;
+  const profile = getCurrentProfile(deviceId);
+  return {
+    ...displayProfiles[profile.model],
+    model: profile.model,
+    deviceId: profile.hardwareId,
+    wireDeviceId: profile.wireDeviceId,
+    clientId: profile.clientId,
+    protocolMajorVersion: profile.majorVersion,
+    protocolMinorVersion: profile.minorVersion,
+  };
 }
 
 export function getDwarfDeviceName(deviceId: number): string {

@@ -72,7 +72,7 @@
     "concurrently": "^9.1.0",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
-    "dwarfii_api": "github:acocalypso/dwarfii_api#4e7d62e33272a401756b3b3207fed442f3978b8d",
+    "dwarfii_api": "github:acocalypso/dwarfii_api#27f14f2b433c520f746345dd969ac9062cbcbacc",
     "esbuild": "^0.25.0",
     "express": "^4.21.1",
     "fabric": "7.4.0",

@@ -24,6 +24,7 @@ export const ConnectionContext = createContext<ConnectionContextType>(
 );
 
 export function ConnectionContextProvider({ children }: ProviderProps) {
+  const [deviceError, setDeviceError] = useState<string | undefined>();
   const [connectionStatus, setConnectionStatus] = useState<
     boolean | undefined
   >();
@@ -195,6 +196,8 @@ export function ConnectionContextProvider({ children }: ProviderProps) {
     setStreamTypeWideDwarf,
     statusTemperatureDwarf,
     setStatusTemperatureDwarf,
+    deviceError,
+    setDeviceError,
     valueFocusDwarf,
     setValueFocusDwarf,
     connectionStatusStellarium,
