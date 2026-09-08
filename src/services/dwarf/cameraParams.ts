@@ -5,7 +5,6 @@ import { allowedWideGains } from "@/lib/data_wide_utils";
 import {
   decodeCurrentParamId,
   getCurrentProfile,
-  normalizeCurrentCameraCatalog,
   normalizeCurrentParamId,
   parseCurrentJsonLossless,
   sameCurrentParameterAcrossModes,
@@ -13,6 +12,7 @@ import {
   type CurrentCatalogParameter,
   type CurrentSession,
 } from "./api";
+import { normalizeDeviceCameraCatalog as normalizeCurrentCameraCatalog } from "./catalog";
 
 export type V3ParameterValue = {
   paramId: string;

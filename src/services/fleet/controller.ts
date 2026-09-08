@@ -2,7 +2,6 @@ import {
   CurrentWebSocketHandler,
   getCurrentProfile,
   normalizeCurrentDeviceInfo,
-  normalizeCurrentCameraCatalog,
   parseCurrentJsonLossless,
   wsURL,
   deviceInfo,
@@ -15,6 +14,7 @@ import {
   type CurrentWebSocketState,
   type CurrentCameraCatalog,
 } from "dwarfii_api";
+import { normalizeDeviceCameraCatalog as normalizeCurrentCameraCatalog } from "@/services/dwarf/catalog";
 import { decodeV3DeviceStateTelemetry } from "@/services/dwarf/telemetry";
 import type { V3DeviceTelemetry } from "@/services/dwarf/telemetry";
 import type { FleetRegistration } from "./registry";
