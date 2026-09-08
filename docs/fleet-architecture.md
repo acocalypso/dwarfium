@@ -313,3 +313,31 @@ and the remaining release gates are still outstanding.
 This is basic integration, not the complete camera/mount migration. Live video,
 manual focus/jogging, calibration/EQ workflows, target provenance, full activity
 reporting, planner integration and multi-device physical acceptance remain open.
+
+## Compact overview and onboarding checkpoint
+
+- Fleet overview now uses compact, keyboard-accessible device tiles showing
+  model, alias and evidence-based activity. Unknown/offline devices are not
+  mislabeled idle. Clicking a tile opens the full single-device view, with
+  device details and connected camera/mount controls expanded. Returning to the
+  overview does not disconnect any controller. Session creation is collapsible.
+- Add telescope and device detail views link to the existing configuration page
+  for location, BLE and Wi-Fi. That page now lets users register the displayed
+  discovered IP with a friendly name, rejects duplicate registered addresses and
+  links back to Fleet. It does not automatically take control or disconnect an
+  existing legacy connection; the handoff instruction is explicit. Location is
+  still installation-wide, not per-device.
+- Wi-Fi profiles are opt-in, versioned local-storage records separate from Fleet
+  persistence. Save/update by SSID, use and delete are available beside the
+  existing Wi-Fi fields. Passwords are not encrypted or synced; the UI warns to
+  use trusted computers. Loading a profile fills fields only, never starts BLE.
+  Invalid storage is preserved rather than silently overwritten. Deleting a
+  profile does not erase credentials already loaded in the existing form.
+- Full CI: 30 suites / 238 tests, lint/format/typecheck pass. Added profile
+  save/reload/use/delete, malformed storage preservation, configured-device
+  registration, duplicate rejection and credential exclusion coverage; updated
+  tile/detail/navigation tests.
+- Playwright inspected 375x812 and 1440x1000 compact layouts, card/detail/back
+  navigation and setup/profile controls. Only documentation-address test
+  registrations were used; no real credentials saved or BLE/movement initiated.
+  No production or Tauri rebuild in this checkpoint.

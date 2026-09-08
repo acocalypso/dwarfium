@@ -5,6 +5,7 @@ import ConnectDwarfSTA from "@/components/setup/ConnectDwarfSTA";
 import ConnectDwarf from "@/components/setup/ConnectDwarf";
 import ConnectStellarium from "@/components/setup/ConnectStellarium";
 import SetLocation from "@/components/setup/SetLocation";
+import RegisterConfiguredDevice from "@/components/fleet/RegisterConfiguredDevice";
 
 export default function SetupScope() {
   const { t } = useTranslation();
@@ -55,6 +56,7 @@ export default function SetupScope() {
       </div>
 
       <div className="dw-setup-stack">
+        <RegisterConfiguredDevice />
         <details className="dw-setup-section" open>
           <summary>
             <i className="bi bi-geo-alt" aria-hidden="true" />

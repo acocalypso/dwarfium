@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Link from "next/link";
 import DeviceControls from "@/components/fleet/DeviceControls";
 import { useContext, useState, useSyncExternalStore } from "react";
 import { useFleet, useFleetRegistry } from "@/stores/FleetContext";
@@ -44,7 +45,15 @@ function ModelIcon({ model }: { model?: DwarfModel }) {
   );
 }
 
-function FleetCard({ device }: { device: FleetRegistration }) {
+function FleetCard({
+  device,
+  compact = false,
+  onOpen,
+}: {
+  device: FleetRegistration;
+  compact?: boolean;
+  onOpen?: () => void;
+}) {
   const manager = useFleet();
   const registry = useFleetRegistry();
   const legacy = useContext(ConnectionContext);
@@ -56,9 +65,9 @@ function FleetCard({ device }: { device: FleetRegistration }) {
   );
   const [alias, setAlias] = useState(device.alias);
   const [error, setError] = useState<string>();
-  const [details, setDetails] = useState(false);
+  const [details, setDetails] = useState(true);
   const [changingControl, setChangingControl] = useState(false);
-  const [workspace, setWorkspace] = useState(false);
+  const [workspace, setWorkspace] = useState(true);
   const busy = ["connected", "connecting", "reconnecting"].includes(
     runtime.connection,
   );
@@ -81,6 +90,44 @@ function FleetCard({ device }: { device: FleetRegistration }) {
         );
       return manager.connect(device.id, getProxyUrl(legacy));
     });
+  if (compact) {
+    const status =
+      runtime.connection !== "connected"
+        ? runtime.connection === "disconnected"
+          ? "Offline"
+          : runtime.connection
+        : runtime.activity === "idle"
+          ? "Idle"
+          : runtime.activity === "unknown"
+            ? "Status unknown"
+            : `Working · ${runtime.activity}`;
+    return (
+      <article aria-label={device.alias}>
+        <button
+          className={styles.deviceTile}
+          onClick={onOpen}
+          aria-label={`Open ${device.alias}`}
+        >
+          <ModelIcon model={runtime.model ?? device.model} />
+          <span className={styles.tileIdentity}>
+            <strong>{device.alias}</strong>
+            <span>
+              {runtime.model || device.model
+                ? modelNames[(runtime.model ?? device.model)!]
+                : "Model not verified"}
+            </span>
+          </span>
+          <span
+            className={styles.tileStatus}
+            data-active={runtime.connection === "connected"}
+          >
+            {status}
+          </span>
+          <span aria-hidden="true">›</span>
+        </button>
+      </article>
+    );
+  }
   return (
     <article className={styles.card} aria-label={device.alias}>
       <header>
@@ -270,9 +317,28 @@ export default function FleetPage() {
   const [sessionName, setSessionName] = useState("");
   const [error, setError] = useState<string>();
   const [adding, setAdding] = useState(false);
+  const [openedId, setOpenedId] = useState<string>();
   const devices = Object.values(snapshot.devices).sort((a, b) =>
     a.alias.localeCompare(b.alias),
   );
+  const opened = openedId && snapshot.devices[openedId];
+  if (opened)
+    return (
+      <section className={styles.page}>
+        <Head>
+          <title>{opened.alias} · Fleet · Dwarfium</title>
+        </Head>
+        <header className={styles.heading}>
+          <button onClick={() => setOpenedId(undefined)}>
+            ← All telescopes
+          </button>
+          <Link href="/setup-scope/">
+            Location, Bluetooth and network setup
+          </Link>
+        </header>
+        <FleetCard key={opened.id} device={opened} />
+      </section>
+    );
   return (
     <section className={styles.page}>
       <Head>
@@ -292,25 +358,94 @@ export default function FleetPage() {
           Add telescope
         </button>
       </header>
-      <p className={styles.notice}>
-        Fleet preview: independent monitoring, session assignment and basic
-        camera and mount controls. Live video and advanced workflows are still
-        being migrated.
-      </p>
+      <details className={styles.overviewHelp}>
+        <summary>Preview capabilities</summary>
+        <p className={styles.notice}>
+          Fleet preview: independent monitoring, session assignment and basic
+          camera and mount controls. Live video and advanced workflows are still
+          being migrated.
+        </p>
+      </details>
       {adding && (
+        <div>
+          <p className={styles.notice}>
+            <Link href="/setup-scope/">
+              Set up a telescope with Bluetooth, Wi-Fi and observing location →
+            </Link>
+            <br />
+            Already know its address? Register it below.
+          </p>
+          <form
+            className={styles.form}
+            onSubmit={(event) => {
+              event.preventDefault();
+              try {
+                manager.registry.register({
+                  alias,
+                  lastKnownHost: validFleetHost(host),
+                  model: model || undefined,
+                });
+                setAlias("");
+                setHost("");
+                setAdding(false);
+                setError(undefined);
+              } catch (failure) {
+                setError(String(failure));
+              }
+            }}
+          >
+            <label>
+              Friendly name
+              <input
+                required
+                maxLength={100}
+                value={alias}
+                onChange={(event) => setAlias(event.target.value)}
+                placeholder="Garden Mini"
+              />
+            </label>
+            <label>
+              IP address
+              <input
+                required
+                value={host}
+                onChange={(event) => setHost(event.target.value)}
+                placeholder="192.168.178.97"
+              />
+            </label>
+            <label>
+              Expected model
+              <select
+                value={model}
+                onChange={(event) =>
+                  setModel(event.target.value as DwarfModel | "")
+                }
+              >
+                <option value="">Identify when connecting</option>
+                {Object.entries(modelNames).map(([value, name]) => (
+                  <option key={value} value={value}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit">Register telescope</button>
+            <p className={styles.hint}>
+              Registration does not connect or take control. Confirm the address
+              belongs to your telescope.
+            </p>
+          </form>
+        </div>
+      )}
+      <details className={styles.overviewHelp}>
+        <summary>Manage observing sessions</summary>
         <form
-          className={styles.form}
+          className={styles.sessionForm}
           onSubmit={(event) => {
             event.preventDefault();
             try {
-              manager.registry.register({
-                alias,
-                lastKnownHost: validFleetHost(host),
-                model: model || undefined,
-              });
-              setAlias("");
-              setHost("");
-              setAdding(false);
+              manager.registry.createSession(sessionName);
+              setSessionName("");
               setError(undefined);
             } catch (failure) {
               setError(String(failure));
@@ -318,72 +453,18 @@ export default function FleetPage() {
           }}
         >
           <label>
-            Friendly name
+            New observing session
             <input
               required
               maxLength={100}
-              value={alias}
-              onChange={(event) => setAlias(event.target.value)}
-              placeholder="Garden Mini"
+              value={sessionName}
+              onChange={(event) => setSessionName(event.target.value)}
+              placeholder="Andromeda night"
             />
           </label>
-          <label>
-            IP address
-            <input
-              required
-              value={host}
-              onChange={(event) => setHost(event.target.value)}
-              placeholder="192.168.178.97"
-            />
-          </label>
-          <label>
-            Expected model
-            <select
-              value={model}
-              onChange={(event) =>
-                setModel(event.target.value as DwarfModel | "")
-              }
-            >
-              <option value="">Identify when connecting</option>
-              {Object.entries(modelNames).map(([value, name]) => (
-                <option key={value} value={value}>
-                  {name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit">Register telescope</button>
-          <p className={styles.hint}>
-            Registration does not connect or take control. Confirm the address
-            belongs to your telescope.
-          </p>
+          <button>Create session</button>
         </form>
-      )}
-      <form
-        className={styles.sessionForm}
-        onSubmit={(event) => {
-          event.preventDefault();
-          try {
-            manager.registry.createSession(sessionName);
-            setSessionName("");
-            setError(undefined);
-          } catch (failure) {
-            setError(String(failure));
-          }
-        }}
-      >
-        <label>
-          New observing session
-          <input
-            required
-            maxLength={100}
-            value={sessionName}
-            onChange={(event) => setSessionName(event.target.value)}
-            placeholder="Andromeda night"
-          />
-        </label>
-        <button>Create session</button>
-      </form>
+      </details>
       {error && (
         <p role="alert" className={styles.error}>
           {error}
@@ -400,7 +481,12 @@ export default function FleetPage() {
       )}
       <div className={styles.grid}>
         {devices.map((device) => (
-          <FleetCard key={device.id} device={device} />
+          <FleetCard
+            key={device.id}
+            device={device}
+            compact
+            onOpen={() => setOpenedId(device.id)}
+          />
         ))}
       </div>
     </section>

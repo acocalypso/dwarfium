@@ -50,8 +50,18 @@ test("shows saved offline devices with models and honest unknown status", async 
   const d3 = screen.getByRole("article", { name: "Observatory D3" });
   expect(within(mini).getByText("DWARF Mini")).toBeInTheDocument();
   expect(within(d3).getByText("DWARF 3")).toBeInTheDocument();
-  expect(within(mini).getByText("Target unknown")).toBeInTheDocument();
-  expect(within(mini).getByText("disconnected")).toBeInTheDocument();
+  expect(within(mini).getByText("Offline")).toBeInTheDocument();
+  expect(
+    within(mini).queryByLabelText("Observing session"),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    within(mini).getByRole("button", { name: "Open Garden Mini" }),
+  );
+  expect(screen.getByText("Target unknown")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "← All telescopes" }));
+  expect(
+    screen.getByRole("button", { name: "Open Observatory D3" }),
+  ).toBeInTheDocument();
 });
 
 test("assigning session A persists metadata without assigning B", async () => {
@@ -60,7 +70,10 @@ test("assigning session A persists metadata without assigning B", async () => {
       <FleetPage />
     </FleetProvider>,
   );
-  const mini = await screen.findByRole("article", { name: "Garden Mini" });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Open Garden Mini" }),
+  );
+  const mini = screen.getByRole("article", { name: "Garden Mini" });
   fireEvent.change(within(mini).getByLabelText("Observing session"), {
     target: { value: session },
   });

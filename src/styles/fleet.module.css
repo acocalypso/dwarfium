@@ -50,8 +50,60 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
   gap: 18px;
+}
+.page .deviceTile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 110px;
+  padding: 16px;
+  text-align: left;
+  background: #101a24;
+  border: 1px solid #2a3b4b;
+  color: #dce7ef;
+}
+.page .deviceTile:hover {
+  border-color: #32d1b2;
+  background: #13232c;
+}
+.deviceTile svg {
+  flex-shrink: 0;
+  color: #32d1b2;
+}
+.tileIdentity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tileIdentity strong {
+  font-size: 15px;
+}
+.tileIdentity span,
+.tileStatus {
+  font-size: 12px;
+  color: #91a6b8;
+}
+.tileStatus {
+  max-width: 95px;
+  text-transform: capitalize;
+}
+.tileStatus[data-active="true"] {
+  color: #5ae2c7;
+}
+.overviewHelp {
+  margin: 12px 0;
+  font-size: 13px;
+  color: #91a6b8;
+}
+.overviewHelp summary {
+  cursor: pointer;
+  padding: 8px 0;
 }
 .card,
 .form,
