@@ -50,6 +50,14 @@ test("rejects a technique control belonging to another camera", () => {
     "namespace mismatch",
   );
 });
+test("accepts the exact wide-angle count ID reported by D3 and Mini", () => {
+  const raw = fixture();
+  raw.data.shootingTechSettings[1].generalParams[0].paramId =
+    "144695730215321616";
+  expect(
+    normalizeDeviceCameraCatalog(raw, 2).cameras[1].parameters[0].paramId,
+  ).toBe("144695730215321616");
+});
 test("rejects invalid bounds and leaves original response unchanged", () => {
   const raw = fixture();
   const before = JSON.stringify(raw);
