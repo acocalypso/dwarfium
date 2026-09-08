@@ -73,3 +73,18 @@ test("assigning session A persists metadata without assigning B", async () => {
   ).toBeUndefined();
   expect(within(mini).getByText("disconnected")).toBeInTheDocument();
 });
+
+test("offline devices do not offer control commands", async () => {
+  render(
+    <FleetProvider>
+      <FleetPage />
+    </FleetProvider>,
+  );
+  const mini = await screen.findByRole("article", { name: "Garden Mini" });
+  expect(
+    within(mini).queryByRole("button", { name: "Request control" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(mini).queryByRole("button", { name: "Release control" }),
+  ).not.toBeInTheDocument();
+});

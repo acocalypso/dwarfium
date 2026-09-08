@@ -266,3 +266,21 @@ host control and closed the test browser. The subsequent Disconnect button click
 had a stale reference, so explicit button-driven disconnection was not verified.
 No motion or capture
 commands were sent. Streaming remains unverified with MediaMTX not running.
+
+## Ownership integration checkpoint
+
+Fleet cards now expose per-controller Request control / Release control actions
+only while connected. Pending UI is local to the card; ownership remains SDK
+reported state rather than an optimistic flag. The implementation uses the SDK's
+existing `setMasterLock` boolean contract without modifying the API library.
+React external-store and async pending-state guidance was checked with Context7.
+
+Command results are checked against the originating controller epoch, transport
+instance and SDK generation before returning to callers. Obsolete results cannot
+be used by a replacement workspace or overwrite its error state.
+
+Validation: full CI passed, 26 suites / 228 tests. Added scoped ownership wire
+payload/ACK-vs-state tests, post-disconnect response rejection, and offline UI
+command visibility coverage. These ownership changes have not yet had live
+hardware or responsive browser validation. Full camera/mount workspace migration
+and the remaining release gates are still outstanding.

@@ -163,6 +163,70 @@ describe("Fleet controller isolation through real SDK sessions", () => {
     ).rejects.toThrow("identity");
     expect(h.fetcher).not.toHaveBeenCalled();
   });
+  test("control request and release are scoped and require reported ownership", async () => {
+    const a = harness("a"),
+      b = harness("b");
+    try {
+      await ready(a, 20);
+      await ready(b, 80);
+      const bCount = b.sockets[0].sent.length;
+      const pending = a.controller.setControl(true);
+      const packet = CurrentDwarfSchema.WsPacket.decode(
+        a.sockets[0].sent.at(-1) as Uint8Array,
+      );
+      expect(packet.cmd).toBe(13004);
+      expect(
+        CurrentDwarfSchema.ReqsetMasterLock.decode(packet.data!).lock,
+      ).toBe(true);
+      expect(a.controller.getSnapshot().ownership).not.toBe("control");
+      a.sockets[0].emit("message", {
+        data: wire("setMasterLock", { code: 0 }),
+      });
+      await pending;
+      expect(a.controller.getSnapshot().ownership).not.toBe("control");
+      a.sockets[0].emit("message", {
+        data: wire("getDeviceState", {
+          connectionStateInfo: { hostSlaveMode: { mode: 0, lock: true } },
+        }),
+      });
+      await flush();
+      expect(a.controller.getSnapshot().ownership).toBe("control");
+      const release = a.controller.setControl(false);
+      const unlocked = CurrentDwarfSchema.WsPacket.decode(
+        a.sockets[0].sent.at(-1) as Uint8Array,
+      );
+      expect(
+        CurrentDwarfSchema.ReqsetMasterLock.decode(unlocked.data!).lock,
+      ).toBe(false);
+      a.sockets[0].emit("message", {
+        data: wire("setMasterLock", { code: 0 }),
+      });
+      await release;
+      expect(b.sockets[0].sent).toHaveLength(bCount);
+      expect(b.controller.getSnapshot().ownership).not.toBe("control");
+    } finally {
+      a.controller.disconnect();
+      b.controller.disconnect();
+    }
+  });
+  test("a completed response cannot escape into a disconnected workspace", async () => {
+    const h = harness("a");
+    try {
+      await ready(h, 20);
+      const pending = h.controller.request("getDeviceState");
+      h.sockets[0].emit("message", {
+        data: wire("getDeviceState", {
+          deviceStateInfo: { batteryInfo: { percentage: 21 } },
+        }),
+      });
+      h.controller.disconnect();
+      await expect(pending).rejects.toThrow();
+      expect(h.controller.getSnapshot().error).toBeUndefined();
+      expect(h.controller.getSnapshot().telemetry).toEqual({});
+    } finally {
+      h.controller.disconnect();
+    }
+  });
   test("late HTTP discovery cannot reopen a disconnected device", async () => {
     const h = harness("a");
     let resolve!: (value: unknown) => void;

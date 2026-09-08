@@ -210,15 +210,32 @@ export class FleetDeviceController {
         "Request control of this telescope before sending commands.",
       );
     const epoch = this.epoch;
+    const generation = client.session.state.generation;
     try {
-      return await client.request(operation, values);
+      const result = await client.request(operation, values);
+      if (
+        epoch !== this.epoch ||
+        client !== this.client ||
+        generation !== client.session.state.generation ||
+        !client.ready
+      )
+        throw new Error("Command result belongs to a previous connection.");
+      return result;
     } catch (error) {
-      if (epoch === this.epoch)
+      if (
+        epoch === this.epoch &&
+        generation === client.session.state.generation
+      )
         this.publish({
           error: error instanceof Error ? error.message : String(error),
         });
       throw error;
     }
+  }
+
+  /** Ownership is confirmed by SDK session evidence, never optimistically set. */
+  async setControl(enabled: boolean): Promise<void> {
+    await this.request("setMasterLock", { lock: enabled });
   }
 
   async loadCatalog(modeId: number): Promise<CurrentCameraCatalog> {

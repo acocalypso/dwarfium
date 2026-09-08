@@ -56,6 +56,7 @@ function FleetCard({ device }: { device: FleetRegistration }) {
   const [alias, setAlias] = useState(device.alias);
   const [error, setError] = useState<string>();
   const [details, setDetails] = useState(false);
+  const [changingControl, setChangingControl] = useState(false);
   const busy = ["connected", "connecting", "reconnecting"].includes(
     runtime.connection,
   );
@@ -128,6 +129,30 @@ function FleetCard({ device }: { device: FleetRegistration }) {
           </strong>
         </span>
       </div>
+      {runtime.connection === "connected" && (
+        <div className={styles.actions}>
+          <span role="status">
+            {runtime.ownership === "control"
+              ? "You have control"
+              : "Monitoring only"}
+          </span>
+          <button
+            disabled={changingControl}
+            onClick={() => {
+              setChangingControl(true);
+              void act(() =>
+                controller.setControl(runtime.ownership !== "control"),
+              ).finally(() => setChangingControl(false));
+            }}
+          >
+            {changingControl
+              ? "Waiting for telescope…"
+              : runtime.ownership === "control"
+                ? "Release control"
+                : "Request control"}
+          </button>
+        </div>
+      )}
       <label>
         Observing session
         <select
