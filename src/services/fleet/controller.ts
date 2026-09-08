@@ -1,0 +1,283 @@
+import {
+  CurrentWebSocketHandler,
+  getCurrentProfile,
+  normalizeCurrentDeviceInfo,
+  normalizeCurrentCameraCatalog,
+  parseCurrentJsonLossless,
+  wsURL,
+  deviceInfo,
+  type CurrentCommand,
+  type CurrentPacket,
+  type CurrentWebSocketOptions,
+  type CurrentWebSocketState,
+  type CurrentCameraCatalog,
+} from "dwarfii_api";
+import { decodeV3DeviceStateTelemetry } from "@/services/dwarf/telemetry";
+import type { V3DeviceTelemetry } from "@/services/dwarf/telemetry";
+import type { FleetRegistration } from "./registry";
+import type { DwarfModel } from "@/services/dwarf/deviceProfile";
+import {
+  reduceActivity,
+  summarizeActivity,
+  type ActivityEvidence,
+} from "./activity";
+
+export type FleetRuntime = Readonly<{
+  model?: DwarfModel;
+  connection:
+    "disconnected" | "connecting" | "connected" | "reconnecting" | "error";
+  activity: "unknown" | "idle" | "capturing" | "focusing" | "slewing";
+  ownership: "unknown" | "control" | "slave";
+  telemetry: Readonly<V3DeviceTelemetry>;
+  frames?: number;
+  lastSeen?: number;
+  error?: string;
+}>;
+
+export const offlineRuntime: FleetRuntime = Object.freeze({
+  connection: "disconnected",
+  activity: "unknown",
+  ownership: "unknown",
+  telemetry: Object.freeze({}),
+});
+
+export function validFleetHost(value: string): string {
+  const host = value.trim();
+  if (
+    !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host) ||
+    host.split(".").some((part) => Number(part) > 255)
+  )
+    throw new Error(
+      "Enter the telescope's IPv4 address, without a port or URL.",
+    );
+  return host;
+}
+
+/** One controller owns one SDK transport and all of its asynchronous work. */
+export class FleetDeviceController {
+  private client?: CurrentWebSocketHandler;
+  private detach?: () => void;
+  private discovery?: AbortController;
+  private requests = new Set<AbortController>();
+  private catalogs = new Map<number, CurrentCameraCatalog>();
+  private epoch = 0;
+  private poll?: ReturnType<typeof setInterval>;
+  private snapshot = offlineRuntime;
+  private listeners = new Set<() => void>();
+  private proxy?: string;
+  private host?: string;
+  private activity: ActivityEvidence = {};
+
+  constructor(
+    readonly id: string,
+    private readonly options: CurrentWebSocketOptions = {},
+    private readonly fetcher: typeof fetch = (...args) => fetch(...args),
+  ) {}
+
+  getSnapshot = () => this.snapshot;
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
+  private publish(update: Partial<FleetRuntime>) {
+    this.snapshot = Object.freeze({ ...this.snapshot, ...update });
+    this.listeners.forEach((listener) => listener());
+  }
+  private url(target: string) {
+    return this.proxy
+      ? `${this.proxy}?target=${encodeURIComponent(target)}`
+      : target;
+  }
+
+  async connect(device: FleetRegistration, proxy?: string): Promise<void> {
+    if (device.id !== this.id) throw new Error("Device identity mismatch.");
+    if (
+      ["connecting", "connected", "reconnecting"].includes(
+        this.snapshot.connection,
+      )
+    )
+      return;
+    const host = validFleetHost(device.lastKnownHost ?? "");
+    this.disconnect();
+    const epoch = this.epoch;
+    this.proxy = proxy;
+    this.host = host;
+    const abort = new AbortController();
+    this.discovery = abort;
+    const timeout = setTimeout(() => abort.abort(), 10_000);
+    this.publish({ connection: "connecting", error: undefined });
+    try {
+      const response = await this.fetcher(this.url(deviceInfo(host)), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+        signal: abort.signal,
+      });
+      if (!response.ok)
+        throw new Error(`Device discovery failed (${response.status}).`);
+      const info = normalizeCurrentDeviceInfo(await response.text());
+      if (epoch !== this.epoch) return;
+      if (device.model && device.model !== info.profile.model)
+        throw new Error(
+          "This address reports a different DWARF model. Review its registration before connecting.",
+        );
+      this.publish({ model: info.profile.model });
+      const client = new CurrentWebSocketHandler(
+        getCurrentProfile(info.hardwareId),
+        this.options,
+      );
+      this.client = client;
+      this.detach = client.subscribe((state, packet) => {
+        if (epoch === this.epoch) this.receive(state, packet);
+      });
+      const proxyAddress = proxy ? new URL(proxy).host : undefined;
+      client.connect(
+        wsURL(host, proxyAddress, proxy?.startsWith("https:") ?? false),
+      );
+      this.poll = setInterval(() => {
+        if (client.ready)
+          void client.request("getDeviceState").catch((error) => {
+            if (epoch === this.epoch) this.publish({ error: String(error) });
+          });
+      }, 10_000);
+    } catch (error) {
+      if (epoch === this.epoch)
+        this.publish({
+          connection: "error",
+          error: error instanceof Error ? error.message : String(error),
+        });
+    } finally {
+      clearTimeout(timeout);
+      if (this.discovery === abort) this.discovery = undefined;
+    }
+  }
+
+  private receive(state: CurrentWebSocketState, packet?: CurrentPacket) {
+    const ready = state.session.phase === "ready";
+    const connection = ready
+      ? "connected"
+      : state.transport === "open"
+        ? "connecting"
+        : state.transport === "disconnected" && state.error
+          ? "error"
+          : state.transport;
+    const update: { -readonly [K in keyof FleetRuntime]?: FleetRuntime[K] } = {
+      connection,
+      ownership: state.session.ownership,
+      error: state.error?.message,
+    };
+    if (!ready) {
+      this.activity = {};
+      this.catalogs.clear();
+      this.requests.forEach((request) => request.abort());
+      update.activity = "unknown";
+      update.telemetry = Object.freeze({});
+      update.frames = undefined;
+    }
+    if (ready && packet?.known && packet.type !== 0) {
+      update.lastSeen = Date.now();
+      if (packet.cmd === 16405) {
+        const telemetry = decodeV3DeviceStateTelemetry(packet.rawData);
+        if (telemetry) update.telemetry = Object.freeze(telemetry);
+      }
+      this.activity = reduceActivity(this.activity, packet);
+      update.activity = summarizeActivity(this.activity);
+      if (packet.type === 2 && [15209, 15237].includes(packet.cmd))
+        update.frames = packet.data.currentCount ?? 0;
+    }
+    this.publish(update);
+  }
+
+  /** Commands are bound to this controller, never resolved through UI selection. */
+  async request(
+    operation: CurrentCommand,
+    values: Record<string, unknown> = {},
+  ) {
+    const client = this.client;
+    if (!client?.ready) throw new Error("This telescope is not connected.");
+    if (
+      ![
+        "getDeviceState",
+        "getQuickSets",
+        "getSavedInfinityPosition",
+        "setMasterLock",
+      ].includes(operation) &&
+      client.session.state.ownership !== "control"
+    )
+      throw new Error(
+        "Request control of this telescope before sending commands.",
+      );
+    const epoch = this.epoch;
+    try {
+      return await client.request(operation, values);
+    } catch (error) {
+      if (epoch === this.epoch)
+        this.publish({
+          error: error instanceof Error ? error.message : String(error),
+        });
+      throw error;
+    }
+  }
+
+  async loadCatalog(modeId: number): Promise<CurrentCameraCatalog> {
+    const client = this.client;
+    if (!client?.ready)
+      throw new Error("Connect before loading camera settings.");
+    const epoch = this.epoch;
+    const generation = client.session.state.generation;
+    const abort = new AbortController();
+    this.requests.add(abort);
+    const timeout = setTimeout(() => abort.abort(), 10_000);
+    try {
+      const response = await this.fetcher(
+        this.url(`http://${this.host}:8082/shootingMode/getParamAndSetting`),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ modeId }),
+          signal: abort.signal,
+        },
+      );
+      if (!response.ok)
+        throw new Error(`Camera discovery failed (${response.status}).`);
+      const catalog = normalizeCurrentCameraCatalog(
+        parseCurrentJsonLossless(await response.text()),
+        modeId,
+      );
+      if (
+        epoch !== this.epoch ||
+        generation !== client.session.state.generation ||
+        !client.ready
+      )
+        throw new Error("Camera settings belong to a previous connection.");
+      this.catalogs.set(modeId, catalog);
+      return catalog;
+    } finally {
+      clearTimeout(timeout);
+      this.requests.delete(abort);
+    }
+  }
+
+  disconnect() {
+    this.activity = {};
+    this.epoch++;
+    this.discovery?.abort();
+    this.requests.forEach((request) => request.abort());
+    this.requests.clear();
+    this.catalogs.clear();
+    if (this.poll) clearInterval(this.poll);
+    this.poll = undefined;
+    this.detach?.();
+    this.detach = undefined;
+    this.client?.close();
+    this.client = undefined;
+    this.publish({
+      ...offlineRuntime,
+      lastSeen: this.snapshot.lastSeen,
+      frames: undefined,
+      error: undefined,
+    });
+  }
+}

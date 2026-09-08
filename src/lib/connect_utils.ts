@@ -164,10 +164,19 @@ export async function connectionHandler(
   connectionCtx.setConnectionStatus(false);
   connectionCtx.setConnectionStatusSlave(true);
 
-  const [deviceId, deviceUid] = await findDeviceInfo(IPDwarf, connectionCtx);
+  let discoveryError: string | undefined;
+  const [deviceId, deviceUid] = await findDeviceInfo(
+    IPDwarf,
+    connectionCtx,
+    (message) => {
+      discoveryError = message;
+    },
+  );
   if (!deviceId) {
     setConnecting(false);
-    setErrorTxt("Unable to identify a supported DWARF device.");
+    setErrorTxt(
+      discoveryError ?? "Unable to identify a supported DWARF device.",
+    );
     return;
   }
 
@@ -192,6 +201,13 @@ export async function connectionHandler(
   webSocketHandler.resetReconnectGuard?.();
 
   connectionCtx.setSocketIPDwarf(webSocketHandler);
+  // Bind asynchronous discovery/notification handlers to this socket even before
+  // React renders the updated context. Never key their caches by a stale context.
+  connectionCtx = {
+    ...connectionCtx,
+    IPDwarf,
+    socketIPDwarf: webSocketHandler,
+  };
   const proxyLocalIP =
     connectionCtx.proxyInLan && connectionCtx.proxyLocalIP
       ? connectionCtx.proxyLocalIP
@@ -232,7 +248,7 @@ export async function connectionHandler(
     connectionCtx.setValueFocusDwarf(undefined);
   };
   const markDisconnected = () => {
-    resetV3CameraParameterCache();
+    resetV3CameraParameterCache(connectionCtx);
     hasProtocolResponse = false;
     ownershipRequested = false;
     catalogLoaded = false;
@@ -267,7 +283,7 @@ export async function connectionHandler(
         }
       }
     } else if (packet.cmd === 15264) {
-      const parameter = ingestV3ParameterNotification(data);
+      const parameter = ingestV3ParameterNotification(data, connectionCtx);
       if (parameter) applyAuthoritativeCameraParam(connectionCtx, parameter);
     } else if (packet.cmd === 15223) {
       applyOwnership(data);

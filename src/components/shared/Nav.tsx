@@ -16,6 +16,7 @@ const navigation: NavGroup[] = [
   {
     label: "Workspace",
     items: [
+      { href: "/fleet", label: "Fleet", icon: "bi-hdd-stack" },
       { href: "/", label: "Dashboard", icon: "bi-grid-1x2" },
       { href: "/cameras", label: "Camera", icon: "bi-camera-video" },
       { href: "/objects", label: "Targets", icon: "bi-crosshair" },

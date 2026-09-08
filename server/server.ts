@@ -646,7 +646,10 @@ app.all("*", async (req, res) => {
     }
 
     const fetchOptions: FetchOptions = {
-      signal: req.signal ?? controller.signal,
+      // The outbound request owns its timeout. An incoming request's signal can
+      // be cancelled as soon as its body finishes in packaged Node runtimes.
+      // That must not abort the independent request to the telescope.
+      signal: controller.signal,
       method: req.method ?? "GET", // Fallback to "GET" if req.method is undefined
       headers: sanitizedHeaders,
       ...(agent ? { agent } : {}), // Add `agent` only when using HTTPS
