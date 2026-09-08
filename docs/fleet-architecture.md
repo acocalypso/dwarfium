@@ -284,3 +284,32 @@ payload/ACK-vs-state tests, post-disconnect response rejection, and offline UI
 command visibility coverage. These ownership changes have not yet had live
 hardware or responsive browser validation. Full camera/mount workspace migration
 and the remaining release gates are still outstanding.
+
+## Basic camera and mount integration checkpoint
+
+- Each connected card can open its own workspace; device/session keys reset
+  draft forms on reconnect. React key/reset guidance validated through Context7.
+- Camera capability discovery populates exposure choices. Gain is validated by
+  the SDK against the freshly loaded catalog; filters use the identified SDK
+  hardware profile. Astronomy capture invokes `executeCurrentCapture`, guarded
+  by controller identity, epoch and generation at every step. Duplicate capture
+  submissions are rejected; Stop capture cancels unsent transaction steps.
+- Tele/wide capture stop, telephoto astro autofocus/stop and coordinate GOTO/stop
+  use this controller exclusively. GOTO validates coordinates and sets gotoOnly;
+  its UI requires explicit movement-path/target confirmation. ACK messages do not
+  claim operation completion. Observer mode disables all mutation buttons.
+- Fixed relative `/api/proxy` routing: HTTP stays on the API route, WebSocket uses
+  the SDK direct local connection (as in the existing workspace). HTTPS/remote
+  deployments still need a configured WebSocket-capable external proxy.
+- CI: 28 suites / 235 tests pass, with lint/format/typecheck. Tests cover scoped
+  GOTO payloads, observer restrictions, draft reset, SDK capture delegation,
+  duplicate/cancelled submissions and HTTP API-mode connection construction.
+- Playwright: live Mini observer connection and capability discovery succeeded;
+  inspected desktop 1440x1000 and mobile 375x812 screenshots, no mobile horizontal
+  overflow (document width 368). Disconnected and closed the test browser. No
+  physical focus/capture/mount commands were sent. Invalid Mini -270°C remains
+  an open telemetry defect. No production/Tauri rebuild in this checkpoint.
+
+This is basic integration, not the complete camera/mount migration. Live video,
+manual focus/jogging, calibration/EQ workflows, target provenance, full activity
+reporting, planner integration and multi-device physical acceptance remain open.

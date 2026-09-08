@@ -1,4 +1,5 @@
 import Head from "next/head";
+import DeviceControls from "@/components/fleet/DeviceControls";
 import { useContext, useState, useSyncExternalStore } from "react";
 import { useFleet, useFleetRegistry } from "@/stores/FleetContext";
 import { ConnectionContext } from "@/stores/ConnectionContext";
@@ -57,6 +58,7 @@ function FleetCard({ device }: { device: FleetRegistration }) {
   const [error, setError] = useState<string>();
   const [details, setDetails] = useState(false);
   const [changingControl, setChangingControl] = useState(false);
+  const [workspace, setWorkspace] = useState(false);
   const busy = ["connected", "connecting", "reconnecting"].includes(
     runtime.connection,
   );
@@ -192,7 +194,21 @@ function FleetCard({ device }: { device: FleetRegistration }) {
         <button onClick={() => setDetails(!details)} aria-expanded={details}>
           Device details
         </button>
+        <button
+          disabled={runtime.connection !== "connected"}
+          aria-expanded={workspace}
+          onClick={() => setWorkspace(!workspace)}
+        >
+          {workspace ? "Close workspace" : "Camera and mount"}
+        </button>
       </div>
+      {workspace && runtime.connection === "connected" && (
+        <DeviceControls
+          key={`${device.id}:${runtime.generation}`}
+          controller={controller}
+          canControl={runtime.ownership === "control"}
+        />
+      )}
       {details && (
         <div className={styles.details}>
           <label>
@@ -229,9 +245,9 @@ function FleetCard({ device }: { device: FleetRegistration }) {
             </div>
           </dl>
           <p className={styles.hint}>
-            Fleet monitoring is available. Camera and mount workspaces are still
-            being migrated; use the existing single-device workspace for those
-            controls.
+            Open Camera and mount for astronomy capture, autofocus and
+            coordinate GOTO. Live video, calibration and advanced controls are
+            still being migrated from the single-device workspace.
           </p>
           <button
             disabled={busy}
@@ -277,8 +293,9 @@ export default function FleetPage() {
         </button>
       </header>
       <p className={styles.notice}>
-        Fleet preview: independent monitoring and session assignment. Device
-        control and video migration are still in progress.
+        Fleet preview: independent monitoring, session assignment and basic
+        camera and mount controls. Live video and advanced workflows are still
+        being migrated.
       </p>
       {adding && (
         <form

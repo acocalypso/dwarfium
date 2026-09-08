@@ -6,6 +6,9 @@ import {
   parseCurrentJsonLossless,
   wsURL,
   deviceInfo,
+  executeCurrentCapture,
+  type CurrentCaptureSettings,
+  type CurrentProfile,
   type CurrentCommand,
   type CurrentPacket,
   type CurrentWebSocketOptions,
@@ -23,6 +26,7 @@ import {
 } from "./activity";
 
 export type FleetRuntime = Readonly<{
+  generation?: number;
   model?: DwarfModel;
   connection:
     "disconnected" | "connecting" | "connected" | "reconnecting" | "error";
@@ -67,6 +71,9 @@ export class FleetDeviceController {
   private proxy?: string;
   private host?: string;
   private activity: ActivityEvidence = {};
+  private profile?: CurrentProfile;
+  private capturePending = false;
+  private captureRevision = 0;
 
   constructor(
     readonly id: string,
@@ -124,6 +131,7 @@ export class FleetDeviceController {
           "This address reports a different DWARF model. Review its registration before connecting.",
         );
       this.publish({ model: info.profile.model });
+      this.profile = getCurrentProfile(info.hardwareId);
       const client = new CurrentWebSocketHandler(
         getCurrentProfile(info.hardwareId),
         this.options,
@@ -132,7 +140,10 @@ export class FleetDeviceController {
       this.detach = client.subscribe((state, packet) => {
         if (epoch === this.epoch) this.receive(state, packet);
       });
-      const proxyAddress = proxy ? new URL(proxy).host : undefined;
+      // The Next HTTP API route does not upgrade WebSockets. In local API mode
+      // use the SDK's direct telescope transport, like the legacy workspace.
+      const proxyAddress =
+        proxy && !proxy.startsWith("/") ? new URL(proxy).host : undefined;
       client.connect(
         wsURL(host, proxyAddress, proxy?.startsWith("https:") ?? false),
       );
@@ -164,6 +175,7 @@ export class FleetDeviceController {
           ? "error"
           : state.transport;
     const update: { -readonly [K in keyof FleetRuntime]?: FleetRuntime[K] } = {
+      generation: state.session.generation,
       connection,
       ownership: state.session.ownership,
       error: state.error?.message,
@@ -211,6 +223,9 @@ export class FleetDeviceController {
       );
     const epoch = this.epoch;
     const generation = client.session.state.generation;
+    // Stop cancels unsent capture configuration steps as well as the device job.
+    if (operation === "stopTeleCapture" || operation === "stopWideCapture")
+      this.captureRevision++;
     try {
       const result = await client.request(operation, values);
       if (
@@ -236,6 +251,73 @@ export class FleetDeviceController {
   /** Ownership is confirmed by SDK session evidence, never optimistically set. */
   async setControl(enabled: boolean): Promise<void> {
     await this.request("setMasterLock", { lock: enabled });
+  }
+
+  getProfile() {
+    return this.profile;
+  }
+
+  async capture(settings: CurrentCaptureSettings) {
+    if (this.capturePending)
+      throw new Error("A capture submission is already in progress.");
+    const client = this.client;
+    const profile = this.profile;
+    if (
+      !client?.ready ||
+      !profile ||
+      client.session.state.ownership !== "control"
+    )
+      throw new Error("Connect and request control before starting capture.");
+    const epoch = this.epoch;
+    const generation = client.session.state.generation;
+    this.capturePending = true;
+    const revision = this.captureRevision;
+    try {
+      const catalog = await this.loadCatalog(2);
+      const transport = {
+        get state() {
+          return client.state;
+        },
+        request: (
+          operation: CurrentCommand,
+          values?: Record<string, unknown>,
+        ) => {
+          if (
+            revision !== this.captureRevision ||
+            epoch !== this.epoch ||
+            client !== this.client ||
+            generation !== client.session.state.generation
+          )
+            throw new Error(
+              "Capture belongs to a previous connection. Review settings and retry.",
+            );
+          return this.request(operation, values);
+        },
+      };
+      return await executeCurrentCapture(transport, profile, catalog, settings);
+    } finally {
+      this.capturePending = false;
+    }
+  }
+
+  async gotoCoordinates(ra: number, dec: number) {
+    if (
+      !Number.isFinite(ra) ||
+      ra < 0 ||
+      ra >= 24 ||
+      !Number.isFinite(dec) ||
+      dec < -90 ||
+      dec > 90
+    )
+      throw new Error(
+        "Enter RA in hours [0, 24) and declination in degrees [-90, 90].",
+      );
+    return this.request("gotoEquatorial", {
+      ra,
+      dec,
+      gotoOnly: true,
+      targetName: "Fleet coordinates",
+    });
   }
 
   async loadCatalog(modeId: number): Promise<CurrentCameraCatalog> {
@@ -278,6 +360,7 @@ export class FleetDeviceController {
   }
 
   disconnect() {
+    this.profile = undefined;
     this.activity = {};
     this.epoch++;
     this.discovery?.abort();

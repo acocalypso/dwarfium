@@ -163,6 +163,56 @@ describe("Fleet controller isolation through real SDK sessions", () => {
     ).rejects.toThrow("identity");
     expect(h.fetcher).not.toHaveBeenCalled();
   });
+  test("relative HTTP proxy discovery uses a direct SDK WebSocket", async () => {
+    const h = harness("a");
+    try {
+      await h.controller.connect(
+        { id: "a", alias: "A", lastKnownHost: "192.0.2.1" },
+        "/api/proxy",
+      );
+      expect(h.fetcher.mock.calls[0][0]).toContain("/api/proxy?target=");
+      expect(h.sockets).toHaveLength(1);
+      expect(h.controller.getSnapshot().error).toBeUndefined();
+    } finally {
+      h.controller.disconnect();
+    }
+  });
+  test("mount coordinates are validated before sending and routed only to A", async () => {
+    const a = harness("a"),
+      b = harness("b");
+    try {
+      await ready(a, 20);
+      await ready(b, 80);
+      a.sockets[0].emit("message", {
+        data: wire("getDeviceState", {
+          connectionStateInfo: { hostSlaveMode: { mode: 0, lock: true } },
+        }),
+      });
+      await flush();
+      const aCount = a.sockets[0].sent.length,
+        bCount = b.sockets[0].sent.length;
+      await expect(a.controller.gotoCoordinates(24, 0)).rejects.toThrow("RA");
+      await expect(a.controller.gotoCoordinates(1, NaN)).rejects.toThrow("RA");
+      expect(a.sockets[0].sent).toHaveLength(aCount);
+      const pending = a.controller.gotoCoordinates(12.5, -30);
+      const packet = CurrentDwarfSchema.WsPacket.decode(
+        a.sockets[0].sent.at(-1) as Uint8Array,
+      );
+      expect(packet.cmd).toBe(11002);
+      const values = CurrentDwarfSchema.ReqGotoDSO.decode(packet.data!);
+      expect(values.ra).toBe(12.5);
+      expect(values.dec).toBe(-30);
+      expect(values.gotoOnly).toBe(true);
+      a.sockets[0].emit("message", {
+        data: wire("gotoEquatorial", { code: 0 }),
+      });
+      await pending;
+      expect(b.sockets[0].sent).toHaveLength(bCount);
+    } finally {
+      a.controller.disconnect();
+      b.controller.disconnect();
+    }
+  });
   test("control request and release are scoped and require reported ownership", async () => {
     const a = harness("a"),
       b = harness("b");
