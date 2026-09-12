@@ -5,6 +5,8 @@ import type { FleetDeviceController } from "@/services/fleet/controller";
 
 function controller() {
   return {
+    getSnapshot: () => ({}),
+    subscribe: () => () => {},
     request: jest.fn().mockResolvedValue({}),
     gotoCoordinates: jest.fn().mockResolvedValue({}),
     capture: jest.fn().mockResolvedValue({}),
@@ -12,6 +14,29 @@ function controller() {
     loadCatalog: jest.fn(),
   };
 }
+
+test("dark-frame warning requires an explicit Continue click on the owning device", async () => {
+  const c = {
+    ...controller(),
+    getSnapshot: () => ({
+      captureWarning: "No matching dark frame was found.",
+    }),
+  };
+  render(
+    <DeviceControls
+      controller={c as unknown as FleetDeviceController}
+      canControl
+    />,
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent("No matching dark frame");
+  expect(c.request).not.toHaveBeenCalled();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Continue despite dark-frame warning" }),
+  );
+  await waitFor(() =>
+    expect(c.request).toHaveBeenCalledWith("continueCapture"),
+  );
+});
 
 test("observer cannot send camera or mount commands", () => {
   const c = controller();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   findCurrentCameraParameter,
   type CurrentCameraCatalog,
@@ -27,6 +27,12 @@ export default function DeviceControls({
   const pending = pendingCount > 0;
   const [error, setError] = useState<string>();
   const [message, setMessage] = useState<string>();
+  const [warning, setWarning] = useState<string>();
+  useEffect(() => {
+    const update = () => setWarning(controller.getSnapshot().captureWarning);
+    update();
+    return controller.subscribe(update);
+  }, [controller]);
   const run = async (action: () => Promise<unknown>, success: string) => {
     setPendingCount((n) => n + 1);
     setError(undefined);
@@ -152,6 +158,22 @@ export default function DeviceControls({
         </label>
       </div>
       <div className={styles.actions}>
+        {warning && (
+          <div role="alert">
+            <p>{warning}</p>
+            <button
+              disabled={disabled}
+              onClick={() =>
+                void run(
+                  () => controller.request("continueCapture"),
+                  "Continue requested; awaiting device progress.",
+                )
+              }
+            >
+              Continue despite dark-frame warning
+            </button>
+          </div>
+        )}
         <button
           disabled={
             disabled ||

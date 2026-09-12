@@ -15,6 +15,7 @@ const settings = {
 function harness(id: string) {
   const controller = new FleetDeviceController(id);
   const client = {
+    subscribe: jest.fn(),
     ready: true,
     session: { state: { generation: 1, ownership: "control" } },
     request: jest.fn().mockResolvedValue({}),
@@ -41,7 +42,7 @@ test("capture uses the originating device and freshly discovered catalog", async
     });
   await a.controller.capture(settings);
   expect(a.controller.loadCatalog).toHaveBeenCalledWith(2);
-  expect(a.client.request).toHaveBeenCalledWith("startTeleCapture", {});
+  expect(a.client.request).toHaveBeenCalledWith("startTeleCapture", {}, 60000);
   expect(b.client.request).not.toHaveBeenCalled();
 });
 test("stop cancels unsent transaction steps and duplicate capture is rejected", async () => {
@@ -65,5 +66,5 @@ test("stop cancels unsent transaction steps and duplicate capture is rejected", 
   resume();
   await expect(capture).rejects.toThrow("previous connection");
   expect(a.client.request).toHaveBeenCalledTimes(1);
-  expect(a.client.request).toHaveBeenCalledWith("stopTeleCapture", {});
+  expect(a.client.request).toHaveBeenCalledWith("stopTeleCapture", {}, 60000);
 });

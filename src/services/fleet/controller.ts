@@ -15,6 +15,10 @@ import {
   type CurrentCameraCatalog,
 } from "dwarfii_api";
 import { normalizeDeviceCameraCatalog as normalizeCurrentCameraCatalog } from "@/services/dwarf/catalog";
+import {
+  requestCaptureCommand,
+  captureWarning,
+} from "@/services/dwarf/captureCommands";
 import { decodeV3DeviceStateTelemetry } from "@/services/dwarf/telemetry";
 import type { V3DeviceTelemetry } from "@/services/dwarf/telemetry";
 import type { FleetRegistration } from "./registry";
@@ -26,6 +30,7 @@ import {
 } from "./activity";
 
 export type FleetRuntime = Readonly<{
+  captureWarning?: string;
   generation?: number;
   model?: DwarfModel;
   connection:
@@ -181,6 +186,7 @@ export class FleetDeviceController {
       error: state.error?.message,
     };
     if (!ready) {
+      update.captureWarning = undefined;
       this.activity = {};
       this.catalogs.clear();
       this.requests.forEach((request) => request.abort());
@@ -189,6 +195,17 @@ export class FleetDeviceController {
       update.frames = undefined;
     }
     if (ready && packet?.known && packet.type !== 0) {
+      if (
+        [11005, 11016, 11050].includes(packet.cmd) &&
+        captureWarning(packet.data.code)
+      )
+        update.captureWarning = captureWarning(packet.data.code);
+      if (
+        packet.type === 2 &&
+        [15208, 15236].includes(packet.cmd) &&
+        [0, 3].includes(packet.data.state ?? 0)
+      )
+        update.captureWarning = undefined;
       update.lastSeen = Date.now();
       if (packet.cmd === 16405) {
         const telemetry = decodeV3DeviceStateTelemetry(packet.rawData);
@@ -227,7 +244,13 @@ export class FleetDeviceController {
     if (operation === "stopTeleCapture" || operation === "stopWideCapture")
       this.captureRevision++;
     try {
-      const result = await client.request(operation, values);
+      const result = await requestCaptureCommand(client, operation, values);
+      if (
+        operation === "continueCapture" ||
+        operation === "stopTeleCapture" ||
+        operation === "stopWideCapture"
+      )
+        this.publish({ captureWarning: undefined });
       if (
         epoch !== this.epoch ||
         client !== this.client ||
