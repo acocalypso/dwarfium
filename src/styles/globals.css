@@ -302,10 +302,10 @@ body {
 
 .sethostmode-dwarf {
     display: flex;
-    justify-content: flex-end; /* Align button to the right */
-    /*justify-content: space-between;*/
-    width: 40rem;
-    float: right !important;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    float: none !important;
     height: fit-content;
     margin-right: 30%;
     margin-top: 0px;
@@ -1340,9 +1340,9 @@ img {
 
 @media (max-width: 1400px) {
     .sethostmode-dwarf {
-        justify-content: flex-end;
-        width: 30rem;
-        margin-right: 5%;
+        justify-content: flex-start;
+        width: 100%;
+        margin-right: 0;
     }
 }
 

@@ -5,6 +5,22 @@ const snapshot = (values: Record<string, unknown>) =>
   CurrentDwarfSchema.ResGetDeviceStateInfo.encode(values).finish();
 
 describe("canonical V3 device-state telemetry", () => {
+  it("rejects invalid Mini CMOS readings and uses valid system temperature", () => {
+    const value = decodeV3DeviceStateTelemetry(
+      snapshot({
+        teleCameraStateInfo: { cmosTemperature: { temperature: -270 } },
+        deviceStateInfo: { temperature: { temperature: 31 } },
+      }),
+    );
+    expect(value?.temperature).toBe(31);
+    expect(
+      decodeV3DeviceStateTelemetry(
+        snapshot({
+          teleCameraStateInfo: { cmosTemperature: { temperature: -270 } },
+        }),
+      )?.temperature,
+    ).toBeUndefined();
+  });
   it("decodes battery, charging, storage and temperature fields", () => {
     const deviceState = [
       26,

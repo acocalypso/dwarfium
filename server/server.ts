@@ -2,8 +2,12 @@
 // use same value as NEXT_PUBLIC_PORT_PROXY_CORS in env.production file
 // use same value as NEXT_PUBLIC_PORT_PROXY_CORS_HTTPS in env.production file
 ////////////////////////////////////////////////////////////////////////
-const NEXT_PUBLIC_PORT_PROXY_CORS = 8860;
-const NEXT_PUBLIC_PORT_PROXY_CORS_HTTPS = 9443;
+const NEXT_PUBLIC_PORT_PROXY_CORS = Number(
+  process.env.DWARFIUM_PROXY_PORT ?? 8860,
+);
+const NEXT_PUBLIC_PORT_PROXY_CORS_HTTPS = Number(
+  process.env.DWARFIUM_PROXY_HTTPS_PORT ?? 9443,
+);
 const USE_CLIENT_CERTIFICATE = false; // if need set USE_CLIENT_CERTIFICATE to true
 
 import express from "express";
@@ -148,81 +152,59 @@ wss.on("connection", (clientSocket, req) => {
 
     console.log(`WebSocket proxying to target: ${targetUrl}`);
 
-    const targetSocket = new WebSocket(targetUrl);
+    const targetSocket = new WebSocket(targetUrl, { handshakeTimeout: 10000 });
+    const pendingFrames: { data: Buffer; binary: boolean }[] = [];
+    let pendingBytes = 0;
 
     targetSocket.on("open", () => {
-      console.log(`Connected to target: ${targetUrl}`);
+      if (clientSocket.readyState !== WebSocket.OPEN) {
+        targetSocket.close();
+        return;
+      }
 
       // If a token is provided, send it to the target server
       if (authToken) {
-        console.log(`Sending auth token: ${authToken}`);
         targetSocket.send(authToken);
       }
+      for (const frame of pendingFrames)
+        targetSocket.send(frame.data, { binary: frame.binary });
+      pendingFrames.length = 0;
+      pendingBytes = 0;
     });
 
-    clientSocket.on("message", (data) => {
+    clientSocket.on("message", (data: Buffer, isBinary: boolean) => {
       if (targetSocket.readyState === WebSocket.OPEN) {
-        // Check if the received message is a ping
-        if (data instanceof Buffer) {
-          const message = data.toString();
-          try {
-            // Try parsing as JSON
-            const jsonData = JSON.parse(message);
-            console.log("Received JSON data:", jsonData);
-
-            // Send JSON as a string
-            targetSocket.send(JSON.stringify(jsonData));
-          } catch (error) {
-            if (message === "ping") {
-              // If it's a ping, resend it as text
-              console.log("Received ping as binary, sending as text...");
-              targetSocket.send("ping"); // Send ping back as text
-            } else {
-              // Otherwise, forward it as is
-              console.log(
-                "Forwarding message from client to target:",
-                data.toString("hex"),
-              );
-              targetSocket.send(data); // Forward data to client
-            }
-          }
+        targetSocket.send(data, { binary: isBinary });
+      } else if (targetSocket.readyState === WebSocket.CONNECTING) {
+        // The browser is already open while the telescope handshake is pending.
+        // Retain the initial status request in order, with a bounded queue.
+        if (
+          pendingFrames.length >= 64 ||
+          pendingBytes + data.length > 1024 * 1024
+        ) {
+          pendingFrames.length = 0;
+          pendingBytes = 0;
+          clientSocket.close(1013, "Upstream queue limit reached");
+          targetSocket.terminate();
+          return;
         }
+        pendingFrames.push({ data, binary: isBinary });
+        pendingBytes += data.length;
       }
     });
 
-    targetSocket.on("message", (data) => {
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        if (data instanceof Buffer) {
-          const message = data.toString();
-
-          try {
-            // Try parsing as JSON
-            const jsonData = JSON.parse(message);
-            console.log("Received JSON data:", jsonData);
-
-            // Send JSON as a string
-            clientSocket.send(JSON.stringify(jsonData));
-          } catch (error) {
-            if (message === "pong") {
-              // If it's a pong, resend it as text
-              console.log("Received pong as binary, sending as text...");
-              clientSocket.send("pong"); // Send pong back as text
-            } else {
-              // Otherwise, forward it as is
-              console.log(
-                "Forwarding message from target to client:",
-                data.toString("hex"),
-              );
-              clientSocket.send(data); // Forward data to client
-            }
-          }
-        }
-      }
+    targetSocket.on("message", (data: Buffer, isBinary: boolean) => {
+      if (clientSocket.readyState === WebSocket.OPEN)
+        clientSocket.send(data, { binary: isBinary });
     });
 
     clientSocket.on("close", () => {
+      pendingFrames.length = 0;
+      pendingBytes = 0;
       try {
-        targetSocket.close(1000, "Normal closure");
+        if (targetSocket.readyState === WebSocket.CONNECTING)
+          targetSocket.terminate();
+        else targetSocket.close(1000, "Normal closure");
       } catch (error: any) {
         console.error("Proxy WebSocket Close error:", error);
       }

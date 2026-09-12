@@ -11,6 +11,38 @@ const notification = (cmd: number, state: number) =>
     data: { state },
   }) as CurrentPacket;
 
+test("explicitly empty subsystem states report idle, not unknown", () => {
+  const empty = { exclusiveState: {} };
+  const evidence = reduceActivity({}, {
+    ...notification(16405, 0),
+    type: 3,
+    data: {
+      teleCameraStateInfo: empty,
+      wideCameraStateInfo: empty,
+      focusMotorStateInfo: empty,
+      motionMotorStateInfo: empty,
+    },
+  } as CurrentPacket);
+  expect(summarizeActivity(evidence)).toBe("idle");
+});
+
+test("nested one-click target tracking is working, not unknown", () => {
+  const evidence = reduceActivity({}, {
+    ...notification(16405, 0),
+    type: 3,
+    data: {
+      motionMotorStateInfo: {
+        exclusiveState: {
+          oneClickGotoState: {
+            astroTrackingState: { state: 1, targetName: "Vega" },
+          },
+        },
+      },
+    },
+  } as CurrentPacket);
+  expect(summarizeActivity(evidence)).toBe("tracking");
+});
+
 test("wide idle cannot clear tele capture; focus cannot erase capture", () => {
   let evidence = reduceActivity({}, notification(15208, 1));
   evidence = reduceActivity(evidence, notification(15236, 0));

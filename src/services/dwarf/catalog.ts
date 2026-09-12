@@ -55,13 +55,8 @@ export function normalizeDeviceCameraCatalog(
         const generalParams = entry.generalParams.map((value) => {
           const parameter = record(value);
           const namespace = decodeCurrentParamId(parameter.paramId);
-          const reportedCamera = Number(
-            (BigInt(String(parameter.paramId)) >> BigInt(44)) & BigInt(15),
-          );
           if (
-            // Current hardware also encodes the camera in bits 44..47.
-            // Retain the original ID: changing its bits changes the command.
-            (reportedCamera || namespace.cameraId) !== camera.cameraId ||
+            namespace.cameraId !== camera.cameraId ||
             namespace.shootingMode !== modeId
           ) {
             throw new CurrentProtocolError(

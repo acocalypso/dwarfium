@@ -15,6 +15,7 @@ import {
   type V3DeviceTelemetry,
 } from "./telemetry";
 import { requestCaptureCommand } from "./captureCommands";
+import { createSessionProfile } from "./sessionProfile";
 
 type MessageCallback = (sender: string, packet: CurrentPacket) => void;
 type Callback = {
@@ -223,7 +224,9 @@ export class WebSocketHandler {
     )
       return true;
     if (!this.client) {
-      this.client = new CurrentWebSocketHandler(this.profile);
+      this.client = new CurrentWebSocketHandler(
+        createSessionProfile(this.profile),
+      );
       this.client.subscribe((state, packet) => {
         const ready = state.session.phase === "ready";
         if (!ready) this.queue = [];

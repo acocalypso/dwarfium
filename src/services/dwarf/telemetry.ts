@@ -34,11 +34,20 @@ export function decodeV3DeviceStateTelemetry(
     const systemTemperature = state?.temperature;
 
     const batteryPercentage = battery ? (battery.percentage ?? 0) : undefined;
-    const temperature =
-      cmos?.temperature ??
-      (systemTemperature && (systemTemperature.code ?? 0) === 0
+    const validTemperature = (value: unknown): value is number =>
+      typeof value === "number" &&
+      Number.isFinite(value) &&
+      value >= -100 &&
+      value <= 150;
+    const fallbackTemperature =
+      systemTemperature && (systemTemperature.code ?? 0) === 0
         ? (systemTemperature.temperature ?? 0)
-        : undefined);
+        : undefined;
+    const temperature = validTemperature(cmos?.temperature)
+      ? cmos.temperature
+      : validTemperature(fallbackTemperature)
+        ? fallbackTemperature
+        : undefined;
 
     const telemetry: V3DeviceTelemetry = {
       batteryPercentage:

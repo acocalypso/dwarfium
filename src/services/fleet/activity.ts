@@ -5,14 +5,24 @@ export type ActivityEvidence = Readonly<{
   wide?: number;
   focus?: number;
   goto?: number;
+  tracking?: number;
 }>;
 
 function stateOf(value: any): number | undefined {
   if (!value || typeof value !== "object") return undefined;
   const state = value.state ?? 0;
-  return Number.isInteger(state) && state >= 0 && state <= 3
+  return Number.isInteger(state) && state >= 0 && state <= 4
     ? state
     : undefined;
+}
+
+function exclusiveState(subsystem: any, keys: string[]): number | undefined {
+  const exclusive = subsystem?.exclusiveState;
+  if (!exclusive || typeof exclusive !== "object") return undefined;
+  if (Object.keys(exclusive).length === 0) return 0;
+  for (const key of keys)
+    if (exclusive[key] !== undefined) return stateOf(exclusive[key]);
+  return undefined;
 }
 
 /** Snapshot absence is unknown. Separate channels prevent wide-idle clearing tele capture. */
@@ -24,20 +34,30 @@ export function reduceActivity(
     return previous;
   if (packet.cmd === 16405) {
     const value = packet.data;
-    const focus = value.focusMotorStateInfo?.exclusiveState;
+    const motion = value.motionMotorStateInfo;
+    const nested = motion?.exclusiveState?.oneClickGotoState;
+    const mount = nested ? { exclusiveState: nested } : motion;
     return Object.freeze({
-      tele: stateOf(value.teleCameraStateInfo?.exclusiveState?.captureRawState),
-      wide: stateOf(value.wideCameraStateInfo?.exclusiveState?.captureRawState),
-      focus: stateOf(
-        focus?.astroAutoFocusState ??
-          focus?.normalAutoFocusState ??
-          focus?.astroAutoFocusFastState ??
-          focus?.areaAutoFocusState,
-      ),
-      goto: stateOf(value.motionMotorStateInfo?.exclusiveState?.astroGotoState),
+      tele: exclusiveState(value.teleCameraStateInfo, ["captureRawState"]),
+      wide: exclusiveState(value.wideCameraStateInfo, ["captureRawState"]),
+      focus: exclusiveState(value.focusMotorStateInfo, [
+        "astroAutoFocusState",
+        "normalAutoFocusState",
+        "astroAutoFocusFastState",
+        "areaAutoFocusState",
+      ]),
+      goto: exclusiveState(mount, ["astroGotoState", "calibrationState"]),
+      tracking: exclusiveState(mount, ["astroTrackingState"]),
     });
   }
   if (packet.type !== 2) return previous;
+  if (packet.cmd === 15233) {
+    return Object.freeze({
+      ...previous,
+      goto: stateOf(packet.data.astroGotoState),
+      tracking: stateOf(packet.data.astroTrackingState),
+    });
+  }
   const field = (
     {
       15208: "tele",
@@ -54,11 +74,12 @@ export function reduceActivity(
 }
 
 export function summarizeActivity(evidence: ActivityEvidence) {
-  const active = (value?: number) => value === 1 || value === 2;
+  const active = (value?: number) => value === 1 || value === 2 || value === 4;
   if (active(evidence.tele) || active(evidence.wide))
     return "capturing" as const;
   if (active(evidence.focus)) return "focusing" as const;
   if (active(evidence.goto)) return "slewing" as const;
+  if (active(evidence.tracking)) return "tracking" as const;
   // Partial idle evidence is not proof that all other subsystems are idle.
   if (
     [evidence.tele, evidence.wide, evidence.focus, evidence.goto].every(

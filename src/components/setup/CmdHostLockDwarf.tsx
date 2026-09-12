@@ -94,12 +94,14 @@ export default function CmdHostLockDwarf() {
       return (
         <div>
           <button
+            type="button"
             onClick={handleClickLockHost}
             className="btn btn-more02 me-3 right-align"
           >
             {isHostLock ? t("cUnlockHost") : t("cLockHost")}
           </button>
           <button
+            type="button"
             onClick={handleClickDisconnect}
             className="btn btn-more02 me-3 right-align"
           >
@@ -115,6 +117,7 @@ export default function CmdHostLockDwarf() {
       return (
         <div>
           <button
+            type="button"
             onClick={handleClickDisconnect}
             className="btn btn-more02 me-3 right-align"
           >

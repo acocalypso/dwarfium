@@ -9,6 +9,7 @@ import { offlineRuntime, validFleetHost } from "@/services/fleet/controller";
 import type { FleetRegistration } from "@/services/fleet/registry";
 import type { DwarfModel } from "@/services/dwarf/deviceProfile";
 import styles from "@/styles/fleet.module.css";
+import { disconnectSetupDevice } from "@/services/fleet/handoff";
 
 const modelNames = {
   dwarf2: "DWARF 2",
@@ -68,6 +69,10 @@ function FleetCard({
   const [details, setDetails] = useState(true);
   const [changingControl, setChangingControl] = useState(false);
   const [workspace, setWorkspace] = useState(true);
+  const setupConnected = Boolean(
+    legacy.socketIPDwarf?.isConnected() &&
+    legacy.IPDwarf === device.lastKnownHost,
+  );
   const busy = ["connected", "connecting", "reconnecting"].includes(
     runtime.connection,
   );
@@ -80,14 +85,8 @@ function FleetCard({
     }
   };
   const connect = () =>
-    act(() => {
-      if (
-        legacy.socketIPDwarf?.isConnected() &&
-        legacy.IPDwarf === device.lastKnownHost
-      )
-        throw new Error(
-          "This telescope is open in the legacy workspace. Disconnect it there before connecting in Fleet.",
-        );
+    act(async () => {
+      if (setupConnected) await disconnectSetupDevice(legacy);
       return manager.connect(device.id, getProxyUrl(legacy));
     });
   if (compact) {
@@ -236,8 +235,13 @@ function FleetCard({
         <button
           onClick={() => (busy ? controller.disconnect() : void connect())}
         >
-          {busy ? "Disconnect" : "Connect"}
+          {busy ? "Disconnect" : setupConnected ? "Use in Fleet" : "Connect"}
         </button>
+        {setupConnected && (
+          <button onClick={() => void act(() => disconnectSetupDevice(legacy))}>
+            Disconnect Setup connection
+          </button>
+        )}
         <button onClick={() => setDetails(!details)} aria-expanded={details}>
           Device details
         </button>

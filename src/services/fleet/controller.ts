@@ -22,6 +22,7 @@ import {
 import { decodeV3DeviceStateTelemetry } from "@/services/dwarf/telemetry";
 import type { V3DeviceTelemetry } from "@/services/dwarf/telemetry";
 import type { FleetRegistration } from "./registry";
+import { createSessionProfile } from "@/services/dwarf/sessionProfile";
 import type { DwarfModel } from "@/services/dwarf/deviceProfile";
 import {
   reduceActivity,
@@ -35,7 +36,8 @@ export type FleetRuntime = Readonly<{
   model?: DwarfModel;
   connection:
     "disconnected" | "connecting" | "connected" | "reconnecting" | "error";
-  activity: "unknown" | "idle" | "capturing" | "focusing" | "slewing";
+  activity:
+    "unknown" | "idle" | "capturing" | "focusing" | "slewing" | "tracking";
   ownership: "unknown" | "control" | "slave";
   telemetry: Readonly<V3DeviceTelemetry>;
   frames?: number;
@@ -138,7 +140,7 @@ export class FleetDeviceController {
       this.publish({ model: info.profile.model });
       this.profile = getCurrentProfile(info.hardwareId);
       const client = new CurrentWebSocketHandler(
-        getCurrentProfile(info.hardwareId),
+        createSessionProfile(getCurrentProfile(info.hardwareId)),
         this.options,
       );
       this.client = client;
