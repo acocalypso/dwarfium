@@ -1,6 +1,7 @@
 /// <reference types="web-bluetooth" />
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
+import WifiProfiles from "./WifiProfiles";
 import { useEffect, useContext, useState, useRef } from "react";
 import type { ChangeEvent } from "react";
 import type { FormEvent } from "react";
@@ -1083,7 +1084,8 @@ export default function ConnectDwarfSTA() {
   return (
     <div>
       {!onTauri && (
-        <>
+        <details className="dw-proxy-settings">
+          <summary>Advanced: proxy and video services</summary>
           <h2>{t("pServerStatus")}</h2>
 
           <p>{t("pServerStatusContent")}</p>
@@ -1343,7 +1345,7 @@ export default function ConnectDwarfSTA() {
             </div>
           )}
           <hr />
-        </>
+        </details>
       )}
       <h2>{t("pEnableSTA", { DwarfType: connectionCtx.typeNameDwarf })}</h2>
 
@@ -1433,6 +1435,14 @@ export default function ConnectDwarfSTA() {
             />
           </div>
         </div>
+        <WifiProfiles
+          ssid={Wifi_SSID}
+          password={Wifi_PWD}
+          onUse={(ssid, password) => {
+            setWifi_SSID(ssid);
+            setWifi_PWD(password);
+          }}
+        />
         {useDirectBluetooth == true &&
           !isProxyOnServer &&
           stateBluetoothProxy &&

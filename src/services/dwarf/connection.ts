@@ -14,6 +14,7 @@ import {
   decodeV3DeviceStateTelemetry,
   type V3DeviceTelemetry,
 } from "./telemetry";
+import { requestCaptureCommand } from "./captureCommands";
 
 type MessageCallback = (sender: string, packet: CurrentPacket) => void;
 type Callback = {
@@ -146,7 +147,7 @@ export class WebSocketHandler {
         "This connection does not have control of the DWARF. Request control in Connection setup.",
       );
     }
-    return this.client.request(operation, values);
+    return requestCaptureCommand(this.client, operation, values);
   }
 
   async prepare(

@@ -5,7 +5,6 @@ import { allowedWideGains } from "@/lib/data_wide_utils";
 import {
   decodeCurrentParamId,
   getCurrentProfile,
-  normalizeCurrentCameraCatalog,
   normalizeCurrentParamId,
   parseCurrentJsonLossless,
   sameCurrentParameterAcrossModes,
@@ -13,6 +12,7 @@ import {
   type CurrentCatalogParameter,
   type CurrentSession,
 } from "./api";
+import { normalizeDeviceCameraCatalog as normalizeCurrentCameraCatalog } from "./catalog";
 
 export type V3ParameterValue = {
   paramId: string;
@@ -29,65 +29,98 @@ type CatalogScope = {
   session?: CurrentSession;
   generation?: number;
 };
-let currentScope: CatalogScope | undefined;
-let unsubscribeSession: (() => void) | undefined;
-let cacheEpoch = 0;
-const rawCatalogs = new Map<number, unknown>();
-const normalizedCatalogs = new Map<number, CurrentCameraCatalog>();
-const pendingCatalogs = new Map<number, Promise<unknown>>();
-const authoritativeValues = new Map<string, V3ParameterValue>();
-const runtimeNamespaces = new Map<number, number>();
+class CameraParameterCache {
+  scope?: CatalogScope;
+  unsubscribe?: () => void;
+  epoch = 0;
+  raw = new Map<number, unknown>();
+  normalized = new Map<number, CurrentCameraCatalog>();
+  pending = new Map<number, Promise<unknown>>();
+  namespaces = new Map<number, number>();
+  requests = new Set<AbortController>();
 
-/** Bind to SDK session lifecycle; root connection disposal may call this too. */
-export function resetV3CameraParameterCache(): void {
-  unsubscribeSession?.();
-  unsubscribeSession = undefined;
-  currentScope = undefined;
-  cacheEpoch += 1;
-  rawCatalogs.clear();
-  normalizedCatalogs.clear();
-  pendingCatalogs.clear();
-  authoritativeValues.clear();
-  runtimeNamespaces.clear();
+  reset() {
+    this.unsubscribe?.();
+    this.unsubscribe = undefined;
+    this.scope = undefined;
+    this.epoch++;
+    this.requests.forEach((request) => request.abort());
+    this.requests.clear();
+    this.raw.clear();
+    this.normalized.clear();
+    this.pending.clear();
+    this.namespaces.clear();
+  }
+}
+
+// React context objects change between renders. The owned socket is the stable
+// key; IP alone cannot distinguish a new connection from an old one.
+const caches = new WeakMap<object, CameraParameterCache>();
+function cacheFor(
+  context?: ConnectionContextType,
+): CameraParameterCache | undefined {
+  if (!context) return undefined;
+  const key = context.socketIPDwarf ?? context;
+  let cache = caches.get(key);
+  if (!cache) {
+    cache = new CameraParameterCache();
+    caches.set(key, cache);
+  }
+  return cache;
+}
+
+/** Reset only the originating device. No implicit global/selected cache. */
+export function resetV3CameraParameterCache(
+  context?: ConnectionContextType,
+): void {
+  cacheFor(context)?.reset();
 }
 
 function synchronizeScope(
   ip: string,
   connectionCtx: ConnectionContextType,
-): void {
+): CameraParameterCache {
+  const cache = cacheFor(connectionCtx)!;
   const socket = connectionCtx.socketIPDwarf;
   const session: CurrentSession | undefined = socket?.session;
   const next = { ip, socket, session, generation: session?.state.generation };
   if (
-    currentScope?.ip === next.ip &&
-    currentScope?.socket === next.socket &&
-    currentScope?.session === next.session &&
-    currentScope?.generation === next.generation
+    cache.scope?.ip === next.ip &&
+    cache.scope?.socket === next.socket &&
+    cache.scope?.session === next.session &&
+    cache.scope?.generation === next.generation
   )
-    return;
-  resetV3CameraParameterCache();
-  currentScope = next;
+    return cache;
+  cache.reset();
+  cache.scope = next;
   if (session) {
-    unsubscribeSession = session.subscribe((state) => {
+    cache.unsubscribe = session.subscribe((state) => {
       if (
         state.generation !== next.generation ||
         state.phase === "disconnected"
       )
-        resetV3CameraParameterCache();
+        cache.reset();
     });
   }
+  return cache;
 }
 
-function checkCurrentScope(connectionCtx?: ConnectionContextType): void {
-  if (connectionCtx?.IPDwarf)
-    synchronizeScope(connectionCtx.IPDwarf, connectionCtx);
-  else if (connectionCtx) resetV3CameraParameterCache();
+function checkCurrentScope(
+  connectionCtx?: ConnectionContextType,
+): CameraParameterCache | undefined {
+  if (!connectionCtx) return undefined;
+  const cache = connectionCtx.IPDwarf
+    ? synchronizeScope(connectionCtx.IPDwarf, connectionCtx)
+    : cacheFor(connectionCtx)!;
+  const scope = cache.scope;
   if (
-    currentScope?.session &&
-    (currentScope.session.state.generation !== currentScope.generation ||
-      currentScope.session.state.phase === "disconnected")
+    !connectionCtx.IPDwarf ||
+    (scope?.session &&
+      (scope.session.state.generation !== scope.generation ||
+        scope.session.state.phase === "disconnected"))
   )
-    resetV3CameraParameterCache();
+    cache.reset();
+  return cache;
 }
 
 /** Display current reported labels, never model-static explanatory values. */
@@ -125,11 +158,18 @@ export async function loadV3CameraParameterCatalog(
   connectionCtx: ConnectionContextType,
   modeId: number,
 ): Promise<unknown> {
-  synchronizeScope(ip, connectionCtx);
-  const pending = pendingCatalogs.get(modeId);
+  if (connectionCtx.IPDwarf && connectionCtx.IPDwarf !== ip)
+    throw new Error(
+      "Camera discovery address does not match this device context.",
+    );
+  const cache = synchronizeScope(ip, connectionCtx);
+  const pending = cache.pending.get(modeId);
   if (pending) return pending;
-  const epoch = cacheEpoch;
-  const scope = currentScope;
+  const epoch = cache.epoch;
+  const scope = cache.scope;
+  const abort = new AbortController();
+  cache.requests.add(abort);
+  const timeout = setTimeout(() => abort.abort(), 10_000);
   const request = (async () => {
     const target = "http://" + ip + ":8082/shootingMode/getParamAndSetting";
     const response = await fetch(
@@ -138,6 +178,7 @@ export async function loadV3CameraParameterCatalog(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modeId }),
+        signal: abort.signal,
       },
     );
     if (!response.ok)
@@ -147,21 +188,23 @@ export async function loadV3CameraParameterCatalog(
     const raw = parseCurrentJsonLossless(await response.text());
     const normalized = normalizeCurrentCameraCatalog(raw, modeId);
     if (
-      epoch !== cacheEpoch ||
-      scope !== currentScope ||
+      epoch !== cache.epoch ||
+      scope !== cache.scope ||
       scope?.session?.state.generation !== scope?.generation
     ) {
       throw new Error("Camera discovery belongs to a previous connection.");
     }
-    rawCatalogs.set(modeId, raw);
-    normalizedCatalogs.set(modeId, normalized);
+    cache.raw.set(modeId, raw);
+    cache.normalized.set(modeId, normalized);
     return raw;
   })();
-  pendingCatalogs.set(modeId, request);
+  cache.pending.set(modeId, request);
   try {
     return await request;
   } finally {
-    if (pendingCatalogs.get(modeId) === request) pendingCatalogs.delete(modeId);
+    clearTimeout(timeout);
+    cache.requests.delete(abort);
+    if (cache.pending.get(modeId) === request) cache.pending.delete(modeId);
   }
 }
 
@@ -176,15 +219,13 @@ export function loadV3AstroParameterCatalog(
 export function getV3AstroParameterCatalog(
   connectionCtx?: ConnectionContextType,
 ): unknown {
-  checkCurrentScope(connectionCtx);
-  return rawCatalogs.get(2);
+  return checkCurrentScope(connectionCtx)?.raw.get(2);
 }
 export function getV3NormalizedCameraCatalog(
   modeId = 2,
   connectionCtx?: ConnectionContextType,
 ): CurrentCameraCatalog | undefined {
-  checkCurrentScope(connectionCtx);
-  return normalizedCatalogs.get(modeId);
+  return checkCurrentScope(connectionCtx)?.normalized.get(modeId);
 }
 export function getV3CameraParameterOptions(
   cameraId: number,
@@ -200,8 +241,7 @@ export function getV3ActiveParameterNamespace(
   cameraId: number,
   connectionCtx?: ConnectionContextType,
 ): number | undefined {
-  checkCurrentScope(connectionCtx);
-  return runtimeNamespaces.get(cameraId);
+  return checkCurrentScope(connectionCtx)?.namespaces.get(cameraId);
 }
 
 /** Only for canonical 15264 payloads: omitted non-optional proto3 value means zero. */
@@ -223,7 +263,6 @@ export function ingestV3ParameterNotification(
       value,
       mode: data.mode ?? 0,
     };
-    authoritativeValues.set(result.paramId, result);
     return result;
   } catch {
     return undefined;
@@ -234,7 +273,7 @@ export function applyAuthoritativeCameraParam(
   connectionCtx: ConnectionContextType,
   parameter: V3ParameterValue,
 ): void {
-  checkCurrentScope(connectionCtx);
+  const cache = checkCurrentScope(connectionCtx)!;
   if (!connectionCtx.IPDwarf || !Number.isSafeInteger(parameter.value)) return;
   const decoded = decodeCurrentParamId(parameter.paramId);
   if (![0, 1].includes(decoded.cameraId) || decoded.reserved !== "0") return;
@@ -242,7 +281,7 @@ export function applyAuthoritativeCameraParam(
     // Runtime namespaces are accepted only when reported and matching a
     // discovered astronomy parameter for the same camera/category/index.
     if (![11, 13].includes(decoded.shootingMode)) return;
-    const known = normalizedCatalogs
+    const known = cache.normalized
       .get(2)
       ?.cameras.find((camera) => camera.cameraId === decoded.cameraId)
       ?.parameters.some(
@@ -251,7 +290,7 @@ export function applyAuthoritativeCameraParam(
           sameCurrentParameterAcrossModes(entry.paramId, parameter.paramId),
       );
     if (!known) return;
-    runtimeNamespaces.set(decoded.cameraId, decoded.shootingMode);
+    cache.namespaces.set(decoded.cameraId, decoded.shootingMode);
   }
   if (decoded.category === 1 && decoded.paramIndex === 1) {
     connectionCtx.setAstroSettings((current) => ({

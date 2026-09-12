@@ -4,6 +4,7 @@ import Modal from "react-bootstrap/Modal";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { startCurrentAstroCapture } from "@/services/dwarf";
+import { captureWarning } from "@/services/dwarf/captureCommands";
 import ImagingAstroSettings from "@/components/imaging/ImagingAstroSettings";
 import RecordingButton from "@/components/icons/RecordingButton";
 import RecordButton from "@/components/icons/RecordButton";
@@ -35,6 +36,7 @@ export default function ImagingMenu(props: PropType) {
   const [focusRequested, setFocusRequested] = useState(false);
   const [focusStatus, setFocusStatus] = useState("");
   const [captureStatus, setCaptureStatus] = useState("");
+  const [warning, setWarning] = useState<string>();
   const [captureBusy, setCaptureBusy] = useState(false);
   const capturePending = useRef(false);
   const stopCapturePending = useRef(false);
@@ -77,6 +79,7 @@ export default function ImagingMenu(props: PropType) {
       setFocusRequested(false);
       setAstroFocus(false);
       setCaptureBusy(false);
+      setWarning(undefined);
     };
     reset();
     setFocusStatus("");
@@ -85,8 +88,18 @@ export default function ImagingMenu(props: PropType) {
       void socket.prepare(
         undefined,
         sender,
-        [15278, 15280, 15257, 15208, 15236],
+        [15278, 15280, 15257, 15208, 15236, 11005, 11016, 11050],
         (_sender, packet) => {
+          if (
+            mounted &&
+            packet.known &&
+            packet.type === 1 &&
+            [11005, 11016, 11050].includes(packet.cmd)
+          ) {
+            const warning = captureWarning(packet.data.code);
+            if (warning) setWarning(warning);
+            return;
+          }
           if (!mounted || !packet.known || ![2, 3].includes(packet.type))
             return;
           const data = packet.data;
@@ -129,8 +142,10 @@ export default function ImagingMenu(props: PropType) {
                 saveImagingSessionDb("startTime", String(startTime));
               }
             } else if (state === 2) setCaptureStatus("Capture is stopping.");
-            else if (state === 3 || state === 0)
+            else if (state === 3 || state === 0) {
+              setWarning(undefined);
               setCaptureStatus("Capture stopped.");
+            }
           }
         },
         (ready) => {
@@ -997,6 +1012,35 @@ export default function ImagingMenu(props: PropType) {
         <li className={styles.focusFeedback} aria-live="polite">
           {captureStatus}
         </li>
+      )}
+      {warning && (
+        <div role="alert">
+          <p>{warning}</p>
+          <button
+            type="button"
+            disabled={captureBusy || !connectionCtx.connectionStatus}
+            onClick={async () => {
+              setCaptureBusy(true);
+              try {
+                if (!connectionCtx.socketIPDwarf)
+                  throw new Error("Reconnect before continuing capture.");
+                await connectionCtx.socketIPDwarf.request("continueCapture");
+                setWarning(undefined);
+                setCaptureStatus(
+                  "Continue requested; awaiting device progress.",
+                );
+              } catch (error) {
+                setCaptureStatus(
+                  error instanceof Error ? error.message : String(error),
+                );
+              } finally {
+                setCaptureBusy(false);
+              }
+            }}
+          >
+            Continue despite dark-frame warning
+          </button>
+        </div>
       )}
       <CameraAddOn showModal={showModal} setShowModal={setShowModal} />
     </ul>

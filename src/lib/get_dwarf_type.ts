@@ -9,8 +9,12 @@ import { getProxyUrl, getIpServerMTX } from "@/lib/get_proxy_url";
 export async function findDeviceInfo(
   IPDwarf: string | undefined,
   connectionCtx: ConnectionContextType,
+  onError?: (message: string) => void,
 ): Promise<[number | undefined, string | undefined]> {
   if (!IPDwarf) return [undefined, undefined];
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  let stage: "network" | "identity" = "network";
   try {
     const requestAddr = deviceInfo(IPDwarf);
     const response = await fetch(
@@ -20,11 +24,15 @@ export async function findDeviceInfo(
         headers: { "Content-Type": "application/json" },
         body: "{}",
         redirect: "follow",
+        signal: controller.signal,
       },
     );
     if (!response.ok) {
-      throw new Error(`DWARF device discovery failed (${response.status})`);
+      throw new Error(
+        `The discovery proxy returned HTTP ${response.status}. Check the proxy service and telescope address ${IPDwarf}.`,
+      );
     }
+    stage = "identity";
     const device = normalizeCurrentDeviceInfo(await response.text());
     // Retain the optional discovery-name suffix for existing UI identifiers;
     // it is never evidence of the model, firmware, or protocol identity.
@@ -32,11 +40,18 @@ export async function findDeviceInfo(
       device.deviceName?.replace(/^DWARF(?:_?MINI|_?II|3)?_/i, "") || undefined;
     return [device.hardwareId, uid];
   } catch (error) {
-    console.error(
-      "DWARF device discovery unavailable:",
-      error instanceof Error ? error.message : String(error),
-    );
+    const detail = controller.signal.aborted
+      ? `Device identification timed out for ${IPDwarf}. Check that the proxy can reach the telescope on port 8082.`
+      : stage === "network" && error instanceof TypeError
+        ? `Cannot reach device discovery for ${IPDwarf}. Check that the configured proxy is running and reachable; BLE discovery alone does not establish a network connection.`
+        : error instanceof Error
+          ? error.message
+          : "Device identification failed.";
+    console.error("DWARF device discovery unavailable:", detail);
+    onError?.(detail);
     return [undefined, undefined];
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

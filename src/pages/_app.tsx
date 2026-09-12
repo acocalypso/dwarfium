@@ -26,6 +26,7 @@ import { useEffect } from "react";
 
 import Layout from "@/components/shared/Layout";
 import { ConnectionContextProvider } from "@/stores/ConnectionContext";
+import { FleetProvider } from "@/stores/FleetContext";
 
 export default function App({ Component, pageProps }: AppProps) {
   const { store, props } = wrapper.useWrappedStore(pageProps);
@@ -59,12 +60,14 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   return (
-    <ConnectionContextProvider>
-      <Provider store={store}>
-        <Layout>
-          <Component {...props.pageProps} />
-        </Layout>
-      </Provider>
-    </ConnectionContextProvider>
+    <FleetProvider>
+      <ConnectionContextProvider>
+        <Provider store={store}>
+          <Layout>
+            <Component {...props.pageProps} />
+          </Layout>
+        </Provider>
+      </ConnectionContextProvider>
+    </FleetProvider>
   );
 }

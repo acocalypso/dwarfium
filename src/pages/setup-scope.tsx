@@ -1,97 +1,109 @@
-import { useTranslation } from "react-i18next";
-import i18n from "@/i18n";
-import { useEffect, useState } from "react";
+import Head from "next/head";
+import Link from "next/link";
+import type { ReactNode } from "react";
 import ConnectDwarfSTA from "@/components/setup/ConnectDwarfSTA";
 import ConnectDwarf from "@/components/setup/ConnectDwarf";
 import ConnectStellarium from "@/components/setup/ConnectStellarium";
 import SetLocation from "@/components/setup/SetLocation";
+import RegisterConfiguredDevice from "@/components/fleet/RegisterConfiguredDevice";
+import styles from "@/styles/connection-setup.module.css";
+
+function SetupSection({
+  number,
+  title,
+  description,
+  children,
+  open = false,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+  open?: boolean;
+}) {
+  return (
+    <details className={styles.section} open={open}>
+      <summary>
+        <span className={styles.number}>{number}</span>
+        <span>
+          <strong>{title}</strong>
+          <small>{description}</small>
+        </span>
+        <span className={styles.chevron} aria-hidden="true">
+          ⌄
+        </span>
+      </summary>
+      <div className={`dw-setup-section-body ${styles.body}`}>{children}</div>
+    </details>
+  );
+}
 
 export default function SetupScope() {
-  const { t } = useTranslation();
-  // eslint-disable-next-line no-unused-vars
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
-
-  useEffect(() => {
-    const storedLanguage = localStorage.getItem("language");
-    if (storedLanguage) {
-      setSelectedLanguage(storedLanguage);
-      i18n.changeLanguage(storedLanguage);
-    }
-  }, []);
-
   return (
-    <div className="dw-page dw-setup-page">
-      <header className="dw-page-header">
+    <div className={styles.page}>
+      <Head>
+        <title>Connection setup · Dwarfium</title>
+      </Head>
+      <header className={styles.heading}>
         <div>
-          <p className="dw-eyebrow">Device</p>
-          <h1>Connection setup</h1>
-          <p>
-            Prepare your observing location, network and telescope integrations.
-            Your saved values remain available between sessions.
-          </p>
+          <span className={styles.eyebrow}>DEVICE SETUP</span>
+          <h1>Connect your telescope</h1>
+          <p>Set up a new DWARF or reconnect one already on your network.</p>
         </div>
+        <Link href="/fleet/" className={styles.back}>
+          ← Fleet overview
+        </Link>
       </header>
-
-      <div className="dw-setup-intro">
-        <section className="dw-panel">
-          <div className="dw-panel-header">
-            <div>
-              <h2>{t("pFirstSteps")}</h2>
-              <p>{t("pFirstStepsContent")}.</p>
-            </div>
-            <span className="dw-panel-icon">
-              <i className="bi bi-signpost-split" aria-hidden="true" />
-            </span>
-          </div>
-        </section>
-        <section className="dw-panel">
-          <div className="dw-panel-header">
-            <div>
-              <h2>Recommended order</h2>
-              <p>Location → network → DWARF → Stellarium</p>
-            </div>
-          </div>
-        </section>
+      <aside className={styles.tip}>
+        <i className="bi bi-info-circle" aria-hidden="true" />
+        <p>
+          For a new telescope, update its firmware in the DWARFLAB app first.
+          Already configured? Enter its address in{" "}
+          <strong>Connect to DWARF</strong> below.
+        </p>
+      </aside>
+      <div className={styles.stack}>
+        <SetupSection
+          number="01"
+          title="Observing location"
+          description="Latitude, longitude and time zone for accurate pointing."
+        >
+          <SetLocation />
+        </SetupSection>
+        <SetupSection
+          number="02"
+          title="Bluetooth & Wi-Fi"
+          description="Find a telescope, configure its network or reuse a saved Wi-Fi profile."
+        >
+          <ConnectDwarfSTA />
+        </SetupSection>
+        <SetupSection
+          number="03"
+          title="Connect to DWARF"
+          description="Connect using the discovered address or enter an IP address."
+          open
+        >
+          <ConnectDwarf />
+        </SetupSection>
+        <SetupSection
+          number="04"
+          title="Save to your Fleet"
+          description="Give the configured telescope a name and keep it in your overview."
+        >
+          <RegisterConfiguredDevice />
+        </SetupSection>
+        <SetupSection
+          number="+"
+          title="Stellarium"
+          description="Optional · connect a planetarium for target selection."
+        >
+          <ConnectStellarium showInfoTxt={true} />
+        </SetupSection>
       </div>
-
-      <div className="dw-setup-stack">
-        <details className="dw-setup-section" open>
-          <summary>
-            <i className="bi bi-geo-alt" aria-hidden="true" />
-            Observing location
-          </summary>
-          <div className="dw-setup-section-body">
-            <SetLocation />
-          </div>
-        </details>
-        <details className="dw-setup-section">
-          <summary>
-            <i className="bi bi-wifi" aria-hidden="true" />
-            DWARF network mode
-          </summary>
-          <div className="dw-setup-section-body">
-            <ConnectDwarfSTA />
-          </div>
-        </details>
-        <details className="dw-setup-section" open>
-          <summary>
-            <i className="bi bi-router" aria-hidden="true" />
-            Connect your DWARF
-          </summary>
-          <div className="dw-setup-section-body">
-            <ConnectDwarf />
-          </div>
-        </details>
-        <details className="dw-setup-section">
-          <summary>
-            <i className="bi bi-stars" aria-hidden="true" />
-            Stellarium integration
-          </summary>
-          <div className="dw-setup-section-body">
-            <ConnectStellarium showInfoTxt={true} />
-          </div>
-        </details>
-      </div>
+      <p className={styles.footnote}>
+        Location is shared by this installation. Wi-Fi profiles stay on this
+        browser or app; they are not synced.
+      </p>
     </div>
   );
 }

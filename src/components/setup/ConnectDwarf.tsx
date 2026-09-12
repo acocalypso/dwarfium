@@ -283,26 +283,27 @@ export default function ConnectDwarf() {
       <form onSubmit={checkConnection} className="mb-3 dw-connection-form">
         <div className="row mb-3">
           <div className="col-lg-2 col-md-3 text-lg-end">
-            <label htmlFor="notify" className="form-label">
-              {connectionCtx.typeNameDwarf}
-            </label>
+            <span className="form-label">Device model</span>
           </div>
           <div className="col">
             <button
               type="button"
-              className="btn-refresh"
+              className="btn btn-outline-secondary"
               onClick={handleReset}
               aria-label={t("pResetDwarfType")}
             >
-              <i className="fa fa-refresh" aria-hidden="true"></i>
+              <i className="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>
+              Redetect model
             </button>{" "}
-            {t("pResetDwarfType")}
+            <span className="small ms-2">
+              {connectionCtx.typeNameDwarf || "Not identified yet"}
+            </span>
           </div>
         </div>
         <div className="row mb-3">
           <div className="col-lg-2 col-md-3 text-lg-end">
             <label htmlFor="notify" className="form-label">
-              Specific ID
+              Private client ID
             </label>
           </div>
           <div className="col">
@@ -315,13 +316,14 @@ export default function ConnectDwarf() {
             />{" "}
             <button
               type="button"
-              className="btn-refresh"
+              className="btn btn-outline-secondary ms-2"
               onClick={handleRefresh}
               aria-label={t("pConnectPrivateID")}
             >
-              <i className="fa fa-refresh" aria-hidden="true"></i>
-            </button>{" "}
-            {t("pConnectPrivateID")}
+              <i className="bi bi-arrow-clockwise me-2" aria-hidden="true"></i>
+              Regenerate ID
+            </button>
+            <p className="small mt-2 mb-0">{t("pConnectPrivateID")}</p>
           </div>
         </div>
         <div className="row mb-3">
@@ -330,7 +332,7 @@ export default function ConnectDwarf() {
               {t("pIPAddress")}
             </label>
           </div>
-          <div className="col-lg-2 col-md-10  d-flex align-items-center">
+          <div className="col-lg-6 col-md-9 d-flex align-items-center">
             <input
               className="form-control"
               id="ip"
