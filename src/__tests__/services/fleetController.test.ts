@@ -86,6 +86,72 @@ async function ready(h: ReturnType<typeof harness>, battery: number) {
 }
 
 describe("Fleet controller isolation through real SDK sessions", () => {
+  test("page facades borrow a single connection and never close either Fleet device", async () => {
+    const a = harness("a"),
+      b = harness("b");
+    try {
+      await ready(a, 21);
+      await ready(b, 87);
+      const page = a.controller.getWorkspaceSocket()!;
+      expect(page).toBe(a.controller.getWorkspaceSocket());
+      expect(await page.run()).toBe(true);
+      expect(a.sockets).toHaveLength(1);
+      await page.cleanup(true);
+      expect(a.sockets[0].closed).toBe(false);
+      expect(b.sockets[0].closed).toBe(false);
+      const bCount = b.sockets[0].sent.length;
+      const pending = page.request("getDeviceState");
+      a.sockets[0].emit("message", {
+        data: wire("getDeviceState", {
+          deviceStateInfo: { batteryInfo: { percentage: 22 } },
+        }),
+      });
+      await pending;
+      expect(b.sockets[0].sent).toHaveLength(bCount);
+      expect(a.controller.getSnapshot().telemetry.batteryPercentage).toBe(22);
+      a.controller.releaseWorkspaceSocket();
+      await expect(page.request("getDeviceState")).rejects.toThrow();
+      expect(a.sockets[0].closed).toBe(false);
+      expect(a.controller.getWorkspaceSocket()).not.toBe(page);
+    } finally {
+      a.controller.disconnect();
+      b.controller.disconnect();
+    }
+  });
+
+  test("temperature notifications survive partial snapshots and reset on disconnect", async () => {
+    const h = harness("a");
+    try {
+      await ready(h, 21);
+      h.sockets[0].emit("message", {
+        data: CurrentDwarfSchema.WsPacket.encode({
+          majorVersion: 1,
+          minorVersion: 20,
+          deviceId: 4,
+          moduleId: 9,
+          cmd: 15243,
+          type: 2,
+          data: encodeCurrentMessage("notify.Temperature", { temperature: 34 }),
+        }).finish(),
+      });
+      await flush();
+      expect(h.controller.getSnapshot().telemetry.temperature).toBe(34);
+      h.sockets[0].emit("message", {
+        data: wire("getDeviceState", {
+          deviceStateInfo: { batteryInfo: { percentage: 25 } },
+        }),
+      });
+      await flush();
+      expect(h.controller.getSnapshot().telemetry).toMatchObject({
+        temperature: 34,
+        batteryPercentage: 25,
+      });
+      h.controller.disconnect();
+      expect(h.controller.getSnapshot().telemetry).toEqual({});
+    } finally {
+      h.controller.disconnect();
+    }
+  });
   afterEach(() => jest.restoreAllMocks());
   test.each([1, 2, 4, 8])(
     "%i simultaneous controllers retain independent state",

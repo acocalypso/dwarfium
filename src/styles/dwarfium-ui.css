@@ -4161,3 +4161,69 @@ body.light-theme .dw-statusbar {
     transition-duration: 0.01ms !important;
   }
 }
+/* Fleet status remains visible and wraps without concealing telemetry. */
+.dw-fleet-statusbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #293c4b;
+  background: #090f16;
+  font-size: 12px;
+}
+.dw-fleet-statusbar > label {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  font-size: 12px;
+}
+.dw-fleet-statusbar select {
+  max-width: 100%;
+  min-height: 36px;
+  background: #101923;
+  color: #eef4f6;
+  border: 1px solid #293c4b;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.dw-fleet-status-list {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.dw-fleet-status-device {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 1px solid #293c4b;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #101923;
+  color: #a8bdcd;
+  font-size: 12px;
+  line-height: 1.4;
+  min-width: 0;
+}
+.dw-fleet-status-device strong {
+  color: #eef4f6;
+  font-size: 13px;
+}
+.dw-fleet-status-device[aria-pressed="true"] {
+  border-color: #27cbb0;
+}
+@media (max-width: 600px) {
+  .dw-fleet-statusbar {
+    padding: 10px;
+  }
+  .dw-fleet-statusbar > label,
+  .dw-fleet-status-list {
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .dw-fleet-status-device {
+    flex: 1 1 220px;
+  }
+}

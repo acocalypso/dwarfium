@@ -7,9 +7,10 @@ import Footer from "@/components/shared/Footer";
 import Themesettings from "@/components/shared/Themesettings";
 import StatusBar from "@/components/shared/StatusBar";
 import { useRouter } from "next/router";
+import FleetStatusBar from "@/components/fleet/FleetStatusBar";
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const isFleet = useRouter().pathname === "/fleet";
+  const pathname = useRouter().pathname;
   const { deviceError, setDeviceError } = useContext(ConnectionContext);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -51,9 +52,10 @@ export default function Layout({ children }: { children: ReactNode }) {
           <span>Dwarfium</span>
           <span className="dw-mobile-header-spacer" aria-hidden="true" />
         </header>
-        {!isFleet && <StatusBar />}
+        <FleetStatusBar />
+        {pathname === "/setup-scope" && <StatusBar />}
         <main id="main-content" className="dw-main" tabIndex={-1}>
-          {!isFleet && deviceError && (
+          {pathname === "/setup-scope" && deviceError && (
             <div
               role="alert"
               className="alert alert-warning d-flex align-items-center justify-content-between gap-3 m-3"

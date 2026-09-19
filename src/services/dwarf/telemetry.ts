@@ -1,4 +1,48 @@
-import { CurrentDwarfSchema } from "dwarfii_api";
+import {
+  CurrentDwarfSchema,
+  currentMessageType,
+  type CurrentPacket,
+} from "dwarfii_api";
+
+const validTemperature = (value: unknown): value is number =>
+  typeof value === "number" &&
+  Number.isFinite(value) &&
+  value >= -100 &&
+  value <= 150;
+
+/** Snapshots and unsolicited notifications are equally authoritative. */
+export function decodeV3TelemetryPacket(
+  packet: CurrentPacket,
+): Partial<V3DeviceTelemetry> | undefined {
+  if (!packet.known || packet.type === 0) return undefined;
+  if (packet.cmd === 16405) {
+    const snapshot = decodeV3DeviceStateTelemetry(packet.rawData);
+    return (
+      snapshot &&
+      Object.fromEntries(
+        Object.entries(snapshot).filter(([, value]) => value !== undefined),
+      )
+    );
+  }
+  if (packet.type !== 2 && packet.type !== 3) return undefined;
+  if (packet.cmd === 15243 || packet.cmd === 15292) {
+    const type = currentMessageType(
+      packet.cmd === 15243 ? "notify.Temperature" : "notify.CmosTemperature",
+    );
+    try {
+      const data = type.toObject(type.decode(packet.rawData), {
+        defaults: false,
+      });
+      const temperature =
+        packet.cmd === 15243 ? (data.temperature ?? 0) : data.temperature;
+      if ((data.code ?? 0) === 0 && validTemperature(temperature))
+        return { temperature };
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
 
 export type V3DeviceTelemetry = {
   batteryPercentage?: number;
@@ -34,11 +78,6 @@ export function decodeV3DeviceStateTelemetry(
     const systemTemperature = state?.temperature;
 
     const batteryPercentage = battery ? (battery.percentage ?? 0) : undefined;
-    const validTemperature = (value: unknown): value is number =>
-      typeof value === "number" &&
-      Number.isFinite(value) &&
-      value >= -100 &&
-      value <= 150;
     const fallbackTemperature =
       systemTemperature && (systemTemperature.code ?? 0) === 0
         ? (systemTemperature.temperature ?? 0)

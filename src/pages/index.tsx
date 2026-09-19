@@ -69,7 +69,7 @@ export default function Home() {
             </Link>
             <Link
               className="dw-button"
-              href={connected ? "/cameras" : "/setup-scope"}
+              href={connected ? "/cameras" : "/fleet"}
             >
               <i
                 className={`bi ${connected ? "bi-camera-video" : "bi-router"}`}
@@ -129,8 +129,8 @@ export default function Home() {
                 </strong>
               </div>
               <div className="dw-metric-card">
-                <span>UID</span>
-                <strong>{connection.typeUidDwarf || "—"}</strong>
+                <span>Address</span>
+                <strong>{connection.IPDwarf || "—"}</strong>
               </div>
             </div>
           </section>

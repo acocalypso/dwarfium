@@ -19,10 +19,11 @@ import {
   requestCaptureCommand,
   captureWarning,
 } from "@/services/dwarf/captureCommands";
-import { decodeV3DeviceStateTelemetry } from "@/services/dwarf/telemetry";
 import type { V3DeviceTelemetry } from "@/services/dwarf/telemetry";
 import type { FleetRegistration } from "./registry";
 import { createSessionProfile } from "@/services/dwarf/sessionProfile";
+import { WebSocketHandler } from "@/services/dwarf/connection";
+import { decodeV3TelemetryPacket } from "@/services/dwarf/telemetry";
 import type { DwarfModel } from "@/services/dwarf/deviceProfile";
 import {
   reduceActivity,
@@ -81,6 +82,20 @@ export class FleetDeviceController {
   private profile?: CurrentProfile;
   private capturePending = false;
   private captureRevision = 0;
+  private workspaceSocket?: WebSocketHandler;
+  private polling = false;
+
+  getWorkspaceSocket() {
+    if (!this.client || !this.host) return undefined;
+    return (this.workspaceSocket ??= WebSocketHandler.fromFleet(
+      this.client,
+      this.host,
+    ));
+  }
+  releaseWorkspaceSocket() {
+    this.workspaceSocket?.disposeBorrowed();
+    this.workspaceSocket = undefined;
+  }
 
   constructor(
     readonly id: string,
@@ -155,10 +170,17 @@ export class FleetDeviceController {
         wsURL(host, proxyAddress, proxy?.startsWith("https:") ?? false),
       );
       this.poll = setInterval(() => {
-        if (client.ready)
-          void client.request("getDeviceState").catch((error) => {
-            if (epoch === this.epoch) this.publish({ error: String(error) });
-          });
+        if (client.ready && !this.polling) {
+          this.polling = true;
+          void client
+            .request("getDeviceState")
+            .catch((error) => {
+              if (epoch === this.epoch) this.publish({ error: String(error) });
+            })
+            .finally(() => {
+              if (epoch === this.epoch) this.polling = false;
+            });
+        }
       }, 10_000);
     } catch (error) {
       if (epoch === this.epoch)
@@ -209,10 +231,12 @@ export class FleetDeviceController {
       )
         update.captureWarning = undefined;
       update.lastSeen = Date.now();
-      if (packet.cmd === 16405) {
-        const telemetry = decodeV3DeviceStateTelemetry(packet.rawData);
-        if (telemetry) update.telemetry = Object.freeze(telemetry);
-      }
+      const telemetry = decodeV3TelemetryPacket(packet);
+      if (telemetry)
+        update.telemetry = Object.freeze({
+          ...this.snapshot.telemetry,
+          ...telemetry,
+        });
       this.activity = reduceActivity(this.activity, packet);
       update.activity = summarizeActivity(this.activity);
       if (packet.type === 2 && [15209, 15237].includes(packet.cmd))
@@ -385,6 +409,9 @@ export class FleetDeviceController {
   }
 
   disconnect() {
+    this.workspaceSocket?.disposeBorrowed();
+    this.workspaceSocket = undefined;
+    this.polling = false;
     this.profile = undefined;
     this.activity = {};
     this.epoch++;

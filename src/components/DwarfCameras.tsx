@@ -27,6 +27,10 @@ import imgTeleCameraSrc from "../../public/images/dwarflab_camera.png";
 import imgWideCameraSrc from "../../public/images/dwarfII.png";
 import { get_error } from "@/lib/dwarf_utils";
 import styles from "@/components/DwarfCameras.module.css";
+import {
+  devicePreviewPath,
+  ensureDevicePreviewPaths,
+} from "@/services/dwarf/previewPaths";
 import { logger } from "@/lib/logger";
 import {
   telephotoCamera,
@@ -62,7 +66,7 @@ export default function DwarfCameras(props: PropType) {
     connectionCtx,
     false,
   );
-  const wideUrl_D3 = `http://${getMediaMTXUrl(connectionCtx)}:8888/dwarf_wide`;
+  const wideUrl_D3 = `http://${getMediaMTXUrl(connectionCtx)}:8888/${devicePreviewPath(IPDwarf, "wide")}`;
   const transformedWideUrl_D3 = getTransfomProxyImageUrl(
     wideUrl_D3,
     proxyUrl,
@@ -77,7 +81,7 @@ export default function DwarfCameras(props: PropType) {
     false,
   );
 
-  const teleUrl_D3 = `http://${getMediaMTXUrl(connectionCtx)}:8888/dwarf_tele`;
+  const teleUrl_D3 = `http://${getMediaMTXUrl(connectionCtx)}:8888/${devicePreviewPath(IPDwarf, "tele")}`;
   const transformedTeleUrl_D3 = getTransfomProxyImageUrl(
     teleUrl_D3,
     proxyUrl,
@@ -224,7 +228,7 @@ export default function DwarfCameras(props: PropType) {
 
     const wideUrl_D3 = `http://${getMediaMTXUrl(
       connectionCtx,
-    )}:8888/dwarf_wide`;
+    )}:8888/${devicePreviewPath(IPDwarf, "wide")}`;
     const transformedWideUrl_D3 = getTransfomProxyImageUrl(
       wideUrl_D3,
       proxyUrl,
@@ -246,7 +250,7 @@ export default function DwarfCameras(props: PropType) {
 
     const teleUrl_D3 = `http://${getMediaMTXUrl(
       connectionCtx,
-    )}:8888/dwarf_tele`;
+    )}:8888/${devicePreviewPath(IPDwarf, "tele")}`;
     const transformedTeleUrl_D3 = getTransfomProxyImageUrl(
       teleUrl_D3,
       proxyUrl,
@@ -529,7 +533,15 @@ export default function DwarfCameras(props: PropType) {
     }
   }
 
-  function turnOnCameraHandler(cameraId: number, connectionCtx) {
+  async function turnOnCameraHandler(cameraId: number, connectionCtx) {
+    try {
+      if (connectionCtx.typeIdDwarf !== 1)
+        await ensureDevicePreviewPaths(connectionCtx);
+      if (!connectionCtx.socketIPDwarf?.isConnected()) return;
+    } catch (error) {
+      setErrorTxt(error instanceof Error ? error.message : String(error));
+      return;
+    }
     if (cameraId === telephotoCamera) {
       // Mount the HLS player immediately. DWARF mini can start the RTSP stream
       // without returning a decoded open-camera acknowledgement, and waiting
@@ -621,6 +633,14 @@ export default function DwarfCameras(props: PropType) {
   async function checkCameraStatusLater() {
     if (connectionCtx.IPDwarf === undefined) {
       return;
+    }
+    if (connectionCtx.typeIdDwarf !== 1) {
+      try {
+        await ensureDevicePreviewPaths(connectionCtx);
+      } catch (error) {
+        setErrorTxt(error instanceof Error ? error.message : String(error));
+        return;
+      }
     }
     console.debug("checkCameraStatusLater");
     // Slave Mode turn on Camera

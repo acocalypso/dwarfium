@@ -10,6 +10,7 @@ import type { FleetRegistration } from "@/services/fleet/registry";
 import type { DwarfModel } from "@/services/dwarf/deviceProfile";
 import styles from "@/styles/fleet.module.css";
 import { disconnectSetupDevice } from "@/services/fleet/handoff";
+import { storageLabel } from "@/components/fleet/FleetStatusBar";
 
 const modelNames = {
   dwarf2: "DWARF 2",
@@ -161,6 +162,9 @@ function FleetCard({
       </dl>
       <div className={styles.telemetry}>
         <span>
+          Storage <strong>{storageLabel(runtime.telemetry)}</strong>
+        </span>
+        <span>
           Battery{" "}
           <strong>
             {runtime.telemetry.batteryPercentage === undefined
@@ -172,7 +176,7 @@ function FleetCard({
           Temperature{" "}
           <strong>
             {runtime.telemetry.temperature === undefined
-              ? "—"
+              ? "Not reported"
               : `${runtime.telemetry.temperature}°C`}
           </strong>
         </span>
@@ -489,7 +493,10 @@ export default function FleetPage() {
             key={device.id}
             device={device}
             compact
-            onOpen={() => setOpenedId(device.id)}
+            onOpen={() => {
+              manager.registry.select(device.id);
+              setOpenedId(device.id);
+            }}
           />
         ))}
       </div>

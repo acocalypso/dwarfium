@@ -2,8 +2,6 @@ import Link from "next/link";
 import { useContext } from "react";
 
 import ConnectDwarfII from "@/components/setup/ConnectDwarfII";
-import { useLoadIntialValues } from "@/hooks/useLoadIntialValues";
-import { useSetupConnection } from "@/hooks/useSetupConnection";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 
 function Metric({
@@ -25,8 +23,6 @@ function Metric({
 }
 
 export default function StatusBar() {
-  useLoadIntialValues();
-  useSetupConnection();
   const connection = useContext(ConnectionContext);
   const connected = connection.connectionStatus === true;
   const telemetryPending = connected ? "Waiting" : "—";

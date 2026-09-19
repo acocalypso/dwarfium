@@ -10,7 +10,7 @@ import { connectionHandler } from "@/lib/connect_utils";
 
 /** Restore user intent once. Only the owned WebSocket session can establish
  * actual DWARF readiness; HTTP reachability is not protocol connectivity. */
-export function useSetupConnection() {
+export function useSetupConnection(restoreDevice = true) {
   const connectionCtx = useContext(ConnectionContext);
   const latestContext = useRef(connectionCtx);
   latestContext.current = connectionCtx;
@@ -19,6 +19,7 @@ export function useSetupConnection() {
   useEffect(() => {
     const ip = connectionCtx.IPDwarf;
     if (
+      !restoreDevice ||
       !ip ||
       connectionCtx.connectionStatus !== true ||
       restoringConnection.current ||
@@ -48,6 +49,7 @@ export function useSetupConnection() {
       fail(error instanceof Error ? error.message : String(error)),
     );
   }, [
+    restoreDevice,
     connectionCtx.IPDwarf,
     connectionCtx.connectionStatus,
     connectionCtx.socketIPDwarf,

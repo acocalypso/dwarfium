@@ -35,6 +35,17 @@ export class WebSocketHandler {
   private useHttps = false;
   private profile?: CurrentProfile;
   private client?: CurrentWebSocketHandler;
+  private borrowed = false;
+  private detach?: () => void;
+
+  /** A page borrows the Fleet transport; it must never reconnect or close it. */
+  static fromFleet(client: CurrentWebSocketHandler, ip: string) {
+    const socket = new WebSocketHandler(ip);
+    socket.borrowed = true;
+    socket.client = client;
+    socket.listen();
+    return socket;
+  }
   private callbacks = new Map<string, Callback>();
   private queue: {
     operation: CurrentCommand;
@@ -55,6 +66,7 @@ export class WebSocketHandler {
     return this.client?.session;
   }
   setProfile(profile: CurrentProfile): void {
+    if (this.borrowed) return;
     if (
       this.profile?.hardwareId !== profile.hardwareId ||
       this.profile?.clientId !== profile.clientId
@@ -72,6 +84,7 @@ export class WebSocketHandler {
     return version === 20;
   }
   async setNewIpDwarf(ip: string): Promise<void> {
+    if (this.borrowed) return;
     if (this.IPDwarf !== ip) {
       this.close();
       this.client = undefined;
@@ -79,6 +92,7 @@ export class WebSocketHandler {
     this.IPDwarf = ip;
   }
   async setProxyUrl(url?: string): Promise<void> {
+    if (this.borrowed) return;
     if (this.proxyURL !== url) {
       this.close();
       this.client = undefined;
@@ -86,6 +100,7 @@ export class WebSocketHandler {
     this.proxyURL = url;
   }
   async setHttpsMode(enabled: boolean): Promise<void> {
+    if (this.borrowed) return;
     if (this.useHttps !== enabled) {
       this.close();
       this.client = undefined;
@@ -216,6 +231,7 @@ export class WebSocketHandler {
   }
 
   async run(): Promise<boolean> {
+    if (this.borrowed) return this.isConnected();
     if (!this.IPDwarf || !this.profile) return false;
     if (
       this.client?.transportOpen ||
@@ -227,40 +243,45 @@ export class WebSocketHandler {
       this.client = new CurrentWebSocketHandler(
         createSessionProfile(this.profile),
       );
-      this.client.subscribe((state, packet) => {
-        const ready = state.session.phase === "ready";
-        if (!ready) this.queue = [];
-        if (ready) {
-          if (this.closeSocketTimer) clearTimeout(this.closeSocketTimer);
-          this.closeTimerHandler();
-          this.readyHandler?.(16405);
-        }
-        for (const callback of Array.from(this.callbacks.values()))
-          callback.state(ready);
-        if (packet) {
-          if (
-            packet.cmd === 16405 &&
-            packet.type !== 0 &&
-            (packet.data.code ?? 0) === 0
-          ) {
-            const telemetry = decodeV3DeviceStateTelemetry(packet.rawData);
-            if (telemetry) this.telemetryHandler?.(telemetry);
-          }
-          for (const [sender, callback] of Array.from(this.callbacks)) {
-            if (
-              callback.commands.some(
-                (command) => command === "*" || Number(command) === packet.cmd,
-              )
-            )
-              callback.message(sender, packet);
-          }
-        }
-        if (state.error) this.reportError(state.error);
-        if (ready) void this.flush();
-      });
+      this.listen();
     }
     this.client.connect(wsURL(this.IPDwarf, this.proxyURL, this.useHttps));
     return true;
+  }
+
+  private listen() {
+    this.detach?.();
+    this.detach = this.client?.subscribe((state, packet) => {
+      const ready = state.session.phase === "ready";
+      if (!ready) this.queue = [];
+      if (ready) {
+        if (this.closeSocketTimer) clearTimeout(this.closeSocketTimer);
+        this.closeTimerHandler();
+        this.readyHandler?.(16405);
+      }
+      for (const callback of Array.from(this.callbacks.values()))
+        callback.state(ready);
+      if (packet) {
+        if (
+          packet.cmd === 16405 &&
+          packet.type !== 0 &&
+          (packet.data.code ?? 0) === 0
+        ) {
+          const telemetry = decodeV3DeviceStateTelemetry(packet.rawData);
+          if (telemetry) this.telemetryHandler?.(telemetry);
+        }
+        for (const [sender, callback] of Array.from(this.callbacks)) {
+          if (
+            callback.commands.some(
+              (command) => command === "*" || Number(command) === packet.cmd,
+            )
+          )
+            callback.message(sender, packet);
+        }
+      }
+      if (state.error) this.reportError(state.error);
+      if (ready) void this.flush();
+    });
   }
 
   private async flush(): Promise<void> {
@@ -294,6 +315,7 @@ export class WebSocketHandler {
     else this.callbacks.clear();
   }
   startTelemetryPolling(intervalMs = 10_000): void {
+    if (this.borrowed) return;
     this.stopTelemetryPolling();
     this.polling = setInterval(() => {
       if (this.isConnected())
@@ -310,8 +332,15 @@ export class WebSocketHandler {
     this.stopTelemetryPolling();
     if (this.closeSocketTimer) clearTimeout(this.closeSocketTimer);
     this.queue = [];
-    this.client?.close();
+    if (!this.borrowed) this.client?.close();
     this.callbacks.clear();
+  }
+  disposeBorrowed() {
+    if (!this.borrowed) return;
+    this.close();
+    this.detach?.();
+    this.detach = undefined;
+    this.client = undefined;
   }
   async cleanup(_forceStop = false): Promise<void> {
     this.close();

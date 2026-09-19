@@ -9,6 +9,7 @@ import { ConnectionContext } from "@/stores/ConnectionContext";
 import { saveIPDwarfDB, saveIPConnectDB } from "@/db/db_utils";
 
 import { connectionHandler } from "@/lib/connect_utils";
+import { useFleetHostGuard } from "@/stores/FleetContext";
 
 const DwarfClientID_original = "0000DAF2-0000-1000-8000-00805F9B34FB";
 const DwarfClientID_base = "0000DAF2-0000-1000-8000-00805F9B35";
@@ -20,6 +21,7 @@ import {
 } from "@/services/dwarf";
 
 export default function ConnectDwarf() {
+  const fleetOwnsHost = useFleetHostGuard();
   let connectionCtx = useContext(ConnectionContext);
   const [currentDwarfClientID, setCurrentDwarfClientID] =
     useState(DwarfClientID); // Store initial DwarfClientID
@@ -79,6 +81,13 @@ export default function ConnectDwarf() {
     const formData = new FormData(e.currentTarget);
     const formIP = formData.get("ip");
     let IPDwarf = formIP?.toString();
+    if (fleetOwnsHost(IPDwarf)) {
+      setErrorTxt(
+        "Already connected in Fleet. This telescope is now selected; open Dashboard or Camera.",
+      );
+      connectionCtx.setConnectionStatus(false);
+      return;
+    }
 
     if (IPDwarf == undefined) {
       return;
