@@ -6,7 +6,6 @@
     "scripts": [
       "./server/server.js",
       "./node_modules/express/**/*",
-      "./node_modules/node-fetch/**/*",
       "./node_modules/cors/**/*"
     ]
   },
@@ -82,12 +81,11 @@
     "joystick-controller": "1.0.15",
     "lucide-react": "^0.479.0",
     "lunarphase-js": "^2.0.3",
-    "next": "^16.3.3",
+    "next": "^16.3.5",
     "next-redux-wrapper": "^8.1.0",
-    "node-fetch": "^3.3.2",
     "node-forge": "^1.3.1",
     "papaparse": "^5.4.1",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.8",
     "react": "18.2.0",
     "react-bootstrap": "^2.7.4",
     "react-chartjs-2": "^5.2.0",
@@ -104,26 +102,28 @@
     "rss-parser": "^3.13.0",
     "suncalc": "^1.9.0",
     "tsx": "^4.19.2",
+    "undici": "^7.29.1",
     "unzipper": "^0.12.3",
     "utif": "^3.1.0",
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "16.3.5",
     "@tauri-apps/cli": "^2.11.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",
     "@types/papaparse": "^5.3.7",
-    "@typescript-eslint/eslint-plugin": "^8.68.0",
-    "@typescript-eslint/parser": "^8.68.0",
+    "@typescript-eslint/eslint-plugin": "^8.70.0",
+    "@typescript-eslint/parser": "^8.70.0",
     "@yao-pkg/pkg": "^6.22.0",
-    "eslint": "^9.39.5",
-    "eslint-config-next": "16.3.3",
+    "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-testing-library": "^7.16.2",
-    "globals": "^17.11.0",
-    "jest": "30.5.0",
-    "jest-environment-jsdom": "30.5.0",
+    "globals": "^17.12.0",
+    "jest": "30.5.2",
+    "jest-environment-jsdom": "30.5.2",
     "typescript": "^5.0.4"
   },
   "description": "![GitHub issues](https://img.shields.io/github/issues/stevejcl/dwarfii-stellarium-goto)\r ![GitHub last commit](https://img.shields.io/github/last-commit/stevejcl/dwarfii-stellarium-goto)\r ![GitHub](https://img.shields.io/github/license/stevejcl/dwarfii-stellarium-goto)\r ![downloads](https://img.shields.io/github/downloads/stevejcl/dwarfii-stellarium-goto/total.svg)\r [![Discord](https://dcbadge.vercel.app/api/server/5vFWbsXDfv)](https://discord.gg/5vFWbsXDfv)\r ![Repobeats](https://repobeats.axiom.co/api/embed/14963aa4fc5307591a6e387817c1dedf75d7e8f9.svg \"Repobeats analytics image\")",
@@ -132,9 +132,20 @@
   "author": "",
   "license": "ISC",
   "overrides": {
-    "glob": "10.5.0",
+    "glob": "13.0.6",
+    "jsdom": "29.1.1",
     "postcss": "8.5.26",
     "rimraf": "5.0.7",
     "tar": "7.5.22"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true,
+    "canvas@3.2.3": true,
+    "fsevents@2.3.3": true,
+    "unrs-resolver@1.12.2": true,
+    "core-js": false,
+    "protobufjs": false
   }
 }

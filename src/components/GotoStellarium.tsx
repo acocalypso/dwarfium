@@ -1,5 +1,3 @@
-/* eslint react/no-unescaped-entities: 0 */
-
 import { useContext, useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useTranslation } from "react-i18next";

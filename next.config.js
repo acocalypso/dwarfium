@@ -18,5 +18,8 @@ if (
   process.env.NEXT_PUBLIC_URL_PROXY_CORS.startsWith("http")
 ) {
   nextConfig.output = "export";
+  // Static desktop/standalone builds use the packaged proxy server. Exclude
+  // Next API routes from this target so the export contains only UI pages.
+  nextConfig.pageExtensions = ["tsx", "jsx"];
 }
 module.exports = nextConfig;

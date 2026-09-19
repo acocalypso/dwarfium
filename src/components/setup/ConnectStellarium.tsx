@@ -1,4 +1,3 @@
-/* eslint react/no-unescaped-entities: 0 */
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { useEffect, useContext, useState, useRef } from "react";

@@ -31,6 +31,7 @@ function DeviceStatus({
     <button
       type="button"
       className="dw-fleet-status-device"
+      aria-label={`${device.alias} ${runtime.connection} · ${runtime.activity}`}
       aria-pressed={selected}
       onClick={() => manager.registry.select(device.id)}
     >

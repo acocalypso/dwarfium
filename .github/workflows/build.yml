@@ -71,6 +71,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
+          cache: false
 
       - name: Install dependencies
         run: npm ci
@@ -105,25 +106,28 @@ jobs:
     needs: [checks, standalone]
     runs-on: ubuntu-24.04
     permissions:
+      actions: read
       contents: write
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: v${{ needs.checks.outputs.version }}
     steps:
       - name: Download standalone archives
-        uses: actions/download-artifact@v8
-        with:
-          pattern: standalone-*
-          path: artifacts
-          merge-multiple: true
+        shell: bash
+        run: gh run download "$GITHUB_RUN_ID" --pattern 'standalone-*' --dir artifacts
 
       - name: Create or update standalone release
         shell: bash
         run: |
+          mapfile -d '' archives < <(find artifacts -type f -print0)
+          if [[ ${#archives[@]} -eq 0 ]]; then
+            echo "No standalone archives were downloaded." >&2
+            exit 1
+          fi
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" artifacts/* --clobber --repo "$GITHUB_REPOSITORY"
+            gh release upload "$RELEASE_TAG" "${archives[@]}" --clobber --repo "$GITHUB_REPOSITORY"
           else
-            gh release create "$RELEASE_TAG" artifacts/* \
+            gh release create "$RELEASE_TAG" "${archives[@]}" \
               --generate-notes \
               --title "$RELEASE_TAG" \
               --repo "$GITHUB_REPOSITORY"
@@ -170,6 +174,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26.0"
+          cache: false
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable

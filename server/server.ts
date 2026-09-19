@@ -14,11 +14,12 @@ import express from "express";
 const WebSocket = require("ws");
 const http = require("http");
 const https = require("https");
-import fetch from "node-fetch";
 import cors from "cors";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+import { Readable } from "stream";
+import { Agent, fetch, type RequestInit } from "undici";
 import {
   buildBleCommandArguments,
   getBleDeviceNames,
@@ -126,19 +127,14 @@ const httpsServer = httpsOptions
   ? https.createServer(httpsOptions, app)
   : false;
 
-// Function to determine the correct agent dynamically
-function getAgentForUrl(url: string) {
-  const targetUrl = new URL(url);
-  if (targetUrl.protocol === "https:" && httpsOptions) {
-    return new https.Agent({
-      ca: httpsOptions.ca, // Use the CA certificate
-      rejectUnauthorized: false,
-    });
-  } else if (targetUrl.protocol === "http:") {
-    return new http.Agent(); // Use a regular HTTP agent for HTTP requests
-  }
-  return undefined;
-}
+const httpsDispatcher = httpsOptions
+  ? new Agent({
+      connect: {
+        ca: httpsOptions.ca,
+        rejectUnauthorized: false,
+      },
+    })
+  : undefined;
 
 // WebSocket Server
 const wss = new WebSocket.Server({ noServer: true });
@@ -555,9 +551,8 @@ app.all("*", async (req, res) => {
     console.log("target: ", lastTarget);
     const urlLastTarget = new URL(target);
     console.log("target port: ", urlLastTarget.port);
-
-    // Assign the correct agent based on `lastTarget`
-    const agent = getAgentForUrl(lastTarget);
+    const dispatcher =
+      urlLastTarget.protocol === "https:" ? httpsDispatcher : undefined;
 
     // Prepare headers, removing problematic ones
     const filteredHeaders = Object.fromEntries(
@@ -588,21 +583,14 @@ app.all("*", async (req, res) => {
       sanitizedHeaders["Content-Type"] = "application/json";
     }
 
-    interface FetchOptions {
-      method: string;
-      headers: { [key: string]: string };
-      body?: string;
-      signal?: AbortSignal; // Ensure signal is part of the type
-    }
-
-    const fetchOptions: FetchOptions = {
+    const fetchOptions: RequestInit = {
       // The outbound request owns its timeout. An incoming request's signal can
       // be cancelled as soon as its body finishes in packaged Node runtimes.
       // That must not abort the independent request to the telescope.
       signal: controller.signal,
       method: req.method ?? "GET", // Fallback to "GET" if req.method is undefined
       headers: sanitizedHeaders,
-      ...(agent ? { agent } : {}), // Add `agent` only when using HTTPS
+      ...(dispatcher ? { dispatcher } : {}),
     };
     console.log(fetchOptions.signal);
     console.log(fetchOptions);
@@ -633,7 +621,9 @@ app.all("*", async (req, res) => {
     // Handle multipart streaming (if applicable)
     if (typeof contentType === "string" && contentType.includes("multipart")) {
       if (response.body) {
-        return response.body.pipe(res); // Stream response directly
+        return Readable.from(
+          response.body as unknown as AsyncIterable<Uint8Array>,
+        ).pipe(res);
       } else {
         // Handle the case where response.body is null or undefined
         return res
