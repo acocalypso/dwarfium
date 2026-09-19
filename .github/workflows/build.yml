@@ -114,7 +114,7 @@ jobs:
     steps:
       - name: Download standalone archives
         shell: bash
-        run: gh run download "$GITHUB_RUN_ID" --pattern 'standalone-*' --dir artifacts
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --pattern 'standalone-*' --dir artifacts
 
       - name: Create or update standalone release
         shell: bash
