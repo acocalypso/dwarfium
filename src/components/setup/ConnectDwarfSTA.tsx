@@ -679,9 +679,7 @@ export default function ConnectDwarfSTA() {
           }
 
           connectionCtx.setUseDirectBluetoothServer(
-            sameProxyServer
-              ? statusBluetoothServer
-              : statusBluetoothServer && !statusBluetoothProxy,
+            statusBluetoothServer && !statusBluetoothProxy,
           );
         }
       } catch (error: unknown) {
@@ -953,6 +951,17 @@ export default function ConnectDwarfSTA() {
         redirect: "follow",
       });
 
+      if (response.status === 401) {
+        const result = await response.json().catch(() => null);
+        console.error("runExecutable: device rejected the BLE setup", result);
+        setConnecting(false);
+        setConnectionStatus(false);
+        setErrorTxt(
+          "Device found, but setup failed. Check the Bluetooth and Wi-Fi passwords.",
+        );
+        return;
+      }
+
       // Check if the response has data
       if (response.ok) {
         console.log(`runExecutable: status ${response.status}`);
@@ -1039,11 +1048,6 @@ export default function ConnectDwarfSTA() {
           }
           setConnecting(false);
           setErrorTxt("More than one device found, Select one");
-        } else if (response.ok && response.status === 401) {
-          console.log(`runExecutable: device Found but error`);
-          setConnecting(false);
-          setConnectionStatus(false);
-          setErrorTxt("Device Found with Error, check Password and Retry ...");
         } else {
           console.error(`runExecutable: ${JSON.stringify(response)}`);
           setConnecting(false);
@@ -1468,10 +1472,12 @@ export default function ConnectDwarfSTA() {
         {useDirectBluetooth == true && (
           <button
             id="btnDirect"
+            type="button"
             className="btn btn-more02 me-6"
+            disabled={connecting}
             onClick={(e) => {
-              runExecutable();
-              e.preventDefault(); // Prevents any unintended form submission
+              e.preventDefault();
+              void runExecutable();
             }}
           >
             <i className="icon-bluetooth" />
