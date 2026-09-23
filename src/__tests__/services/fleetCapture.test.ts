@@ -1,8 +1,8 @@
-jest.mock("dwarfii_api", () => ({
-  ...jest.requireActual("dwarfii_api"),
-  executeCurrentCapture: jest.fn(),
+jest.mock("@/services/dwarf/captureRuntime", () => ({
+  executeCurrentCaptureWithRuntime: jest.fn(),
 }));
-import { executeCurrentCapture, getCurrentProfile } from "dwarfii_api";
+import { getCurrentProfile } from "dwarfii_api";
+import { executeCurrentCaptureWithRuntime } from "@/services/dwarf/captureRuntime";
 import { FleetDeviceController } from "@/services/fleet/controller";
 
 const settings = {
@@ -32,14 +32,16 @@ test("capture uses the originating device and freshly discovered catalog", async
   const a = harness("a"),
     b = harness("b");
   jest
-    .mocked(executeCurrentCapture)
-    .mockImplementationOnce(async (transport, profile, catalog, received) => {
-      expect(profile.hardwareId).toBe(4);
-      expect(catalog.modeId).toBe(2);
-      expect(received).toEqual(settings);
-      await transport.request("startTeleCapture", {});
-      return {} as any;
-    });
+    .mocked(executeCurrentCaptureWithRuntime)
+    .mockImplementationOnce(
+      async (_client, transport, profile, catalog, received) => {
+        expect(profile.hardwareId).toBe(4);
+        expect(catalog.modeId).toBe(2);
+        expect(received).toEqual(settings);
+        await transport.request("startTeleCapture", {});
+        return {} as any;
+      },
+    );
   await a.controller.capture(settings);
   expect(a.controller.loadCatalog).toHaveBeenCalledWith(2);
   expect(a.client.request).toHaveBeenCalledWith("startTeleCapture", {}, 60000);
@@ -52,8 +54,8 @@ test("stop cancels unsent transaction steps and duplicate capture is rejected", 
     resume = resolve;
   });
   jest
-    .mocked(executeCurrentCapture)
-    .mockImplementationOnce(async (transport) => {
+    .mocked(executeCurrentCaptureWithRuntime)
+    .mockImplementationOnce(async (_client, transport) => {
       await gate;
       await transport.request("startTeleCapture", {});
       return {} as any;

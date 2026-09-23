@@ -5,7 +5,6 @@ import {
   parseCurrentJsonLossless,
   wsURL,
   deviceInfo,
-  executeCurrentCapture,
   type CurrentCaptureSettings,
   type CurrentProfile,
   type CurrentCommand,
@@ -15,6 +14,7 @@ import {
   type CurrentCameraCatalog,
 } from "dwarfii_api";
 import { normalizeDeviceCameraCatalog as normalizeCurrentCameraCatalog } from "@/services/dwarf/catalog";
+import { executeCurrentCaptureWithRuntime } from "@/services/dwarf/captureRuntime";
 import {
   requestCaptureCommand,
   captureWarning,
@@ -343,7 +343,14 @@ export class FleetDeviceController {
           return this.request(operation, values);
         },
       };
-      return await executeCurrentCapture(transport, profile, catalog, settings);
+      return await executeCurrentCaptureWithRuntime(
+        client,
+        transport,
+        profile,
+        catalog,
+        settings,
+        () => this.loadCatalog(2),
+      );
     } finally {
       this.capturePending = false;
     }

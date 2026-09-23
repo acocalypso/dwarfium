@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const unzipper = require("unzipper");
+const { pipeline } = require("stream/promises");
 
 const DIST_DIR = path.resolve("dist");
 const DEPLOY_DIR = path.resolve("Dwarfium");
@@ -132,12 +133,28 @@ tools.forEach(({ src, dest }) => {
   }
   // Check if the file is a ZIP file
   else if (src.endsWith(".zip")) {
-    // Unzip the file to the destination path
-    fs.createReadStream(src)
-      .pipe(unzipper.Extract({ path: destPath }))
-      .on("close", () => {
-        console.log(`Unzipped ${src} to ${destPath}`);
-      });
+    // Extract entries individually and await their streams. unzipper.Extract
+    // silently omitted two Python modules from extern.zip in the Windows
+    // standalone package, leaving Direct Bluetooth unable to start.
+    void unzipper.Open.file(src).then(async (archive) => {
+      const root = path.resolve(destPath);
+      for (const entry of archive.files) {
+        const target = path.resolve(root, entry.path);
+        if (target !== root && !target.startsWith(root + path.sep)) {
+          throw new Error(`Unsafe ZIP entry: ${entry.path}`);
+        }
+        if (entry.type === "Directory") {
+          fs.mkdirSync(target, { recursive: true });
+          continue;
+        }
+        fs.mkdirSync(path.dirname(target), { recursive: true });
+        await pipeline(entry.stream(), fs.createWriteStream(target));
+      }
+      console.log(`Unzipped ${src} to ${destPath}`);
+    }).catch((error) => {
+      console.error(`Could not unpack ${src}:`, error);
+      process.exitCode = 1;
+    });
   } else {  
     fs.copyFileSync(src, destPath);
     fs.chmodSync(destPath, 0o755); // Ensure executable permissions

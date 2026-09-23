@@ -637,13 +637,9 @@ app.all("*", async (req, res) => {
       const buffer = Buffer.from(await response.arrayBuffer()); // ? Convert response to Buffer
       return res.status(response.status).send(buffer); // ? Send binary data
     } else {
-      // Check if it contains JSON
-      const isJSON = contentType?.includes("application/json");
-
-      const data = isJSON ? await response.json() : await response.text();
-      //console.log(data);
-
-      res.status(response.status).send(data);
+      // Firmware JSON contains uint64 parameter IDs. Parsing and serializing
+      // here rounds them before the client can decode them losslessly.
+      res.status(response.status).send(await response.text());
     }
   } catch (error: any) {
     if (error.name === "AbortError") {

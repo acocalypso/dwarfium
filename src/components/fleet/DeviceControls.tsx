@@ -33,13 +33,16 @@ export default function DeviceControls({
     update();
     return controller.subscribe(update);
   }, [controller]);
-  const run = async (action: () => Promise<unknown>, success: string) => {
+  const run = async (
+    action: () => Promise<unknown>,
+    success: string | ((result: unknown) => string),
+  ) => {
     setPendingCount((n) => n + 1);
     setError(undefined);
     setMessage(undefined);
     try {
-      await action();
-      setMessage(success);
+      const result = await action();
+      setMessage(typeof success === "string" ? success : success(result));
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure));
     } finally {
@@ -192,7 +195,13 @@ export default function DeviceControls({
                   frameCount: Number(count),
                   ...(camera === 0 ? { filterIndex: Number(filter) } : {}),
                 }),
-              "Capture submitted; awaiting device progress.",
+              (result) =>
+                result &&
+                typeof result === "object" &&
+                "status" in result &&
+                result.status === "completed"
+                  ? "Requested frame count reached; capture stopped on the telescope."
+                  : "Capture submitted; awaiting device progress.",
             )
           }
         >
