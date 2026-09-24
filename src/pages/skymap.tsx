@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/router";
 import PageHeader from "@/components/shared/PageHeader";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { getDwarfDeviceProfile } from "@/services/dwarf/deviceProfile";
@@ -9,7 +8,7 @@ import {
   padNumber,
 } from "@/lib/math_utils";
 import { startGotoHandler } from "@/lib/goto_utils";
-import { savePlannerSkySelection } from "@/lib/observation_planner_transfer";
+import { plannerSkySelectionHref } from "@/lib/observation_planner_transfer";
 
 type SkyTarget = {
   name: string;
@@ -50,7 +49,6 @@ function footprintVertices(target: SkyTarget, width: number, height: number) {
 }
 
 export default function SkyMap() {
-  const router = useRouter();
   const connection = useContext(ConnectionContext);
   const aladinRef = useRef<AladinInstance | null>(null);
   const apiRef = useRef<any>(null);
@@ -63,6 +61,7 @@ export default function SkyMap() {
   });
   const [gotoError, setGotoError] = useState<string>();
   const [gotoSuccess, setGotoSuccess] = useState<string>();
+  const [openingPlanner, setOpeningPlanner] = useState(false);
 
   const deviceProfile = useMemo(() => {
     if (!connection.typeIdDwarf) return null;
@@ -214,16 +213,20 @@ export default function SkyMap() {
     }
   };
 
-  const sendToPlanner = async () => {
-    if (!selectedTarget) return;
-    savePlannerSkySelection({
-      name: selectedTarget.name,
-      rightAscension: formatRa(selectedTarget.ra),
-      declination: formatDec(selectedTarget.dec),
-      fovWidthDegrees: fov.widthDegrees,
-      fovHeightDegrees: fov.heightDegrees,
-    });
-    await router.push("/scheduler");
+  const sendToPlanner = () => {
+    if (!selectedTarget || openingPlanner) return;
+    setOpeningPlanner(true);
+    // A full document navigation avoids the Next.js static-export route crash
+    // when leaving the Aladin atlas; the URL keeps the draft through remounts.
+    window.location.assign(
+      plannerSkySelectionHref({
+        name: selectedTarget.name,
+        rightAscension: formatRa(selectedTarget.ra),
+        declination: formatDec(selectedTarget.dec),
+        fovWidthDegrees: fov.widthDegrees,
+        fovHeightDegrees: fov.heightDegrees,
+      }),
+    );
   };
 
   return (
@@ -296,9 +299,10 @@ export default function SkyMap() {
                 <button
                   className="dw-button dw-button-secondary"
                   onClick={sendToPlanner}
+                  disabled={openingPlanner}
                 >
-                  <i className="bi bi-calendar-plus" aria-hidden="true" /> Add
-                  to planner
+                  <i className="bi bi-calendar-plus" aria-hidden="true" />
+                  {openingPlanner ? "Opening plan…" : "Add to planner"}
                 </button>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useCallback, useEffect, useState, useContext } from "react";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 
@@ -28,8 +28,42 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
+  const navigateFromSkyAtlas = (event: MouseEvent<HTMLDivElement>) => {
+    if (
+      pathname !== "/skymap" ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      !(event.target instanceof Element)
+    )
+      return;
+    const link = event.target.closest("a[href]") as HTMLAnchorElement | null;
+    if (
+      !link ||
+      link.hasAttribute("download") ||
+      (link.target && link.target !== "_self")
+    )
+      return;
+    const destination = new URL(link.href);
+    if (
+      destination.origin !== window.location.origin ||
+      destination.pathname === window.location.pathname
+    )
+      return;
+    // Unmounting Aladin during a Next client-side transition can blank the
+    // static standalone. A document navigation safely releases its canvas.
+    event.preventDefault();
+    event.stopPropagation();
+    window.location.assign(destination.href);
+  };
+
   return (
-    <div className={`dw-app ${collapsed ? "has-collapsed-sidebar" : ""}`}>
+    <div
+      className={`dw-app ${collapsed ? "has-collapsed-sidebar" : ""}`}
+      onClickCapture={navigateFromSkyAtlas}
+    >
       <a className="dw-skip-link" href="#main-content">
         Skip to main content
       </a>

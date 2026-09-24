@@ -1,8 +1,10 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import {
   PLANNER_SELECTION_KEY,
-  type PlannerSkySelection,
+  isPlannerSkySelection,
+  plannerSkySelectionFromQuery,
 } from "@/lib/observation_planner_transfer";
 
 type PlannerTab = "overview" | "plans" | "editor" | "preferences";
@@ -94,9 +96,10 @@ function downloadJson(filename: string, value: unknown) {
 }
 
 export default function AstroScheduler() {
+  const router = useRouter();
   const connection = useContext(ConnectionContext);
   const importRef = useRef<HTMLInputElement>(null);
-  const selectionHandledRef = useRef(false);
+  const initializedRef = useRef(false);
   const [activeTab, setActiveTab] = useState<PlannerTab>("overview");
   const [plans, setPlans] = useState<ObservationPlan[]>([]);
   const [preferences, setPreferences] = useState(DEFAULT_PREFERENCES);
@@ -106,12 +109,22 @@ export default function AstroScheduler() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    if (!router.isReady || initializedRef.current) return;
+    initializedRef.current = true;
+    let nextPreferences = DEFAULT_PREFERENCES;
     try {
       const storedPlans = localStorage.getItem(PLANS_KEY);
+      if (storedPlans) {
+        const parsed = JSON.parse(storedPlans);
+        if (Array.isArray(parsed)) setPlans(parsed);
+      }
+    } catch {
+      setNotice(
+        "Saved plans could not be read. You can still create a new plan.",
+      );
+    }
+    try {
       const storedPreferences = localStorage.getItem(PREFERENCES_KEY);
-      const storedSelection = localStorage.getItem(PLANNER_SELECTION_KEY);
-      let nextPreferences = DEFAULT_PREFERENCES;
-      if (storedPlans) setPlans(JSON.parse(storedPlans));
       if (storedPreferences) {
         nextPreferences = {
           ...DEFAULT_PREFERENCES,
@@ -119,33 +132,39 @@ export default function AstroScheduler() {
         };
         setPreferences(nextPreferences);
       }
-      if (storedSelection && !selectionHandledRef.current) {
-        const selection = JSON.parse(storedSelection) as PlannerSkySelection;
-        selectionHandledRef.current = true;
-        setDraft({
-          ...blankPlan(nextPreferences),
-          name: `${selection.name} observation`,
-          target: selection.name,
-          rightAscension: selection.rightAscension,
-          declination: selection.declination,
-          notes: `Framed in Sky Map for ${selection.fovWidthDegrees.toFixed(2)}° × ${selection.fovHeightDegrees.toFixed(2)}° telephoto FoV.`,
-        });
-        localStorage.removeItem(PLANNER_SELECTION_KEY);
-        setActiveTab("editor");
-        setNotice(
-          "Sky Map framing added. Choose a start time and review the capture settings.",
-        );
-      } else if (!selectionHandledRef.current) {
-        setDraft(blankPlan(nextPreferences));
-      }
     } catch {
-      setNotice(
-        "Some saved planner data could not be read. New changes will still be saved.",
-      );
-    } finally {
-      setLoaded(true);
+      setNotice("Planner preferences could not be read. Using defaults.");
     }
-  }, []);
+
+    let selection = plannerSkySelectionFromQuery(router.query);
+    if (!selection) {
+      try {
+        const storedSelection = localStorage.getItem(PLANNER_SELECTION_KEY);
+        if (storedSelection) {
+          const parsed: unknown = JSON.parse(storedSelection);
+          if (isPlannerSkySelection(parsed)) selection = parsed;
+        }
+      } catch {
+        localStorage.removeItem(PLANNER_SELECTION_KEY);
+      }
+    }
+    if (selection) {
+      setDraft({
+        ...blankPlan(nextPreferences),
+        target: selection.name === "Map center" ? "" : selection.name,
+        rightAscension: selection.rightAscension,
+        declination: selection.declination,
+      });
+      localStorage.removeItem(PLANNER_SELECTION_KEY);
+      setActiveTab("editor");
+      setNotice(
+        `Sky Atlas coordinates added (${selection.fovWidthDegrees.toFixed(2)}° × ${selection.fovHeightDegrees.toFixed(2)}° frame). Name the plan and choose a start time.`,
+      );
+    } else {
+      setDraft(blankPlan(nextPreferences));
+    }
+    setLoaded(true);
+  }, [router.isReady, router.query]);
 
   useEffect(() => {
     if (loaded) localStorage.setItem(PLANS_KEY, JSON.stringify(plans));
@@ -191,13 +210,24 @@ export default function AstroScheduler() {
     },
   ];
 
+  const clearSkyTransfer = () => {
+    if (router.query.from === "sky-atlas") {
+      void router.replace("/scheduler", undefined, {
+        shallow: true,
+        scroll: false,
+      });
+    }
+  };
+
   const startNewPlan = () => {
+    clearSkyTransfer();
     setDraft(blankPlan(preferences));
     setFormError(undefined);
     setActiveTab("editor");
   };
 
   const editPlan = (plan: ObservationPlan) => {
+    clearSkyTransfer();
     setDraft({ ...plan });
     setFormError(undefined);
     setActiveTab("editor");
@@ -237,6 +267,7 @@ export default function AstroScheduler() {
     );
     setNotice(`${saved.name} saved.`);
     setFormError(undefined);
+    clearSkyTransfer();
     setActiveTab("plans");
   };
 
@@ -312,6 +343,14 @@ export default function AstroScheduler() {
     { id: "preferences", label: "Preferences", icon: "bi-sliders" },
   ];
 
+  if (!loaded) {
+    return (
+      <div className="dw-inline-empty" role="status">
+        Opening observation planner…
+      </div>
+    );
+  }
+
   return (
     <div className="dw-planner">
       <nav
@@ -322,7 +361,10 @@ export default function AstroScheduler() {
           <button
             key={tab.id}
             className={activeTab === tab.id ? "is-active" : ""}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              clearSkyTransfer();
+              setActiveTab(tab.id);
+            }}
             aria-current={activeTab === tab.id ? "page" : undefined}
           >
             <i className={`bi ${tab.icon}`} aria-hidden="true" /> {tab.label}
@@ -821,7 +863,10 @@ export default function AstroScheduler() {
             <button
               type="button"
               className="dw-button dw-button-secondary"
-              onClick={() => setActiveTab(draft.id ? "plans" : "overview")}
+              onClick={() => {
+                clearSkyTransfer();
+                setActiveTab(draft.id ? "plans" : "overview");
+              }}
             >
               Cancel
             </button>
