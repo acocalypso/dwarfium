@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import i18n from "@/i18n";
-import RSSFeed from "@/components/RSSFeed";
+import SpaceCalendarFeed from "@/components/SpaceCalendarFeed";
 import PageHeader from "@/components/shared/PageHeader";
 
 export default function AstroCalendar() {
@@ -24,7 +24,7 @@ export default function AstroCalendar() {
         description={`${t("pCalendarYear")} ${new Date().getFullYear()} · upcoming celestial events and observing opportunities.`}
       />
       <section className="dw-panel dw-calendar-feed">
-        <RSSFeed />
+        <SpaceCalendarFeed />
       </section>
     </div>
   );

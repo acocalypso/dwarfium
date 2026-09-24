@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import "@testing-library/jest-dom";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { FleetProvider } from "@/stores/FleetContext";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import { FleetProvider, useFleet } from "@/stores/FleetContext";
 import {
   ConnectionContext,
   ConnectionContextProvider,
@@ -9,6 +9,7 @@ import {
 import FleetStatusBar from "@/components/fleet/FleetStatusBar";
 import FleetWorkspace from "@/components/fleet/FleetWorkspace";
 import { FLEET_STORAGE_KEY } from "@/services/fleet/manager";
+import type { FleetManager } from "@/services/fleet/manager";
 
 jest.mock("next/router", () => ({ useRouter: () => ({ pathname: "/" }) }));
 const a = "00000000-0000-4000-8000-000000000001";
@@ -22,7 +23,20 @@ function Page() {
     </>
   );
 }
-test("selection gates the page and routes context to only the chosen registration", () => {
+const managerRef: { current?: FleetManager } = {};
+function CaptureManager() {
+  managerRef.current = useFleet();
+  return null;
+}
+
+function setConnection(id: string, connection: "connected" | "disconnected") {
+  const controller = managerRef.current?.getDevice(id) as unknown as {
+    publish: (update: { connection: "connected" | "disconnected" }) => void;
+  };
+  act(() => controller.publish({ connection }));
+}
+
+test("top bar shows connected telescopes only and routes the selected workspace", () => {
   localStorage.setItem(
     FLEET_STORAGE_KEY,
     JSON.stringify({
@@ -42,6 +56,7 @@ test("selection gates the page and routes context to only the chosen registratio
   render(
     <FleetProvider>
       <ConnectionContextProvider>
+        <CaptureManager />
         <FleetStatusBar />
         <FleetWorkspace>
           <Page />
@@ -50,22 +65,27 @@ test("selection gates the page and routes context to only the chosen registratio
     </FleetProvider>,
   );
   expect(screen.queryByTestId("host")).not.toBeInTheDocument();
-  fireEvent.change(screen.getByRole("combobox", { name: "Target device" }), {
-    target: { value: a },
-  });
-  expect(screen.getByTestId("host")).toHaveTextContent("192.0.2.1");
-  expect(screen.getByTestId("state")).toHaveTextContent("false");
-  fireEvent.change(screen.getByRole("combobox", { name: "Target device" }), {
-    target: { value: b },
-  });
-  expect(screen.getByTestId("host")).toHaveTextContent("192.0.2.2");
   expect(
-    screen.getByRole("button", { name: /Mini disconnected/ }),
-  ).toBeVisible();
-  expect(screen.getByRole("button", { name: /D3 disconnected/ })).toBeVisible();
-  fireEvent.change(screen.getByRole("combobox", { name: "Target device" }), {
-    target: { value: "" },
-  });
-  expect(screen.queryByTestId("host")).not.toBeInTheDocument();
+    screen.queryByRole("combobox", { name: "Target device" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("No telescope connected")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: /Mini connected/ }),
+  ).not.toBeInTheDocument();
+
+  setConnection(a, "connected");
+  expect(screen.getByTestId("host")).toHaveTextContent("192.0.2.1");
+  expect(screen.getByTestId("state")).toHaveTextContent("true");
+  expect(screen.getByRole("button", { name: /Mini connected/ })).toBeVisible();
+  expect(screen.queryByRole("button", { name: /D3/ })).not.toBeInTheDocument();
+
+  setConnection(b, "connected");
+  fireEvent.click(screen.getByRole("button", { name: /D3 connected/ }));
+  expect(screen.getByTestId("host")).toHaveTextContent("192.0.2.2");
+  setConnection(b, "disconnected");
+  expect(
+    screen.queryByRole("button", { name: /D3 connected/ }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByTestId("host")).toHaveTextContent("192.0.2.1");
   localStorage.clear();
 });

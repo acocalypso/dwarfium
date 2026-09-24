@@ -112,8 +112,8 @@ export default function FleetWorkspace({ children }: { children: ReactNode }) {
           <div className="dw-page">
             <h1>Select a telescope</h1>
             <p>
-              Choose the target device in the top bar before using this
-              workspace.
+              Connect a telescope in Fleet, then select its card in the top bar
+              to use this workspace.
             </p>
             <Link href="/fleet">Manage your fleet</Link>
           </div>

@@ -260,7 +260,7 @@ textarea {
 .dw-collapse-button {
   width: 100%;
 }
-.dw-mobile-close {
+.dw-icon-button.dw-mobile-close {
   display: none;
 }
 .dw-sidebar.is-collapsed {
@@ -943,6 +943,62 @@ textarea {
 }
 .dw-connection-form {
   max-width: 920px;
+}
+.dw-connection-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+.dw-connection-actions .btn {
+  margin: 0 !important;
+}
+.dw-connection-actions > span {
+  margin: 0;
+}
+.dw-ble-progress-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(3, 8, 13, 0.78);
+  backdrop-filter: blur(5px);
+}
+.dw-ble-progress-panel {
+  width: min(420px, 100%);
+  padding: 28px;
+  text-align: center;
+  color: var(--dw-text);
+  background: var(--dw-surface-raised);
+  border: 1px solid var(--dw-border-strong);
+  border-radius: 14px;
+  box-shadow: var(--dw-shadow);
+}
+.dw-ble-progress-panel h3 {
+  margin: 12px 0 8px;
+  font-size: 1.12rem;
+}
+.dw-ble-progress-panel p {
+  margin: 8px 0;
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+.dw-ble-spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--dw-border-strong);
+  border-top-color: var(--dw-accent);
+  border-radius: 50%;
+  animation: dw-ble-spin 0.8s linear infinite;
+}
+@keyframes dw-ble-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .dw-connection-form .row > :first-child {
   align-self: flex-start;
@@ -2009,6 +2065,11 @@ textarea {
 .dw-calendar-toolbar .is-spinning {
   animation: dw-spin 0.8s linear infinite;
 }
+.dw-calendar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .dw-calendar-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2153,6 +2214,10 @@ textarea {
   color: var(--dw-text-muted);
   font-size: 0.76rem;
   line-height: 1.45;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 .dw-calendar-event > a {
   display: inline-flex;
@@ -2192,8 +2257,9 @@ textarea {
     align-items: stretch;
     flex-direction: column;
   }
-  .dw-calendar-toolbar .dw-button {
-    width: 100%;
+  .dw-calendar-actions .dw-button {
+    flex: 1 1 140px;
+    justify-content: center;
   }
   .dw-calendar-summary {
     grid-template-columns: 1fr;
@@ -3044,7 +3110,7 @@ body.light-theme .dw-statusbar {
   .dw-collapse-button {
     display: none;
   }
-  .dw-mobile-close {
+  .dw-icon-button.dw-mobile-close {
     display: inline-grid;
   }
   .dw-nav-backdrop {
@@ -3423,6 +3489,22 @@ body.light-theme .dw-statusbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   gap: 16px;
+}
+.dw-sky-inspector .dw-button {
+  min-height: 39px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-align: center;
+}
+.dw-sky-inspector .dw-action-row {
+  align-items: stretch;
+  gap: 10px;
+}
+.dw-sky-inspector .dw-action-row .dw-button {
+  width: 100%;
 }
 .dw-sky-inspector {
   display: flex;
@@ -4167,32 +4249,22 @@ body.light-theme .dw-statusbar {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
-  padding: 12px 20px;
+  padding: 12px 68px 12px 20px;
   border-bottom: 1px solid #293c4b;
   background: #090f16;
   font-size: 12px;
-}
-.dw-fleet-statusbar > label {
-  display: grid;
-  gap: 4px;
-  min-width: 180px;
-  font-size: 12px;
-}
-.dw-fleet-statusbar select {
-  max-width: 100%;
-  min-height: 36px;
-  background: #101923;
-  color: #eef4f6;
-  border: 1px solid #293c4b;
-  border-radius: 6px;
-  padding: 6px 10px;
 }
 .dw-fleet-status-list {
   display: flex;
   flex: 1;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   min-width: 0;
+}
+.dw-fleet-status-empty {
+  color: var(--dw-text-muted);
+  font-size: 0.78rem;
 }
 .dw-fleet-status-device {
   display: grid;
@@ -4218,7 +4290,6 @@ body.light-theme .dw-statusbar {
   .dw-fleet-statusbar {
     padding: 10px;
   }
-  .dw-fleet-statusbar > label,
   .dw-fleet-status-list {
     width: 100%;
     flex-basis: 100%;

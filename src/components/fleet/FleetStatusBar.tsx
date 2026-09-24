@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useFleet, useFleetRegistry } from "@/stores/FleetContext";
-import { useSyncExternalStore } from "react";
 import { offlineRuntime } from "@/services/fleet/controller";
 import type { FleetRegistration } from "@/services/fleet/registry";
 
@@ -26,7 +26,7 @@ function DeviceStatus({
     controller.getSnapshot,
     () => offlineRuntime,
   );
-  const t = runtime.telemetry;
+  const telemetry = runtime.telemetry;
   return (
     <button
       type="button"
@@ -41,13 +41,15 @@ function DeviceStatus({
       </span>
       <span>
         Battery{" "}
-        {t.batteryPercentage === undefined
+        {telemetry.batteryPercentage === undefined
           ? "Unavailable"
-          : `${t.batteryPercentage}%`}{" "}
+          : `${telemetry.batteryPercentage}%`}{" "}
         · Temperature{" "}
-        {t.temperature === undefined ? "Not reported" : `${t.temperature}°C`}
+        {telemetry.temperature === undefined
+          ? "Not reported"
+          : `${telemetry.temperature}°C`}
       </span>
-      <span>Storage {storageLabel(t)}</span>
+      <span>Storage {storageLabel(telemetry)}</span>
     </button>
   );
 }
@@ -55,30 +57,50 @@ function DeviceStatus({
 export default function FleetStatusBar() {
   const manager = useFleet();
   const registry = useFleetRegistry();
+  const [connectedIds, setConnectedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const controllers = Object.keys(registry.devices).map((id) =>
+      manager.getDevice(id),
+    );
+    const update = () => {
+      const next = controllers
+        .filter(
+          (controller) => controller.getSnapshot().connection === "connected",
+        )
+        .map((controller) => controller.id);
+      setConnectedIds((current) =>
+        current.length === next.length &&
+        current.every((id, index) => id === next[index])
+          ? current
+          : next,
+      );
+    };
+    const unsubscribe = controllers.map((controller) =>
+      controller.subscribe(update),
+    );
+    update();
+    return () => unsubscribe.forEach((stop) => stop());
+  }, [manager, registry.devices]);
+
+  useEffect(() => {
+    const selected = registry.selectedDeviceId;
+    if (selected && connectedIds.includes(selected)) return;
+    const next = connectedIds[0];
+    if (selected !== next) manager.registry.select(next);
+  }, [connectedIds, manager, registry.selectedDeviceId]);
+
   return (
     <div className="dw-fleet-statusbar" aria-label="Fleet device status">
-      <label>
-        Target device
-        <select
-          value={registry.selectedDeviceId ?? ""}
-          onChange={(event) =>
-            manager.registry.select(event.target.value || undefined)
-          }
-        >
-          <option value="">Select a telescope</option>
-          {Object.values(registry.devices).map((device) => (
-            <option key={device.id} value={device.id}>
-              {device.alias}
-            </option>
-          ))}
-        </select>
-      </label>
       <div className="dw-fleet-status-list">
-        {Object.values(registry.devices).map((device) => (
+        {connectedIds.length === 0 && (
+          <span className="dw-fleet-status-empty">No telescope connected</span>
+        )}
+        {connectedIds.map((id) => (
           <DeviceStatus
-            key={device.id}
-            device={device}
-            selected={registry.selectedDeviceId === device.id}
+            key={id}
+            device={registry.devices[id]}
+            selected={registry.selectedDeviceId === id}
           />
         ))}
       </div>

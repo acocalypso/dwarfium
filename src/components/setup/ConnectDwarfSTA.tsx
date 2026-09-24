@@ -25,6 +25,11 @@ import {
   analyzePacketBle,
 } from "@/services/dwarf";
 import { ConnectionContext } from "@/stores/ConnectionContext";
+import { useFleet } from "@/stores/FleetContext";
+import {
+  bleNameFromResult,
+  rememberBleDevice,
+} from "@/services/fleet/bleIdentity";
 import {
   saveIPDwarfDB,
   saveBlePWDDwarfDB,
@@ -54,6 +59,7 @@ function getBluetoothErrorMessage(error: unknown): string {
 
 export default function ConnectDwarfSTA() {
   let connectionCtx = useContext(ConnectionContext);
+  const fleet = useFleet();
 
   const [showHelp, setShowHelp] = useState(false);
   const [onTauri, setOnTauri] = useState(false);
@@ -63,6 +69,7 @@ export default function ConnectDwarfSTA() {
   const [proxyLocalIPs, setProxyLocalIPs] = useState<string[]>([]);
   const [isCustomInput, setIsCustomInput] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [directBleBusy, setDirectBleBusy] = useState(false);
   const [findDwarfBluetooth, setFindDwarfBluetooth] = useState(false);
   const [etatBluetooth, setEtatBluetooth] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<boolean | undefined>(
@@ -88,6 +95,20 @@ export default function ConnectDwarfSTA() {
   const [debouncedValue, setDebouncedValue] = useState(""); // Debounced value
   const [devices, setDevices] = useState<string[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<string>("");
+
+  const saveBleIdentity = (name: string | undefined, host: string) => {
+    if (!name || !host) return;
+    rememberBleDevice(name, host);
+    for (const device of Object.values(fleet.registry.getSnapshot().devices)) {
+      if (
+        device.lastKnownHost === host &&
+        (!device.reportedName ||
+          device.reportedName.toLowerCase() === name.toLowerCase())
+      ) {
+        fleet.registry.updateReportedName(device.id, name);
+      }
+    }
+  };
 
   const handleInputPWDChange = (event) => {
     setBluetoothPWD(event.target.value);
@@ -414,6 +435,7 @@ export default function ConnectDwarfSTA() {
           }
           connectionCtx.setIPDwarf(result_data.ip);
           saveIPDwarfDB(result_data.ip);
+          saveBleIdentity(deviceDwarf?.name, result_data.ip);
           connectionCtx.setBlePWDDwarf(BluetoothPWD);
           saveBlePWDDwarfDB(BluetoothPWD);
           connectionCtx.setBleSTASSIDDwarf(result_data.ssid);
@@ -886,6 +908,7 @@ export default function ConnectDwarfSTA() {
   };
 
   const runExecutable = async () => {
+    setDirectBleBusy(true);
     button_progress();
     // Get the Bluetooth password from the input field
     // Old Get
@@ -917,6 +940,10 @@ export default function ConnectDwarfSTA() {
       button_default();
       setConnecting(false);
       setConnectionStatus(false);
+      setErrorTxt(
+        "Bluetooth service is unavailable. Check the local proxy and retry.",
+      );
+      setDirectBleBusy(false);
       return;
     } else if (proxyUrl?.includes("api")) {
       proxyUrl = "/api" + requestCmd;
@@ -995,6 +1022,11 @@ export default function ConnectDwarfSTA() {
               }
               connectionCtx.setIPDwarf(result.dwarfIp);
               saveIPDwarfDB(result.dwarfIp);
+              saveBleIdentity(
+                bleNameFromResult(result.details) ||
+                  (auto_select_value !== "0" ? auto_select_value : undefined),
+                result.dwarfIp,
+              );
               connectionCtx.setBlePWDDwarf(BluetoothPWD);
               saveBlePWDDwarfDB(BluetoothPWD);
               connectionCtx.setBleSTASSIDDwarf(Wifi_SSID);
@@ -1073,6 +1105,7 @@ export default function ConnectDwarfSTA() {
         setConnectionStatus(false);
       }
     } finally {
+      setDirectBleBusy(false);
       button_default();
     }
   };
@@ -1466,25 +1499,53 @@ export default function ConnectDwarfSTA() {
               </div>
             </div>
           )}
-        <button id="btnWeb" type="submit" className="btn btn-more02 me-3">
-          <i className="icon-bluetooth" /> {t("pConnectWeb")}
-        </button>
-        {useDirectBluetooth == true && (
-          <button
-            id="btnDirect"
-            type="button"
-            className="btn btn-more02 me-6"
-            disabled={connecting}
-            onClick={(e) => {
-              e.preventDefault();
-              void runExecutable();
-            }}
-          >
-            <i className="icon-bluetooth" />
-            {t("pDirectBluetooth")}
+        <div className="dw-connection-actions">
+          <button id="btnWeb" type="submit" className="btn btn-more02">
+            <i className="icon-bluetooth" /> {t("pConnectWeb")}
           </button>
-        )}{" "}
-        {renderConnectionStatus()}
+          {useDirectBluetooth == true && (
+            <button
+              id="btnDirect"
+              type="button"
+              className="btn btn-more02"
+              disabled={connecting}
+              onClick={(e) => {
+                e.preventDefault();
+                void runExecutable();
+              }}
+            >
+              <i className="icon-bluetooth" />
+              {t("pDirectBluetooth")}
+            </button>
+          )}
+          {renderConnectionStatus()}
+        </div>
+        {directBleBusy && (
+          <div
+            className="dw-ble-progress-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Connecting via Bluetooth"
+          >
+            <div
+              className="dw-ble-progress-panel"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="dw-ble-spinner" aria-hidden="true" />
+              <h3>Connecting via Bluetooth</h3>
+              <p>
+                Scanning for your DWARF, reading its network settings, and
+                resolving its current IP address. This can take up to two
+                minutes.
+              </p>
+              <p className="dw-muted">
+                Keep the telescope powered on and near this computer. The helper
+                reports its result when it finishes.
+              </p>
+            </div>
+          </div>
+        )}
         {devices?.length > 0 && (
           <div className="row mb-3">
             <div className="col-lg-4 col-md-10 mt-3 d-flex align-items-center ">

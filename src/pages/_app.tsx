@@ -8,7 +8,6 @@ import "@/styles/all.min.css";
 import "@/styles/navbar.css";
 import "@/styles/modal.css";
 import "@/styles/sliding-pane.css";
-import "@/styles/moonphase.css";
 import "@/styles/weather.css";
 import "@/styles/clouds.css";
 import "@/styles/Calendar.css";
@@ -17,6 +16,7 @@ import "@/styles/image-editor.css";
 import "@/styles/mosaic.css";
 import "@/styles/camera.css";
 import "@/styles/dwarfium-ui.css";
+import "@/styles/moonphase.css";
 
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "@/fontello/css/custom-focus.css";

@@ -131,6 +131,15 @@ export class FleetRegistry {
     this.updateDevice({ ...device, alias: normalized });
   }
 
+  updateReportedName(id: FleetDeviceId, reportedName: string): void {
+    const device = this.getDevice(id);
+    const normalized = label(reportedName);
+    if (!/^DWARF(?:3|_mini|II)?_[A-Za-z0-9]+$/i.test(normalized))
+      throw new Error("Enter a valid DWARF Bluetooth identifier.");
+    if (device.reportedName === normalized) return;
+    this.updateDevice({ ...device, reportedName: normalized });
+  }
+
   /** Endpoint is a hint, never a permanent identity or automatic merge key. */
   updateHost(id: FleetDeviceId, host: string): void {
     const device = this.getDevice(id);

@@ -3,6 +3,7 @@ import { useContext, useState } from "react";
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import { useFleet } from "@/stores/FleetContext";
 import { validFleetHost } from "@/services/fleet/controller";
+import { lastBleDevice } from "@/services/fleet/bleIdentity";
 
 export default function RegisterConfiguredDevice() {
   const connection = useContext(ConnectionContext);
@@ -44,6 +45,7 @@ export default function RegisterConfiguredDevice() {
             setError("");
             try {
               const host = validFleetHost(connection.IPDwarf || "");
+              const recentBle = lastBleDevice();
               if (
                 Object.values(manager.registry.getSnapshot().devices).some(
                   (d) => d.lastKnownHost === host,
@@ -52,7 +54,12 @@ export default function RegisterConfiguredDevice() {
                 throw new Error(
                   "This address is already registered in Fleet. Open its existing card.",
                 );
-              manager.registry.register({ alias: name, lastKnownHost: host });
+              manager.registry.register({
+                alias: name,
+                lastKnownHost: host,
+                reportedName:
+                  recentBle?.host === host ? recentBle.name : undefined,
+              });
               setMessage(
                 "Telescope registered. If connected below, disconnect it there before connecting its Fleet card.",
               );

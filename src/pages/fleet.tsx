@@ -11,6 +11,7 @@ import type { DwarfModel } from "@/services/dwarf/deviceProfile";
 import styles from "@/styles/fleet.module.css";
 import { disconnectSetupDevice } from "@/services/fleet/handoff";
 import { storageLabel } from "@/components/fleet/FleetStatusBar";
+import { bleNameFromResult } from "@/services/fleet/bleIdentity";
 
 const modelNames = {
   dwarf2: "DWARF 2",
@@ -66,7 +67,11 @@ function FleetCard({
     () => offlineRuntime,
   );
   const [alias, setAlias] = useState(device.alias);
+  const [hostInput, setHostInput] = useState(device.lastKnownHost ?? "");
+  const [bleInput, setBleInput] = useState(device.reportedName ?? "");
   const [error, setError] = useState<string>();
+  const [status, setStatus] = useState<string>();
+  const [detecting, setDetecting] = useState(false);
   const [details, setDetails] = useState(true);
   const [changingControl, setChangingControl] = useState(false);
   const [workspace, setWorkspace] = useState(true);
@@ -90,6 +95,65 @@ function FleetCard({
       if (setupConnected) await disconnectSetupDevice(legacy);
       return manager.connect(device.id, getProxyUrl(legacy));
     });
+  const redetect = async () => {
+    setError(undefined);
+    setStatus(undefined);
+    if (busy) {
+      setError("Disconnect this telescope before updating its address.");
+      return;
+    }
+    if (!device.reportedName) {
+      setError(
+        "Save its Bluetooth identifier first, or discover it on the Connection setup page.",
+      );
+      return;
+    }
+    setDetecting(true);
+    try {
+      const proxy = getProxyUrl(legacy);
+      if (!proxy) throw new Error("The local Bluetooth proxy is unavailable.");
+      const endpoint = proxy.includes("/api")
+        ? "/api/run-ble"
+        : `${proxy}/run-ble`;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ble_psd: legacy.BlePWDDwarf || "DWARF_12345678",
+          // Redetection reads the device's current network settings; it must
+          // not apply a Wi-Fi profile saved for a different telescope.
+          ble_STA_ssid: "",
+          ble_STA_pwd: "",
+          auto_select: device.reportedName,
+        }),
+        signal: AbortSignal.timeout(120000),
+      });
+      if (response.status === 202)
+        throw new Error(
+          "The saved Bluetooth identifier was not selected. Check the identifier and retry.",
+        );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Bluetooth discovery failed.");
+      const foundName = bleNameFromResult(result.details);
+      if (
+        !foundName ||
+        foundName.toLowerCase() !== device.reportedName.toLowerCase()
+      ) {
+        throw new Error(
+          "The detected telescope does not match this Fleet registration. Address was not changed.",
+        );
+      }
+      const nextHost = validFleetHost(result.dwarfIp);
+      manager.registry.updateHost(device.id, nextHost);
+      setHostInput(nextHost);
+      setStatus(`Found ${foundName} at ${nextHost}. Connect to use it.`);
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : String(failure));
+    } finally {
+      setDetecting(false);
+    }
+  };
   if (compact) {
     const status =
       runtime.connection !== "connected"
@@ -115,6 +179,9 @@ function FleetCard({
               {runtime.model || device.model
                 ? modelNames[(runtime.model ?? device.model)!]
                 : "Model not verified"}
+            </span>
+            <span className={styles.bleIdentifier}>
+              {device.reportedName || "BLE identity not linked"}
             </span>
           </span>
           <span
@@ -281,6 +348,70 @@ function FleetCard({
           >
             Save name
           </button>
+          <div className={styles.identityForm}>
+            <label>
+              Bluetooth identifier
+              <input
+                value={bleInput}
+                onChange={(event) => setBleInput(event.target.value)}
+                placeholder="DWARF_mini_6a5316"
+              />
+            </label>
+            <button
+              onClick={() =>
+                void act(() =>
+                  manager.registry.updateReportedName(device.id, bleInput),
+                )
+              }
+            >
+              Save identifier
+            </button>
+          </div>
+          <p className={styles.hint}>
+            Advertised BLE name: {device.reportedName || "Not linked yet"}.
+            Bluetooth setup can fill this automatically.
+          </p>
+          <div className={styles.identityForm}>
+            <label>
+              IP address
+              <input
+                value={hostInput}
+                onChange={(event) => setHostInput(event.target.value)}
+                placeholder="192.168.178.53"
+              />
+            </label>
+            <button
+              disabled={busy || detecting}
+              onClick={() =>
+                void act(() => {
+                  const nextHost = validFleetHost(hostInput);
+                  manager.registry.updateHost(device.id, nextHost);
+                  setStatus(`Address saved: ${nextHost}`);
+                })
+              }
+            >
+              Save address
+            </button>
+            <button
+              disabled={busy || detecting || !device.reportedName}
+              onClick={() => void redetect()}
+            >
+              {detecting
+                ? "Detecting via Bluetooth…"
+                : "Redetect IP via Bluetooth"}
+            </button>
+          </div>
+          {detecting && (
+            <p role="status" className={styles.hint}>
+              Scanning for {device.reportedName} and resolving its current
+              address. This can take up to two minutes.
+            </p>
+          )}
+          {status && (
+            <p role="status" className={styles.success}>
+              {status}
+            </p>
+          )}
           <dl>
             <div>
               <dt>Address</dt>
