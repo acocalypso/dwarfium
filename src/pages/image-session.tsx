@@ -6,7 +6,19 @@ import i18n from "@/i18n";
 import { getProxyUrl, getTransfomProxyImageUrl } from "@/lib/get_proxy_url";
 import PhotoEditor from "../components/photoeditor/PhotoEditor"; // Import de bewerkingsmodule
 import PageHeader from "@/components/shared/PageHeader";
+import DeviceSessions from "@/components/sessions/DeviceSessions";
+
 export default function AstroPhoto() {
+  const connectionCtx = useContext(ConnectionContext);
+  // DWARF II retains its legacy file browser; current devices expose albums.
+  return connectionCtx.typeIdDwarf === 1 ? (
+    <LegacyAstroPhoto />
+  ) : (
+    <DeviceSessions />
+  );
+}
+
+function LegacyAstroPhoto() {
   const connectionCtx = useContext(ConnectionContext);
   let thumbnailUrl = "";
   const [notification] = useState<string | null>(null);
@@ -28,7 +40,7 @@ export default function AstroPhoto() {
     let proxyUrlData = getProxyUrl(connectionCtx);
 
     if (thumbnailExists[index]) {
-      if (connectionCtx.typeNameDwarf === "Dwarf II") {
+      if (connectionCtx.typeIdDwarf === 1) {
         thumbnailUrl = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}/stacked_thumbnail.jpg`;
         thumbnailUrl = `${proxyUrlData}?target=${encodeURIComponent(
           thumbnailUrl,
@@ -67,7 +79,7 @@ export default function AstroPhoto() {
     sessionName: string,
     proxyUrlData: string,
   ) => {
-    if (connectionCtx.typeNameDwarf == "Dwarf II") {
+    if (connectionCtx.typeIdDwarf === 1) {
       const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}/stacked_thumbnail.jpg`;
       thumbnailUrl = `${proxyUrlData}?target=${encodeURIComponent(url)}`;
     } else {
@@ -127,7 +139,7 @@ export default function AstroPhoto() {
     try {
       let response;
       let proxyUrlData = getProxyUrl(connectionCtx);
-      if (connectionCtx.typeNameDwarf == "Dwarf II") {
+      if (connectionCtx.typeIdDwarf === 1) {
         const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/`;
         const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(url)}`;
         response = await fetch(proxyUrl);
@@ -146,7 +158,7 @@ export default function AstroPhoto() {
         const folderDate = matches[3];
         if (!/dwarf_dark|solving_failed|cali_frame/i.test(folderName)) {
           try {
-            if (connectionCtx.typeNameDwarf == "Dwarf II") {
+            if (connectionCtx.typeIdDwarf === 1) {
               const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${folderName}/shotsInfo.json`;
               const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(
                 url,
@@ -185,7 +197,7 @@ export default function AstroPhoto() {
       let response;
       let proxyUrlData = getProxyUrl(connectionCtx);
 
-      if (connectionCtx.typeNameDwarf == "Dwarf II") {
+      if (connectionCtx.typeIdDwarf === 1) {
         const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}/shotsInfo.json`;
         const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(url)}`;
         response = await fetch(proxyUrl);
@@ -238,7 +250,7 @@ export default function AstroPhoto() {
           { create: true },
         );
         let folderResponse;
-        if (connectionCtx.typeNameDwarf == "Dwarf II") {
+        if (connectionCtx.typeIdDwarf === 1) {
           const url = `http://${connectionCtx.IPDwarf}/sdcard/DWARF_II/Astronomy/${sessionName}`;
           const proxyUrl = `${proxyUrlData}?target=${encodeURIComponent(url)}`;
           folderResponse = await fetch(proxyUrl);
@@ -260,7 +272,7 @@ export default function AstroPhoto() {
             let downloadedFiles = 0;
             for (const fitsFile of fitsFiles) {
               let fileResponse;
-              if (connectionCtx.typeNameDwarf == "Dwarf II") {
+              if (connectionCtx.typeIdDwarf === 1) {
                 const url = `http://${
                   connectionCtx.IPDwarf
                 }/sdcard/DWARF_II/Astronomy/${sessionName}/${encodeURIComponent(
@@ -455,7 +467,7 @@ export default function AstroPhoto() {
                       <tr className="active-row" key={index}>
                         <td>
                           {thumbnailExists[index] === true &&
-                          connectionCtx.typeNameDwarf == "Dwarf II" ? (
+                          connectionCtx.typeIdDwarf === 1 ? (
                             <img
                               className="thumblarge"
                               src={getTransfomProxyImageUrl(

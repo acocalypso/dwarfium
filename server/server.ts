@@ -557,7 +557,14 @@ app.all("*", async (req, res) => {
     // Prepare headers, removing problematic ones
     const filteredHeaders = Object.fromEntries(
       Object.entries(req.headers).filter(
-        ([key]) => !["host", "transfer-encoding"].includes(key.toLowerCase()),
+        ([key]) =>
+          ![
+            "host",
+            "connection",
+            "content-length",
+            "content-type",
+            "transfer-encoding",
+          ].includes(key.toLowerCase()),
       ),
     );
 
@@ -580,7 +587,7 @@ app.all("*", async (req, res) => {
     // Only include body if valid
     if (isBodyValid) {
       // Ensure proper content type
-      sanitizedHeaders["Content-Type"] = "application/json";
+      sanitizedHeaders["content-type"] = "application/json";
     }
 
     const fetchOptions: RequestInit = {
