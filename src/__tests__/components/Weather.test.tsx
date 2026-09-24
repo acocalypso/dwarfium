@@ -75,4 +75,42 @@ describe("Weather", () => {
       ),
     );
   });
+
+  it("loads the forecast with one request without saving an unsaved key", async () => {
+    mockedAxios.get.mockResolvedValue({
+      data: {
+        cod: "200",
+        city: { name: "Fürth", country: "DE", timezone: 7200 },
+        list: [
+          {
+            dt: 1790233200,
+            main: {
+              temp: 15,
+              temp_min: 14,
+              temp_max: 18,
+              feels_like: 14,
+              humidity: 73,
+            },
+            wind: { speed: 5 },
+            clouds: { all: 68 },
+            pop: 0.54,
+            weather: [{ description: "broken clouds", icon: "04d" }],
+          },
+        ],
+      },
+    });
+    renderWeather();
+
+    fireEvent.change(screen.getByLabelText("City"), {
+      target: { value: "Fürth" },
+    });
+    fireEvent.change(screen.getByLabelText("OpenWeather API key"), {
+      target: { value: "test-key" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+    await waitFor(() => expect(localStorage.getItem("city")).toBe("Fürth"));
+    expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("apiKey")).toBeNull();
+  });
 });

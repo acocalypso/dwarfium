@@ -8,7 +8,7 @@ export default function WeatherForeCast() {
       <PageHeader
         eyebrow="Conditions"
         title="Weather"
-        description="Check current conditions and the forecast before starting an observing session."
+        description="Review upcoming cloud cover, rain, wind, and temperature before an observing session."
       />
       <section className="dw-panel dw-conditions-panel">
         <Weather />
