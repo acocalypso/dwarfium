@@ -237,3 +237,4 @@ install/extern/config.py
 
 # Separate local SDK checkout; use its own repository for API changes.
 /dwarfii_api/
+output/
