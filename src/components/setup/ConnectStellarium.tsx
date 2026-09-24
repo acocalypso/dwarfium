@@ -3,6 +3,7 @@ import i18n from "@/i18n";
 import { useEffect, useContext, useState, useRef } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import { isTauri } from "@tauri-apps/api/core";
 import {
   getProxyUrl,
   getServerUrl,
@@ -122,9 +123,7 @@ export default function ConnectStellarium(props: PropType) {
 
     if (showInfoTxt !== undefined && !showInfoTxt) setShowInfoTxtData(false);
 
-    const isTauri = "__TAURI__" in window;
-
-    if (isTauri) {
+    if (isTauri()) {
       setUrl_plugin("");
     } else {
       // Test Proxy

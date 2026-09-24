@@ -16,6 +16,7 @@ import {
   compareURLsIgnoringPort,
 } from "@/lib/get_proxy_url";
 import axios from "axios";
+import { isTauri } from "@tauri-apps/api/core";
 import {
   DwarfClientIdDwarfMini,
   DwarfDeviceIdDwarfMini,
@@ -548,7 +549,6 @@ export default function ConnectDwarfSTA() {
   }, []);
 
   useEffect(() => {
-    const isTauri = "__TAURI__" in window;
     console.log("Effect triggered, aborting previous request if exists...");
     if (abortControllerRef.current) {
       abortControllerRef.current.abort(); // Abort the previous request
@@ -654,7 +654,9 @@ export default function ConnectDwarfSTA() {
             await Promise.all([
               checkHealth(proxyUrl + "/health", 3000, signal),
               checkHealth(proxyUrl + "/run-ble-health", 3000, signal),
-              checkHealth(serverUrl + "/run-ble-health", 3000, signal),
+              isTauri()
+                ? Promise.resolve(false)
+                : checkHealth(serverUrl + "/run-ble-health", 3000, signal),
             ]);
 
           setIsProxyOnServer(sameProxyServer);
@@ -717,13 +719,12 @@ export default function ConnectDwarfSTA() {
       }
     };
 
-    if (isTauri) {
+    if (isTauri()) {
       setOnTauri(true);
       connectionCtx?.setProxyInLan(true);
       setStateProxyInLan(true);
-    } else {
-      checkProxyStatus(signal);
     }
+    void checkProxyStatus(signal);
     return () => {
       console.log("Cleanup: Aborting previous checkProxyStatus call");
       abortControllerRef.current?.abort();
@@ -731,7 +732,6 @@ export default function ConnectDwarfSTA() {
   }, [connectionCtx.proxyIP]);
 
   useEffect(() => {
-    const isTauri = "__TAURI__" in window;
     console.log("Effect 2 triggered, aborting previous request if exists...");
     if (abortControllerRef2.current) {
       abortControllerRef2.current.abort(); // Abort the previous request
@@ -782,7 +782,7 @@ export default function ConnectDwarfSTA() {
       }
     };
 
-    if (isTauri) {
+    if (isTauri()) {
       setOnTauri(true);
       connectionCtx?.setProxyInLan(true);
       setStateProxyInLan(true);
@@ -1216,7 +1216,7 @@ export default function ConnectDwarfSTA() {
                 </div>
               </div>
             )}
-            {!isProxyOnServer && stateBluetoothServer == true && (
+            {!onTauri && !isProxyOnServer && stateBluetoothServer == true && (
               <div className="row mb-3">
                 <div className="col-lg-10 col-md-10">
                   <i
@@ -1227,7 +1227,7 @@ export default function ConnectDwarfSTA() {
                 </div>
               </div>
             )}
-            {!isProxyOnServer && stateBluetoothServer == false && (
+            {!onTauri && !isProxyOnServer && stateBluetoothServer == false && (
               <div className="row mb-3">
                 <div className="col-lg-10 col-md-10">
                   <i className="bi bi-x-circle" style={{ color: "red" }}></i>

@@ -34,7 +34,8 @@
     },
     "resources": {
       "mediamtx.yml": "mediamtx.yml",
-      "../install/config/mediamtx-https.yml": "mediamtx-https.yml"
+      "../install/config/mediamtx-https.yml": "mediamtx-https.yml",
+      "extern": "extern"
     },
     "shortDescription": "",
     "linux": {

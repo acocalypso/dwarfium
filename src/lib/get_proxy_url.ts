@@ -1,4 +1,5 @@
 import { ConnectionContextType } from "@/types";
+import { isTauri } from "@tauri-apps/api/core";
 
 export async function checkHealth(url, timeout = 5000, externalSignal) {
   const timeoutSignal = AbortSignal.timeout(timeout);
@@ -50,8 +51,7 @@ export async function checkHealth(url, timeout = 5000, externalSignal) {
 
 export function isModeHttps() {
   // don't change if using Tauri
-  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
-  if (isTauri) {
+  if (isTauri()) {
     return false;
   } else if (typeof window !== "undefined") {
     const port = window.location.protocol;
@@ -69,9 +69,8 @@ export function getServerIp() {
 
 export function getServerUrl() {
   // don't change if using /api/proxy or Tauri
-  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
   if (
-    isTauri ||
+    isTauri() ||
     (process.env.NEXT_PUBLIC_URL_PROXY_CORS &&
       process.env.NEXT_PUBLIC_URL_PROXY_CORS.includes("api"))
   ) {
@@ -92,10 +91,9 @@ export function getServerUrl() {
 
 export function getProxyUrl(connectionCtx: ConnectionContextType) {
   // don't change if using Tauri
-  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
-  if (isTauri) {
+  if (isTauri()) {
     console.debug(`PROXY-1 is : ${process.env.NEXT_PUBLIC_URL_PROXY_CORS}`);
-    return process.env.NEXT_PUBLIC_URL_PROXY_CORS;
+    return process.env.NEXT_PUBLIC_URL_PROXY_CORS || "http://127.0.0.1:8860";
     // don't change if using api/proxy and not using an external Proxy
   } else if (
     process.env.NEXT_PUBLIC_URL_PROXY_CORS &&
@@ -137,8 +135,7 @@ export function getProxyUrl(connectionCtx: ConnectionContextType) {
 }
 
 export function getMediaMTXUrl(connectionCtx: ConnectionContextType): string {
-  const isTauri = typeof window !== "undefined" && "__TAURI__" in window;
-  if (isTauri) {
+  if (isTauri()) {
     return process.env.NEXT_PUBLIC_IP_MEDIAMTX || "localhost";
   } else if (typeof window !== "undefined") {
     let hostname = "";
@@ -161,8 +158,8 @@ export function getMediaMTXUrl(connectionCtx: ConnectionContextType): string {
 }
 
 export function getIpServerMTX() {
-  if (typeof window !== "undefined" && "__TAURI__" in window) {
-    return process.env.NEXT_PUBLIC_IP_MEDIAMTX;
+  if (isTauri()) {
+    return process.env.NEXT_PUBLIC_IP_MEDIAMTX || "localhost";
   }
   return "0.0.0.0";
 }

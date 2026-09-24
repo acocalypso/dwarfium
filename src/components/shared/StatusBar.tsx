@@ -39,10 +39,12 @@ export default function StatusBar() {
       ? `${connection.availableSizeDwarf}/${connection.totalSizeDwarf} GB`
       : "—";
   const target = connection.astroSettings?.target || "No target";
-  const isCapturing = Boolean(
-    connection.imagingSession?.isRecording ||
-    connection.imagingSession?.isGoLive,
-  );
+  const isCapturing =
+    connected &&
+    Boolean(
+      connection.imagingSession?.isRecording ||
+      connection.imagingSession?.isGoLive,
+    );
 
   return (
     <div className="dw-statusbar" aria-label="Device status" aria-live="polite">

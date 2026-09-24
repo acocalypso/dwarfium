@@ -227,6 +227,8 @@ install/windows/createSSLcert.exe
 src-tauri/bin/DwarfiumProxy-x86_64-pc-windows-msvc.exe
 src-tauri/bin/mediamtx-x86_64-pc-windows-msvc.exe
 src-tauri/mediamtx.yml
+/src-tauri/extern/*
+!/src-tauri/extern/.gitkeep
 install/extern/config.py
 install/extern/config.py
 install/extern/config.py
