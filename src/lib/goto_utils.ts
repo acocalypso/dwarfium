@@ -1,7 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
 import { AstroObject, ConnectionContextType } from "@/types";
-import { focusPath, focusPosPath } from "@/lib/stellarium_utils";
-import { getProxyUrl } from "@/lib/get_proxy_url";
+import {
+  focusPath,
+  focusPosPath,
+  stellariumRequestUrl,
+} from "@/lib/stellarium_utils";
 
 import {
   Dwarfii_Api,
@@ -1368,12 +1371,7 @@ export function centerCoordinatesHandler(
     console.log(`coordinates found: ${str_coord}`);
 
     let focusUrl = `${url}${focusPosPath}${str_coord}`;
-    if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-      const targetUrl = new URL(focusUrl);
-      focusUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-        targetUrl.href,
-      )}`;
-    }
+    focusUrl = stellariumRequestUrl(focusUrl, connectionCtx);
     console.log("focusUrl : " + focusUrl);
     fetch(focusUrl, { method: "POST", signal: AbortSignal.timeout(2000) })
       // res.json don't work here
@@ -1418,12 +1416,7 @@ export function centerHandler(
       console.log(`coordinates found: ${str_coord}`);
 
       let focusUrl = `${url}${focusPosPath}${str_coord}`;
-      if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-        const targetUrl = new URL(focusUrl);
-        focusUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href,
-        )}`;
-      }
+      focusUrl = stellariumRequestUrl(focusUrl, connectionCtx);
       console.log("focusUrl : " + focusUrl);
       fetch(focusUrl, { method: "POST", signal: AbortSignal.timeout(2000) })
         // res.json don't work here
@@ -1440,12 +1433,7 @@ export function centerHandler(
     } else {
       console.log("select object by name in stellarium...");
       let focusUrl = `${url}${focusPath}${object.designation}`;
-      if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-        const targetUrl = new URL(focusUrl);
-        focusUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href,
-        )}`;
-      }
+      focusUrl = stellariumRequestUrl(focusUrl, connectionCtx);
       console.log("focusUrl : " + focusUrl);
       fetch(focusUrl, { method: "POST", signal: AbortSignal.timeout(2000) })
         .then((res) => {
@@ -1468,12 +1456,7 @@ export function centerHandler(
             console.log(`coordinates found: ${str_coord}`);
 
             focusUrl = `${url}${focusPosPath}${str_coord}`;
-            if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-              const targetUrl = new URL(focusUrl);
-              focusUrl = `${getProxyUrl(
-                connectionCtx,
-              )}?target=${encodeURIComponent(targetUrl.href)}`;
-            }
+            focusUrl = stellariumRequestUrl(focusUrl, connectionCtx);
             console.log("focusUrl : " + focusUrl);
             fetch(focusUrl, {
               method: "POST",

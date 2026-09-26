@@ -5,12 +5,15 @@ import i18n from "@/i18n";
 
 import { ConnectionContext } from "@/stores/ConnectionContext";
 import ConnectStellarium from "@/components/setup/ConnectStellarium";
-import { statusPath, parseStellariumData } from "@/lib/stellarium_utils";
+import {
+  statusPath,
+  parseStellariumData,
+  stellariumRequestUrl,
+} from "@/lib/stellarium_utils";
 import { AstroObject, ParsedStellariumData } from "@/types";
 import DSOObject from "@/components/astroObjects/DSOObject";
 import { getObjectByNamesListOpenNGC } from "@/lib/observation_lists_utils";
 import dsoCatalog from "../../data/catalogs/dso_catalog.json";
-import { getProxyUrl } from "@/lib/get_proxy_url";
 import {
   startGotoHandler,
   stellariumErrorHandler,
@@ -112,13 +115,10 @@ export default function ManualGoto(props: PropType) {
 
     let url = connectionCtx.urlStellarium;
     if (url) {
-      let fetchUrl = `${url}${statusPath}`;
-      if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-        const targetUrl = new URL(fetchUrl);
-        fetchUrl = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href,
-        )}`;
-      }
+      const fetchUrl = stellariumRequestUrl(
+        `${url}${statusPath}`,
+        connectionCtx,
+      );
       fetch(fetchUrl, {
         signal: AbortSignal.timeout(2000),
       })

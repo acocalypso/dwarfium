@@ -3,8 +3,18 @@ import {
   ObjectStellariumInfo,
   ObjectStellarium,
 } from "@/types";
+import type { ConnectionContextType } from "@/types";
+import { getProxyUrl } from "@/lib/get_proxy_url";
 
 export let statusPath = "/api/main/status";
+
+export function stellariumRequestUrl(
+  target: string,
+  connection: ConnectionContextType,
+): string {
+  const proxy = getProxyUrl(connection);
+  return proxy ? `${proxy}?target=${encodeURIComponent(target)}` : target;
+}
 export let focusPath = "/api/main/focus?target=";
 export let focusPosPath = "/api/main/focus?position=";
 export let objectInfoPath = "/api/objects/info?format=json";

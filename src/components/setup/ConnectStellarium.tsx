@@ -4,6 +4,7 @@ import { useEffect, useContext, useState, useRef } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import { isTauri } from "@tauri-apps/api/core";
+import { statusPath, stellariumRequestUrl } from "@/lib/stellarium_utils";
 import {
   getProxyUrl,
   getServerUrl,
@@ -49,7 +50,7 @@ export default function ConnectStellarium(props: PropType) {
     const formPort = formData.get("port");
     const port = formPort ? Number(formPort) : 8090;
 
-    if (formIP && !isNaN(port) && port > 0) {
+    if (formIP && Number.isInteger(port) && port > 0 && port <= 65535) {
       setConnecting(true);
       let url = `http://${formIP}:${port}`;
 
@@ -63,14 +64,20 @@ export default function ConnectStellarium(props: PropType) {
       saveIPStellariumDB(formIP.toString());
       saveUrlStellariumDB(url);
 
-      if (connectionCtx.proxyIP && getProxyUrl(connectionCtx)) {
-        const targetUrl = new URL(url);
-        url = `${getProxyUrl(connectionCtx)}?target=${encodeURIComponent(
-          targetUrl.href,
-        )}`;
-      }
-      fetch(url, { signal: AbortSignal.timeout(2000) })
-        .then(() => {
+      const statusUrl = stellariumRequestUrl(
+        `${url}${statusPath}`,
+        connectionCtx,
+      );
+      fetch(statusUrl, { signal: AbortSignal.timeout(5000) })
+        .then((response) => {
+          if (!response.ok)
+            throw new Error(`Stellarium returned HTTP ${response.status}`);
+          return response.json();
+        })
+        .then((status) => {
+          if (!status || typeof status !== "object") {
+            throw new Error("Stellarium did not return status data");
+          }
           setConnecting(false);
           connectionCtx.setConnectionStatusStellarium(true);
           saveConnectionStatusStellariumDB(true);
@@ -280,7 +287,7 @@ export default function ConnectStellarium(props: PropType) {
               className="form-control"
               id="stellarium_ip"
               name="stellarium_ip"
-              placeholder="127.00.00.00"
+              placeholder="127.0.0.1"
               required
               defaultValue={connectionCtx.IPStellarium}
             />
@@ -297,6 +304,9 @@ export default function ConnectStellarium(props: PropType) {
               className="form-control"
               id="port"
               name="port"
+              type="number"
+              min="1"
+              max="65535"
               placeholder="8090"
               required
               value={portStellarium}
