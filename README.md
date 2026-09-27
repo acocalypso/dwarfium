@@ -53,6 +53,8 @@ The desktop sidebar collapses at narrower widths and becomes a keyboard-accessib
 
 Download the latest desktop or standalone package from [GitHub Releases](https://github.com/acocalypso/dwarfium/releases).
 
+For Windows 3.1.5, see the [illustrated desktop and standalone setup guide with troubleshooting FAQ](docs/GETTING_STARTED.md).
+
 - **Desktop app:** the recommended experience. It bundles the local proxy and MediaMTX services used for telescope communication and video streaming.
 - **Standalone web package:** useful for a local server or another machine on the telescope's network.
 - **Browser development:** requires a Chromium-based browser for Web Bluetooth. Bluetooth access also requires a secure context (`https://` or `localhost`).
