@@ -534,6 +534,11 @@ export default function DwarfCameras(props: PropType) {
   }
 
   async function turnOnCameraHandler(cameraId: number, connectionCtx) {
+    if (connectionCtx.connectionStatusSlave) {
+      setErrorTxt("Request control in Fleet before opening a camera preview.");
+      return;
+    }
+    setErrorTxt("");
     try {
       if (connectionCtx.typeIdDwarf !== 1)
         await ensureDevicePreviewPaths(connectionCtx);

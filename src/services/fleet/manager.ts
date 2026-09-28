@@ -25,7 +25,7 @@ export class FleetManager {
     return controller;
   }
 
-  async connect(id: string, proxy?: string) {
+  async connect(id: string, proxy?: string, requestControl = false) {
     const registration = this.registry.getDevice(id);
     const host = validFleetHost(registration.lastKnownHost ?? "");
     for (const [otherId, controller] of Array.from(this.controllers)) {
@@ -40,7 +40,12 @@ export class FleetManager {
     }
     this.desiredConnections.add(id);
     this.saveDesiredConnections();
-    await this.getDevice(id).connect(registration, proxy);
+    const controller = this.getDevice(id);
+    await controller.connect(registration, proxy);
+    if (requestControl) {
+      await controller.waitUntilConnected();
+      await controller.setControl(true);
+    }
   }
 
   disconnect(id: string) {

@@ -3,6 +3,7 @@ import {
   getProxyUrl,
   getServerUrl,
   proxyHostname,
+  shouldUseHttpsPreview,
 } from "@/lib/get_proxy_url";
 import type { ConnectionContextType } from "@/types";
 
@@ -44,4 +45,10 @@ test("HTTPS standalone rejects a stale insecure proxy URL and keeps HLS local", 
   expect(proxyHostname("http://192.168.0.120:8095", "127.0.0.1", "http:")).toBe(
     "192.168.0.120",
   );
+});
+
+test("HLS follows the page scheme even before Connection setup has been opened", () => {
+  expect(shouldUseHttpsPreview(true, false, "https:")).toBe(true);
+  expect(shouldUseHttpsPreview(true, false, "http:")).toBe(false);
+  expect(shouldUseHttpsPreview(false, true, "https:")).toBe(false);
 });

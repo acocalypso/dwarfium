@@ -110,6 +110,35 @@ export class FleetDeviceController {
       this.listeners.delete(listener);
     };
   };
+  /** Wait for the SDK handshake before issuing commands after an explicit Connect. */
+  waitUntilConnected(timeoutMs = 20_000): Promise<void> {
+    if (this.snapshot.connection === "connected") return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      let finished = false;
+      let unsubscribe = () => {};
+      const finish = (error?: Error) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeout);
+        unsubscribe();
+        if (error) reject(error);
+        else resolve();
+      };
+      const check = () => {
+        if (this.snapshot.connection === "connected") finish();
+        else if (this.snapshot.connection === "error")
+          finish(
+            new Error(this.snapshot.error || "Telescope connection failed."),
+          );
+      };
+      const timeout = setTimeout(
+        () => finish(new Error("Telescope connection timed out.")),
+        timeoutMs,
+      );
+      unsubscribe = this.subscribe(check);
+      check();
+    });
+  }
   private publish(update: Partial<FleetRuntime>) {
     this.snapshot = Object.freeze({ ...this.snapshot, ...update });
     this.listeners.forEach((listener) => listener());

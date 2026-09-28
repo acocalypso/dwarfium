@@ -93,7 +93,7 @@ function FleetCard({
   const connect = () =>
     act(async () => {
       if (setupConnected) await disconnectSetupDevice(legacy);
-      return manager.connect(device.id, getProxyUrl(legacy));
+      return manager.connect(device.id, getProxyUrl(legacy), true);
     });
   const redetect = async () => {
     setError(undefined);
@@ -253,7 +253,7 @@ function FleetCard({
           <span role="status">
             {runtime.ownership === "control"
               ? "You have control"
-              : "Monitoring only"}
+              : "Monitoring only · request control to use the camera"}
           </span>
           <button
             disabled={changingControl}
@@ -308,7 +308,11 @@ function FleetCard({
             busy ? manager.disconnect(device.id) : void connect()
           }
         >
-          {busy ? "Disconnect" : setupConnected ? "Use in Fleet" : "Connect"}
+          {busy
+            ? "Disconnect"
+            : setupConnected
+              ? "Use in Fleet & control"
+              : "Connect & control"}
         </button>
         {setupConnected && (
           <button onClick={() => void act(() => disconnectSetupDevice(legacy))}>

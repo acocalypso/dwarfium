@@ -107,4 +107,39 @@ describe("Fleet metadata persistence", () => {
     expect(JSON.parse(sessionStorage.getItem(FLEET_ACTIVE_KEY)!)).toEqual([]);
     restored.dispose();
   });
+
+  test("explicit Connect requests control after the handshake, but refresh does not", async () => {
+    const calls: string[] = [];
+    const factory = (id: string) =>
+      ({
+        id,
+        connect: async () => {
+          calls.push("connect");
+        },
+        waitUntilConnected: async () => {
+          calls.push("ready");
+        },
+        setControl: async (enabled: boolean) => {
+          calls.push(`control:${enabled}`);
+        },
+        disconnect: jest.fn(),
+        getSnapshot: () => ({ connection: "disconnected" }),
+      }) as any;
+    const first = new FleetManager(factory);
+    first.initialize(localStorage, jest.fn(), sessionStorage);
+    const device = first.registry.register({
+      alias: "Mini",
+      lastKnownHost: "192.0.2.1",
+    });
+    await first.connect(device.id, "/api/proxy", true);
+    expect(calls).toEqual(["connect", "ready", "control:true"]);
+    first.dispose();
+
+    calls.length = 0;
+    const restored = new FleetManager(factory);
+    restored.initialize(localStorage, jest.fn(), sessionStorage);
+    await restored.restoreConnections("/api/proxy");
+    expect(calls).toEqual(["connect"]);
+    restored.dispose();
+  });
 });

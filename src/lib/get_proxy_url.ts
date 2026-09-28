@@ -267,26 +267,34 @@ export const isLocalIp = (url) => {
   return islocalIp.test(url);
 };
 
+export function shouldUseHttpsPreview(
+  forceHttps: boolean,
+  configuredHttps: boolean | undefined,
+  pageProtocol: string,
+) {
+  return forceHttps && (configuredHttps === true || pageProtocol === "https:");
+}
+
 export function getTransfomProxyImageUrl(
   imageUrl,
   proxyUrl: string | undefined = undefined,
   connectionCtx: ConnectionContextType,
   forceHttps: boolean = false,
 ) {
-  if (connectionCtx && !connectionCtx.useHttps && connectionCtx.proxyInLan) {
+  const previewHttps = shouldUseHttpsPreview(
+    forceHttps,
+    connectionCtx?.useHttps,
+    typeof window === "undefined" ? "" : window.location.protocol,
+  );
+  if (connectionCtx && !previewHttps && connectionCtx.proxyInLan) {
     console.debug("getTransfomProxyImageUrl - Local Lan.");
     return imageUrl;
-  } else if (
-    connectionCtx &&
-    connectionCtx.useHttps &&
-    forceHttps &&
-    connectionCtx.proxyInLan
-  ) {
+  } else if (connectionCtx && previewHttps && connectionCtx.proxyInLan) {
     console.debug("getTransfomProxyImageUrl - Local Lan Force Https.");
     return imageUrl.replace("http:", "https:");
   } else {
     if (!proxyUrl) proxyUrl = getProxyUrl(connectionCtx);
-    if (connectionCtx && connectionCtx.useHttps && forceHttps) {
+    if (previewHttps) {
       imageUrl = imageUrl.replace("http:", "https:");
     }
     if (!proxyUrl && !connectionCtx.proxyIP) return imageUrl;

@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
 import { telephotoCamera } from "@/lib/dwarf_utils";
@@ -35,6 +35,11 @@ export function ConnectionContextProvider({ children }: ProviderProps) {
     number | undefined
   >();
   const [useHttps, setUseHttps] = useState<boolean>(false);
+  useEffect(() => {
+    // Fleet can connect without visiting Setup, so derive the transport mode
+    // from the standalone page instead of relying on Setup to set this flag.
+    setUseHttps(window.location.protocol === "https:");
+  }, []);
   const [proxyIP, setProxyIP] = useState<string | undefined>();
   const [proxyLocalIP, setProxyLocalIP] = useState<string | undefined>();
   const [proxyInLan, setProxyInLan] = useState<boolean | undefined>();
