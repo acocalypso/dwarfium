@@ -1,4 +1,9 @@
-import { getIpServerMTX, getProxyUrl, getServerUrl } from "@/lib/get_proxy_url";
+import {
+  getIpServerMTX,
+  getProxyUrl,
+  getServerUrl,
+  proxyHostname,
+} from "@/lib/get_proxy_url";
 import type { ConnectionContextType } from "@/types";
 
 jest.mock("@tauri-apps/api/core", () => ({
@@ -27,4 +32,16 @@ test("desktop service URLs use the bundled loopback proxy, not tauri.localhost",
 test("browser service URLs can still use a LAN proxy", () => {
   process.env.NEXT_PUBLIC_PORT_PROXY_CORS = "8860";
   expect(getProxyUrl(connection)).toBe("http://192.168.178.21:8860");
+});
+
+test("HTTPS standalone rejects a stale insecure proxy URL and keeps HLS local", () => {
+  expect(
+    proxyHostname("http://192.168.0.120:8095", "127.0.0.1", "https:"),
+  ).toBe("127.0.0.1");
+  expect(proxyHostname("192.168.0.120", "127.0.0.1", "https:")).toBe(
+    "192.168.0.120",
+  );
+  expect(proxyHostname("http://192.168.0.120:8095", "127.0.0.1", "http:")).toBe(
+    "192.168.0.120",
+  );
 });

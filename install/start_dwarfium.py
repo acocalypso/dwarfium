@@ -13,7 +13,7 @@ if importlib.util.find_spec(package_name) is None:
     print(f"{package_name} is not installed. Installing now...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 # Create a Flask app, serving static files from the current directory
 app = Flask(__name__, static_folder=os.getcwd())
 
@@ -233,26 +233,30 @@ def serve_static(path):
     if os.path.exists(full_path):
         return send_from_directory(app.static_folder, path)
 
+    # Missing build assets must be reported as missing, not silently returned
+    # as HTML (which the browser then rejects as a JavaScript MIME error).
+    if path.startswith("_next/") or "." in os.path.basename(path):
+        abort(404)
+
     # Otherwise, redirect to index.html for frontend routing (SPA)
     return send_from_directory(app.static_folder, "index.html")
 
 # Start the Flask server on port 8000
 if __name__ == '__main__':
-    # Path to your certificate and key files
-    cert_file = 'DwarfiumCert.pem'
-    key_file = 'DwarfiumKey.pem'
     ca_file = 'CADwarfiumCert.pem'
 
-    # Define possible certificate paths
-    cert_files = ['DwarfiumCert.pem', 'DwarfiumServerCert.pem']
-    key_files = ['DwarfiumKey.pem', 'DwarfiumServerKey.pem']
-    ca_file = 'CADwarfiumCert.pem'
+    # Certificate and key must come from the same pair. Older ZIP releases
+    # used the Server-prefixed names; keep those installations upgradeable.
+    certificate_pair = next(
+        ((cert, key) for cert, key in (
+            ('DwarfiumCert.pem', 'DwarfiumKey.pem'),
+            ('DwarfiumServerCert.pem', 'DwarfiumServerKey.pem'),
+        ) if os.path.exists(cert) and os.path.exists(key)),
+        None,
+    )
 
-    # Find the first available certificate and key
-    cert_file = next((cert for cert in cert_files if os.path.exists(cert)), None)
-    key_file = next((key for key in key_files if os.path.exists(key)), None)
-
-    if cert_file and key_file:
+    if certificate_pair:
+        cert_file, key_file = certificate_pair
         print(f"Using certificate: {cert_file} and key: {key_file}")
 
         ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)

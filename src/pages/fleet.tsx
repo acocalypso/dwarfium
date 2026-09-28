@@ -304,7 +304,9 @@ function FleetCard({
       )}
       <div className={styles.actions}>
         <button
-          onClick={() => (busy ? controller.disconnect() : void connect())}
+          onClick={() =>
+            busy ? manager.disconnect(device.id) : void connect()
+          }
         >
           {busy ? "Disconnect" : setupConnected ? "Use in Fleet" : "Connect"}
         </button>

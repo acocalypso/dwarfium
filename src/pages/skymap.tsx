@@ -54,6 +54,7 @@ export default function SkyMap() {
   const apiRef = useRef<any>(null);
   const overlayRef = useRef<any>(null);
   const [selectedTarget, setSelectedTarget] = useState<SkyTarget | null>(null);
+  const [framing, setFraming] = useState(true);
   const [mapCenter, setMapCenter] = useState<SkyTarget>({
     name: "Map center",
     ra: 83.82,
@@ -62,6 +63,7 @@ export default function SkyMap() {
   const [gotoError, setGotoError] = useState<string>();
   const [gotoSuccess, setGotoSuccess] = useState<string>();
   const [openingPlanner, setOpeningPlanner] = useState(false);
+  const activeTarget = selectedTarget ?? mapCenter;
 
   const deviceProfile = useMemo(() => {
     if (!connection.typeIdDwarf) return null;
@@ -133,6 +135,9 @@ export default function SkyMap() {
           container.replaceChildren();
           const aladin = A.default.aladin(container, {
             target: "M42",
+            // The default DSS2 resolver can select an IRSA mirror that omits
+            // CORS headers; use the CDS-hosted HiPS endpoint explicitly.
+            survey: "https://alasky.cds.unistra.fr/DSS/DSSColor",
             fov: 3,
             projection: "AIT",
             cooFrame: "equatorial",
@@ -142,6 +147,7 @@ export default function SkyMap() {
           });
           apiRef.current = A.default;
           aladinRef.current = aladin;
+          if (framing) drawFootprint(activeTarget);
           aladin.on(
             "positionChanged",
             ({ ra, dec }: { ra: number; dec: number }) => {
@@ -178,21 +184,23 @@ export default function SkyMap() {
   }, []);
 
   useEffect(() => {
-    if (selectedTarget) drawFootprint(selectedTarget);
-  }, [selectedTarget, fov.widthDegrees, fov.heightDegrees]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (framing) drawFootprint(activeTarget);
+    else overlayRef.current?.removeAll?.();
+  }, [framing, selectedTarget, mapCenter, fov.widthDegrees, fov.heightDegrees]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selectMapCenter = () => setSelectedTarget(mapCenter);
 
   const centerSelection = () => {
-    if (!selectedTarget || !aladinRef.current) return;
-    aladinRef.current.gotoRaDec(selectedTarget.ra, selectedTarget.dec);
+    if (!aladinRef.current) return;
+    aladinRef.current.gotoRaDec(activeTarget.ra, activeTarget.dec);
     aladinRef.current.setFoV(Math.max(fov.widthDegrees * 2.2, 3));
   };
 
   const gotoSelection = async () => {
-    if (!selectedTarget) return;
-    if (!connection.connectionStatus) {
-      setGotoError("Connect your DWARF before sending a GOTO command.");
+    if (!connection.connectionStatus || connection.connectionStatusSlave) {
+      setGotoError(
+        "Connect this DWARF and request control in Fleet before sending a GOTO command.",
+      );
       return;
     }
     try {
@@ -201,9 +209,9 @@ export default function SkyMap() {
         setGotoError,
         setGotoSuccess,
         undefined,
-        formatRa(selectedTarget.ra),
-        formatDec(selectedTarget.dec),
-        selectedTarget.name,
+        formatRa(activeTarget.ra),
+        formatDec(activeTarget.dec),
+        activeTarget.name,
       );
     } catch (error) {
       setGotoSuccess(undefined);
@@ -214,15 +222,13 @@ export default function SkyMap() {
   };
 
   const sendToPlanner = () => {
-    if (!selectedTarget || openingPlanner) return;
+    if (openingPlanner) return;
     setOpeningPlanner(true);
-    // A full document navigation avoids the Next.js static-export route crash
-    // when leaving the Aladin atlas; the URL keeps the draft through remounts.
     window.location.assign(
       plannerSkySelectionHref({
-        name: selectedTarget.name,
-        rightAscension: formatRa(selectedTarget.ra),
-        declination: formatDec(selectedTarget.dec),
+        name: activeTarget.name,
+        rightAscension: formatRa(activeTarget.ra),
+        declination: formatDec(activeTarget.dec),
         fovWidthDegrees: fov.widthDegrees,
         fovHeightDegrees: fov.heightDegrees,
       }),
@@ -238,6 +244,28 @@ export default function SkyMap() {
       />
       <section className="dw-sky-workspace">
         <div className="dw-panel dw-sky-map">
+          <div
+            className="dw-sky-map-toolbar"
+            role="group"
+            aria-label="Sky map view"
+          >
+            <button
+              type="button"
+              className={`dw-button ${framing ? "dw-button-secondary" : "dw-button-primary"}`}
+              aria-pressed={!framing}
+              onClick={() => setFraming(false)}
+            >
+              All sky
+            </button>
+            <button
+              type="button"
+              className={`dw-button ${framing ? "dw-button-primary" : "dw-button-secondary"}`}
+              aria-pressed={framing}
+              onClick={() => setFraming(true)}
+            >
+              Framing
+            </button>
+          </div>
           <div id="aladin-lite-div" />
         </div>
         <aside className="dw-panel dw-sky-inspector">
@@ -253,8 +281,9 @@ export default function SkyMap() {
             </span>
           </div>
           <p className="dw-muted">
-            Select an atlas object with the pointer, or use the current map
-            center for an exact coordinate.
+            {selectedTarget
+              ? "Selected atlas object. Move the map or choose its center to frame another coordinate."
+              : "The frame follows the map center. Select an atlas object to lock onto a target."}
           </p>
           <button
             className="dw-button dw-button-secondary dw-button-block"
@@ -262,63 +291,52 @@ export default function SkyMap() {
           >
             <i className="bi bi-crosshair" aria-hidden="true" /> Use map center
           </button>
-          {selectedTarget ? (
-            <div className="dw-sky-target-card">
-              <h3>{selectedTarget.name}</h3>
-              <dl>
-                <div>
-                  <dt>Right ascension</dt>
-                  <dd>{formatRa(selectedTarget.ra)}</dd>
-                </div>
-                <div>
-                  <dt>Declination</dt>
-                  <dd>{formatDec(selectedTarget.dec)}</dd>
-                </div>
-                <div>
-                  <dt>Telephoto FoV</dt>
-                  <dd>
-                    {fov.widthDegrees.toFixed(2)}° ×{" "}
-                    {fov.heightDegrees.toFixed(2)}°
-                  </dd>
-                </div>
-              </dl>
-              <div className="dw-action-row">
-                <button
-                  className="dw-button dw-button-secondary"
-                  onClick={centerSelection}
-                >
-                  Preview frame
-                </button>
-                <button
-                  className="dw-button dw-button-primary"
-                  onClick={gotoSelection}
-                  disabled={!connection.connectionStatus}
-                >
-                  <i className="bi bi-send" aria-hidden="true" /> GOTO target
-                </button>
-                <button
-                  className="dw-button dw-button-secondary"
-                  onClick={sendToPlanner}
-                  disabled={openingPlanner}
-                >
-                  <i className="bi bi-calendar-plus" aria-hidden="true" />
-                  {openingPlanner ? "Opening plan…" : "Add to planner"}
-                </button>
+          <div className="dw-sky-target-card">
+            <h3>{activeTarget.name}</h3>
+            <dl>
+              <div>
+                <dt>Right ascension</dt>
+                <dd>{formatRa(activeTarget.ra)}</dd>
               </div>
+              <div>
+                <dt>Declination</dt>
+                <dd>{formatDec(activeTarget.dec)}</dd>
+              </div>
+              <div>
+                <dt>Telephoto FoV</dt>
+                <dd>
+                  {fov.widthDegrees.toFixed(2)}° ×{" "}
+                  {fov.heightDegrees.toFixed(2)}°
+                </dd>
+              </div>
+            </dl>
+            <div className="dw-action-row">
+              <button
+                className="dw-button dw-button-secondary"
+                onClick={centerSelection}
+              >
+                Preview frame
+              </button>
+              <button
+                className="dw-button dw-button-primary"
+                onClick={gotoSelection}
+                disabled={
+                  !connection.connectionStatus ||
+                  connection.connectionStatusSlave
+                }
+              >
+                <i className="bi bi-send" aria-hidden="true" /> GOTO target
+              </button>
+              <button
+                className="dw-button dw-button-secondary"
+                onClick={sendToPlanner}
+                disabled={openingPlanner}
+              >
+                <i className="bi bi-calendar-plus" aria-hidden="true" />
+                {openingPlanner ? "Opening plan…" : "Add to planner"}
+              </button>
             </div>
-          ) : (
-            <div className="dw-empty-state dw-empty-state-compact">
-              <i
-                className="bi bi-stars dw-empty-state-icon"
-                aria-hidden="true"
-              />
-              <h2>No target selected</h2>
-              <p>
-                Choose an object in the atlas to see its coordinates and DWARF
-                frame.
-              </p>
-            </div>
-          )}
+          </div>
           {(gotoError || gotoSuccess) && (
             <div
               className={`dw-inline-message ${gotoError ? "is-error" : "is-success"}`}

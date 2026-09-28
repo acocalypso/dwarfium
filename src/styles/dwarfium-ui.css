@@ -2798,6 +2798,24 @@ textarea {
 .dw-sky-map {
   padding: 10px;
   overflow: hidden;
+  position: relative;
+}
+.dw-sky-map-toolbar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--dw-border);
+  border-radius: 9px;
+  background: rgba(5, 11, 19, 0.92);
+}
+.dw-sky-map-toolbar .dw-button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
 }
 .dw-sky-map #aladin-lite-div {
   width: 100%;

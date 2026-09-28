@@ -52,8 +52,8 @@ export default function Layout({ children }: { children: ReactNode }) {
       destination.pathname === window.location.pathname
     )
       return;
-    // Unmounting Aladin during a Next client-side transition can blank the
-    // static standalone. A document navigation safely releases its canvas.
+    // Aladin's static-export teardown needs a document navigation. Fleet
+    // monitoring reconnects on the new document without claiming control.
     event.preventDefault();
     event.stopPropagation();
     window.location.assign(destination.href);

@@ -21,7 +21,7 @@ import {
 } from "@/services/dwarf/captureCommands";
 import type { V3DeviceTelemetry } from "@/services/dwarf/telemetry";
 import type { FleetRegistration } from "./registry";
-import { createSessionProfile } from "@/services/dwarf/sessionProfile";
+import { createFleetSessionProfile } from "@/services/dwarf/sessionProfile";
 import { WebSocketHandler } from "@/services/dwarf/connection";
 import { decodeV3TelemetryPacket } from "@/services/dwarf/telemetry";
 import type { DwarfModel } from "@/services/dwarf/deviceProfile";
@@ -155,7 +155,11 @@ export class FleetDeviceController {
       this.publish({ model: info.profile.model });
       this.profile = getCurrentProfile(info.hardwareId);
       const client = new CurrentWebSocketHandler(
-        createSessionProfile(getCurrentProfile(info.hardwareId)),
+        createFleetSessionProfile(
+          getCurrentProfile(info.hardwareId),
+          device.id,
+          typeof sessionStorage === "undefined" ? undefined : sessionStorage,
+        ),
         this.options,
       );
       this.client = client;

@@ -2,11 +2,14 @@ import { FleetRegistry } from "./registry";
 import { FleetDeviceController, validFleetHost } from "./controller";
 
 export const FLEET_STORAGE_KEY = "dwarfium.fleet.v1";
+export const FLEET_ACTIVE_KEY = "dwarfium.fleet.active.v1";
 
 export class FleetManager {
   readonly registry = new FleetRegistry();
   private controllers = new Map<string, FleetDeviceController>();
   private stopSaving?: () => void;
+  private connectionStorage?: Pick<Storage, "getItem" | "setItem">;
+  private desiredConnections = new Set<string>();
 
   constructor(
     private readonly factory = (id: string) => new FleetDeviceController(id),
@@ -35,7 +38,39 @@ export class FleetManager {
       )
         throw new Error("This address already has an active Fleet connection.");
     }
+    this.desiredConnections.add(id);
+    this.saveDesiredConnections();
     await this.getDevice(id).connect(registration, proxy);
+  }
+
+  disconnect(id: string) {
+    this.desiredConnections.delete(id);
+    this.saveDesiredConnections();
+    this.getDevice(id).disconnect();
+  }
+
+  /** Reopen monitoring transports after a document reload; never claim control. */
+  async restoreConnections(proxy?: string) {
+    await Promise.all(
+      Array.from(this.desiredConnections).map(async (id) => {
+        try {
+          await this.connect(id, proxy);
+        } catch {
+          // A stale address or unavailable telescope remains visible in Fleet.
+        }
+      }),
+    );
+  }
+
+  private saveDesiredConnections() {
+    try {
+      this.connectionStorage?.setItem(
+        FLEET_ACTIVE_KEY,
+        JSON.stringify(Array.from(this.desiredConnections)),
+      );
+    } catch {
+      // Browser storage may be disabled; manual connections still work.
+    }
   }
 
   remove(id: string) {
@@ -47,12 +82,15 @@ export class FleetManager {
       throw new Error("Disconnect this telescope before removing it.");
     controller?.disconnect();
     this.controllers.delete(id);
+    this.desiredConnections.delete(id);
+    this.saveDesiredConnections();
     this.registry.removeDisconnected(id);
   }
 
   initialize(
     storage: Pick<Storage, "getItem" | "setItem">,
     onError: (message: string) => void,
+    connectionStorage?: Pick<Storage, "getItem" | "setItem">,
   ) {
     this.stopSaving?.();
     const saved = storage.getItem(FLEET_STORAGE_KEY);
@@ -86,6 +124,22 @@ export class FleetManager {
         );
       }
     });
+    this.connectionStorage = connectionStorage;
+    this.desiredConnections.clear();
+    try {
+      const savedConnections = JSON.parse(
+        connectionStorage?.getItem(FLEET_ACTIVE_KEY) ?? "[]",
+      );
+      if (Array.isArray(savedConnections))
+        for (const id of savedConnections)
+          if (
+            typeof id === "string" &&
+            this.registry.getSnapshot().devices[id]?.lastKnownHost
+          )
+            this.desiredConnections.add(id);
+    } catch {
+      // Invalid session state cannot grant ownership or block Fleet setup.
+    }
   }
 
   dispose() {

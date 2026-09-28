@@ -1,5 +1,8 @@
 import { disconnectSetupDevice } from "@/services/fleet/handoff";
-import { createSessionProfile } from "@/services/dwarf/sessionProfile";
+import {
+  createFleetSessionProfile,
+  createSessionProfile,
+} from "@/services/dwarf/sessionProfile";
 import { getCurrentProfile } from "dwarfii_api";
 
 test("Setup handoff closes its socket and clears auto-connect, without device stop commands", async () => {
@@ -30,4 +33,14 @@ test("separate connections have distinct valid client IDs without changing model
   );
   expect(a.hardwareId).toBe(base.hardwareId);
   expect(a.wireDeviceId).toBe(base.wireDeviceId);
+});
+
+test("Fleet reuses its identity in one tab but not across registrations", () => {
+  sessionStorage.clear();
+  const base = getCurrentProfile(4);
+  const first = createFleetSessionProfile(base, "mini-a", sessionStorage);
+  const refreshed = createFleetSessionProfile(base, "mini-a", sessionStorage);
+  const other = createFleetSessionProfile(base, "mini-b", sessionStorage);
+  expect(refreshed.clientId).toBe(first.clientId);
+  expect(other.clientId).not.toBe(first.clientId);
 });

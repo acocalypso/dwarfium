@@ -1,8 +1,15 @@
 import { FleetRegistry } from "@/services/fleet/registry";
-import { FleetManager, FLEET_STORAGE_KEY } from "@/services/fleet/manager";
+import {
+  FleetManager,
+  FLEET_ACTIVE_KEY,
+  FLEET_STORAGE_KEY,
+} from "@/services/fleet/manager";
 
 describe("Fleet metadata persistence", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
   test("legacy migration is idempotent and never restores connection authority", () => {
     localStorage.setItem("IPDwarf", "192.0.2.1");
     localStorage.setItem("connectionStatus", "true");
@@ -63,5 +70,41 @@ describe("Fleet metadata persistence", () => {
     );
     expect(fleet.serialize()).not.toContain("capturing");
     expect(fleet.serialize()).not.toContain("connected");
+  });
+
+  test("refresh reopens only explicitly connected Fleet transports without claiming control", async () => {
+    const connect = jest.fn().mockResolvedValue(undefined);
+    const disconnect = jest.fn();
+    const factory = (id: string) =>
+      ({
+        id,
+        connect,
+        disconnect,
+        getSnapshot: () => ({ connection: "disconnected" }),
+      }) as any;
+    const first = new FleetManager(factory);
+    first.initialize(localStorage, jest.fn(), sessionStorage);
+    const device = first.registry.register({
+      alias: "Mini",
+      lastKnownHost: "192.0.2.1",
+    });
+    await first.connect(device.id, "/api/proxy");
+    expect(JSON.parse(sessionStorage.getItem(FLEET_ACTIVE_KEY)!)).toEqual([
+      device.id,
+    ]);
+    first.dispose();
+
+    connect.mockClear();
+    const restored = new FleetManager(factory);
+    restored.initialize(localStorage, jest.fn(), sessionStorage);
+    await restored.restoreConnections("/api/proxy");
+    expect(connect).toHaveBeenCalledTimes(1);
+    expect(connect).toHaveBeenCalledWith(
+      expect.objectContaining({ id: device.id }),
+      "/api/proxy",
+    );
+    restored.disconnect(device.id);
+    expect(JSON.parse(sessionStorage.getItem(FLEET_ACTIVE_KEY)!)).toEqual([]);
+    restored.dispose();
   });
 });

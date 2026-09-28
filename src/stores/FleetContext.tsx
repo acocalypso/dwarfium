@@ -7,20 +7,24 @@ import {
   type ReactNode,
 } from "react";
 import { FleetManager } from "@/services/fleet/manager";
+import { ConnectionContext } from "@/stores/ConnectionContext";
+import { getProxyUrl } from "@/lib/get_proxy_url";
 
 const FleetContext = createContext<FleetManager | undefined>(undefined);
 
 export function FleetProvider({ children }: { children: ReactNode }) {
   const [manager] = useState(() => new FleetManager());
+  const connection = useContext(ConnectionContext);
   const [error, setError] = useState<string>();
   useEffect(() => {
     try {
-      manager.initialize(localStorage, setError);
+      manager.initialize(localStorage, setError, sessionStorage);
+      void manager.restoreConnections(getProxyUrl(connection));
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : String(failure));
     }
     return () => manager.dispose();
-  }, [manager]);
+  }, [manager]); // Restore once per browser document, not on context updates.
   return (
     <FleetContext.Provider value={manager}>
       {error && (

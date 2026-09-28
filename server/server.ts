@@ -72,17 +72,27 @@ function check_certificates() {
   const basePath = "."; // Current directory
   const caPath = path.join(basePath, "CADwarfiumCert.pem"); // Your Root CA
 
-  // Possible certificate and key names
-  const certPath = path.join(basePath, "DwarfiumCert.pem");
-  const keyPath = path.join(basePath, "DwarfiumKey.pem");
+  // Match the standalone web server's supported certificate names. Older
+  // installations use the Server-prefixed pair, and must start HTTPS on both
+  // ports or browsers will block camera/proxy requests as mixed content.
+  const pair = [
+    ["DwarfiumCert.pem", "DwarfiumKey.pem"],
+    ["DwarfiumServerCert.pem", "DwarfiumServerKey.pem"],
+  ].find(
+    ([cert, key]) =>
+      fs.existsSync(path.join(basePath, cert)) &&
+      fs.existsSync(path.join(basePath, key)),
+  );
 
-  if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+  if (pair) {
+    const certPath = path.join(basePath, pair[0]);
+    const keyPath = path.join(basePath, pair[1]);
     console.log(`✅ Using certificate: ${certPath}`);
     return {
       key: fs.readFileSync(keyPath, "utf-8"),
       cert: fs.readFileSync(certPath, "utf-8"),
-      requestCert: true, // Require client certificates
-      rejectUnauthorized: false, // Enforce validation
+      requestCert: USE_CLIENT_CERTIFICATE,
+      rejectUnauthorized: USE_CLIENT_CERTIFICATE,
       ca: fs.existsSync(caPath) ? fs.readFileSync(caPath, "utf-8") : undefined,
     };
   }

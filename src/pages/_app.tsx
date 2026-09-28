@@ -62,8 +62,8 @@ export default function App({ Component, pageProps }: AppProps) {
   }, []);
 
   return (
-    <FleetProvider>
-      <ConnectionContextProvider>
+    <ConnectionContextProvider>
+      <FleetProvider>
         <SetupLifecycle />
         <Provider store={store}>
           <Layout>
@@ -72,7 +72,7 @@ export default function App({ Component, pageProps }: AppProps) {
             </FleetWorkspace>
           </Layout>
         </Provider>
-      </ConnectionContextProvider>
-    </FleetProvider>
+      </FleetProvider>
+    </ConnectionContextProvider>
   );
 }

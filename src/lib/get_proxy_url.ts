@@ -89,6 +89,27 @@ export function getServerUrl() {
   return server_url;
 }
 
+export function proxyHostname(
+  selected: string | undefined,
+  pageHostname: string,
+  pageProtocol: string,
+): string {
+  if (!selected) return pageHostname;
+  try {
+    const configured = new URL(
+      selected.includes("://") ? selected : `http://${selected}`,
+    );
+    const localPage = ["localhost", "127.0.0.1"].includes(pageHostname);
+    return localPage &&
+      pageProtocol === "https:" &&
+      selected.startsWith("http://")
+      ? pageHostname
+      : configured.hostname;
+  } catch {
+    return pageHostname;
+  }
+}
+
 export function getProxyUrl(connectionCtx: ConnectionContextType) {
   // don't change if using Tauri
   if (isTauri()) {
@@ -97,21 +118,23 @@ export function getProxyUrl(connectionCtx: ConnectionContextType) {
     // don't change if using api/proxy and not using an external Proxy
   } else if (
     process.env.NEXT_PUBLIC_URL_PROXY_CORS &&
-    process.env.NEXT_PUBLIC_URL_PROXY_CORS.includes("api") &&
-    connectionCtx &&
-    !connectionCtx.proxyIP
+    process.env.NEXT_PUBLIC_URL_PROXY_CORS.startsWith("/api/")
   ) {
-    console.debug(`PROXY-1 is : ${process.env.NEXT_PUBLIC_URL_PROXY_CORS}`);
+    // The Next server is the proxy for this build. A stale saved LAN proxy
+    // must not turn an HTTPS page into an insecure cross-origin request.
     return process.env.NEXT_PUBLIC_URL_PROXY_CORS;
   } else if (typeof window !== "undefined") {
-    let hostname = "";
-
-    // if already defined use it
-    if (connectionCtx && connectionCtx.proxyInLan && connectionCtx.proxyLocalIP)
-      hostname = connectionCtx.proxyLocalIP;
-    else if (connectionCtx && connectionCtx.proxyIP)
-      hostname = connectionCtx.proxyIP;
-    else hostname = window.location.hostname;
+    const selected =
+      connectionCtx?.proxyInLan && connectionCtx.proxyLocalIP
+        ? connectionCtx.proxyLocalIP
+        : connectionCtx?.proxyIP;
+    // A legacy HTTP URL saved for a remote proxy cannot be used by a local
+    // HTTPS standalone page. Prefer its bundled local proxy instead.
+    const hostname = proxyHostname(
+      selected,
+      window.location.hostname,
+      window.location.protocol,
+    );
 
     if (hostname) {
       const protocol = window.location.protocol;
@@ -138,21 +161,10 @@ export function getMediaMTXUrl(connectionCtx: ConnectionContextType): string {
   if (isTauri()) {
     return process.env.NEXT_PUBLIC_IP_MEDIAMTX || "localhost";
   } else if (typeof window !== "undefined") {
-    let hostname = "";
-
-    // If already defined, use it
-    if (connectionCtx?.proxyLocalIP) {
-      hostname = connectionCtx.proxyLocalIP;
-      console.debug("proxyLocalIP:", hostname);
-    } else if (connectionCtx?.proxyIP) {
-      hostname = connectionCtx.proxyIP;
-      console.debug("proxyIP:", hostname);
-    } else {
-      hostname = window.location.hostname;
-    }
-    console.debug("Final getMediaMTXUrl:", hostname);
-
-    return hostname || process.env.NEXT_PUBLIC_IP_MEDIAMTX || "localhost";
+    const proxy = getProxyUrl(connectionCtx);
+    return proxy?.startsWith("http")
+      ? new URL(proxy).hostname
+      : window.location.hostname;
   }
   return process.env.NEXT_PUBLIC_IP_MEDIAMTX || "localhost"; // Default for server-side
 }
